@@ -1,0 +1,22 @@
+{
+  "name": "sm-survival-score",
+  "version": "1.0.0",
+  "description": "SM Survival Score — Diagnostic interactif pour Scrum Masters",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "node src/sm-survival-score.test.js"
+  },
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "recharts": "^2.12.7"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.1",
+    "vite": "^5.4.8"
+  }
+}
