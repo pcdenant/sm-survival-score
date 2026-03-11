@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer } from "recharts";
 
 // ============================================================
@@ -328,10 +328,7 @@ function QuestionScreen({ questionIndex, question, selectedAnswer, onSelect, onN
 
 function ResultScreen({ answers, onRestart }) {
   const [unlocked, setUnlocked] = useState(false);
-  const [email, setEmail] = useState("");
-  const [emailSent, setEmailSent] = useState(false);
-  const [submitError, setSubmitError] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
+  const kitContainerRef = useRef(null);
 
   const dimScores = useMemo(() => computeDimensionScores(answers), [answers]);
   const pct = useMemo(() => computeGlobalScore(dimScores), [dimScores]);
@@ -341,31 +338,53 @@ function ResultScreen({ answers, onRestart }) {
   const dimSorted = useMemo(() => [...dimOrdered].sort((a, b) => a.score - b.score), [dimOrdered]);
   const radarData = useMemo(() => dimOrdered.map(d => ({ dimension: d.shortName, score: d.score, fullMark: 8 })), [dimOrdered]);
 
-  const handleUnlock = useCallback(async () => {
-    if (!isValidEmail(email) || submitting) return;
-    setSubmitting(true);
-    setSubmitError(false);
+  // Load Kit embed script and watch for successful submission
+  useEffect(() => {
+    if (unlocked || !kitContainerRef.current) return;
 
-    try {
-      const res = await fetch("/api/subscribe", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
-      });
+    // Load the Kit script
+    const script = document.createElement("script");
+    script.src = "https://collaboration-solved.kit.com/da72eeaa73/index.js";
+    script.async = true;
+    script.dataset.uid = "da72eeaa73";
+    kitContainerRef.current.appendChild(script);
 
-      if (!res.ok) throw new Error("API error");
+    // Watch for Kit's success message in the DOM
+    const observer = new MutationObserver((mutations) => {
+      const container = kitContainerRef.current;
+      if (!container) return;
 
-      setUnlocked(true);
-      setEmailSent(true);
-    } catch (err) {
-      console.error("Subscribe failed:", err);
-      // Unlock anyway — don't punish the user for a server hiccup
-      setUnlocked(true);
-      setSubmitError(true);
-    } finally {
-      setSubmitting(false);
-    }
-  }, [email, submitting]);
+      // Kit replaces the form with a success message after submission
+      // Check for common Kit success indicators
+      const text = container.innerText.toLowerCase();
+      if (
+        text.includes("success") ||
+        text.includes("merci") ||
+        text.includes("thank") ||
+        text.includes("confirm") ||
+        text.includes("check your email") ||
+        text.includes("vérifi")
+      ) {
+        setUnlocked(true);
+        observer.disconnect();
+      }
+
+      // Also check if Kit added a success-state class or data attribute
+      const successEl = container.querySelector("[data-state='success'], .formkit-alert-success, .formkit-success");
+      if (successEl) {
+        setUnlocked(true);
+        observer.disconnect();
+      }
+    });
+
+    observer.observe(kitContainerRef.current, {
+      childList: true,
+      subtree: true,
+      characterData: true,
+    });
+
+    return () => observer.disconnect();
+  }, [unlocked]);
 
   const handleShare = useCallback(() => {
     const text = `Je viens de faire le SM Survival Score. Mon résultat : ${category.label} (${pct}/100). Et toi, tu en es où ?`;
@@ -442,36 +461,15 @@ function ResultScreen({ answers, onRestart }) {
               <div style={{ textAlign: "center", padding: "36px 28px", background: T.navy, borderRadius: T.r, marginTop: 24 }}>
                 <p style={{ fontSize: 18, fontWeight: 700, color: T.white, marginBottom: 8 }}>Débloque tes 4 autres diagnostics</p>
                 <p style={{ fontSize: 13, color: T.slateLight, marginBottom: 24, lineHeight: 1.6 }}>Entre ton email — tu recevras aussi une tactique concrète chaque semaine pour défendre ton rôle.</p>
-                <div style={{ display: "flex", flexDirection: "column", gap: 10, maxWidth: 340, margin: "0 auto" }}>
-                  <input
-                    type="email"
-                    placeholder="ton@email.com"
-                    value={email}
-                    onChange={e => setEmail(e.target.value)}
-                    onKeyDown={e => e.key === "Enter" && handleUnlock()}
-                    disabled={submitting}
-                    aria-label="Ton adresse email"
-                    style={{ width: "100%", padding: "16px 18px", fontSize: 15, fontFamily: T.f, border: "2px solid #334155", borderRadius: T.r, outline: "none", background: submitting ? "#f1f5f9" : T.white, boxSizing: "border-box" }}
-                  />
-                  <button onClick={handleUnlock} disabled={submitting} style={{ width: "100%", padding: "16px 18px", fontSize: 15, fontWeight: 700, fontFamily: T.f, background: submitting ? T.navyMid : T.accent, color: submitting ? T.slateLight : T.navy, border: "none", borderRadius: T.r, cursor: submitting ? "wait" : "pointer", boxSizing: "border-box" }}>
-                    {submitting ? "Un instant..." : "Voir mes diagnostics complets"}
-                  </button>
-                </div>
-                <p style={{ fontSize: 11, color: T.navyMid, marginTop: 14 }}>Pas de spam. Désinscription en un clic.</p>
+                <div ref={kitContainerRef} style={{ maxWidth: 380, margin: "0 auto" }} />
               </div>
             </>
           )}
         </section>
 
-        {emailSent && (
+        {unlocked && (
           <div role="alert" style={{ padding: "16px 20px", background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: T.r, marginBottom: 24, textAlign: "center", animation: "fadeUp 0.3s ease-out" }}>
             <p style={{ fontSize: 14, color: "#166534", fontWeight: 600 }}>✓ C'est débloqué. Tu recevras ta première tactique cette semaine.</p>
-          </div>
-        )}
-
-        {submitError && !emailSent && (
-          <div role="alert" style={{ padding: "16px 20px", background: "#fffbeb", border: "1px solid #fde68a", borderRadius: T.r, marginBottom: 24, textAlign: "center", animation: "fadeUp 0.3s ease-out" }}>
-            <p style={{ fontSize: 14, color: "#92400e", fontWeight: 600 }}>Diagnostics débloqués, mais l'inscription a échoué. Rejoins la newsletter directement ici pour ne rien manquer.</p>
           </div>
         )}
 
