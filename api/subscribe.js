@@ -25,25 +25,33 @@ export default async function handler(req, res) {
 
   try {
     const response = await fetch(
-      `https://api.convertkit.com/v3/forms/${FORM_ID}/subscribe`,
+      `https://api.kit.com/v4/forms/${FORM_ID}/subscribers`,
       {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${API_KEY}`,
+        },
         body: JSON.stringify({
-          api_key: API_KEY,
-          email: email,
+          email_address: email,
         }),
       }
     );
 
-    const data = await response.json();
-
-    if (!response.ok) {
-      console.error("Kit API error:", data);
-      return res.status(response.status).json({ error: "Erreur Kit API" });
+    // Kit v4 may return 200, 201 (with body) or 204 (empty)
+    if (response.ok) {
+      return res.status(200).json({ success: true });
     }
 
-    return res.status(200).json({ success: true });
+    // Error — try to parse response for logging
+    let data;
+    try {
+      data = await response.json();
+    } catch {
+      data = { status: response.status, statusText: response.statusText };
+    }
+    console.error("Kit API error:", data);
+    return res.status(response.status).json({ error: "Erreur Kit API" });
   } catch (error) {
     console.error("Subscribe error:", error);
     return res.status(500).json({ error: "Erreur serveur" });
