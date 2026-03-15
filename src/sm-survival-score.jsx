@@ -41,7 +41,7 @@ const GLOBAL_RESULTS = {
     title: "Ton rôle est en danger.",
     paragraphs: [
       "Soyons clairs. Si quelqu'un dans ta direction demandait demain « pourquoi on paie un Scrum Master ? », personne n'aurait de réponse solide. Ton travail est invisible. Tes preuves n'existent pas. Et tu parles un langage que ton management ne comprend pas.",
-      "Les SM qui se sont fait couper chez Capital One, Fidelity ou dans les banques UK ? Même profil. Pas incompétents. Juste invisibles.",
+      "Les rôles agile éliminés chez Capital One, les coupes chez Fidelity, les banques UK ? Même pattern. Le travail était reconnu. Les postes ont sauté quand même. Parce que l'impact était invisible au moment de la décision.",
       "Chaque zone de vulnérabilité ci-dessous peut se corriger. Pas en 6 mois. Cette semaine. Commence par tes dimensions les plus faibles.",
     ],
   },
@@ -65,7 +65,7 @@ const GLOBAL_RESULTS = {
 
 const DIAGNOSTICS = {
   visibility: {
-    low: { text: "Ton management ne voit pas ce que tu fais. Personne ne le sait. Et dans une réorg, ce qui est invisible est le premier coupé. Les SM qui ont perdu leur poste chez Capital One ou Fidelity n'étaient pas les moins compétents. C'étaient les moins visibles.", action: "Cette semaine, envoie un message de 3 lignes à ton manager avec UN résultat concret de ton dernier sprint. Pas un statut. Un résultat." },
+    low: { text: "Ton management ne voit pas ce que tu fais. Personne ne le sait. Et dans une réorg, ce qui est invisible est le premier coupé. Chez Capital One, l'entreprise a reconnu que le travail des rôles agile était « critique ». Elle les a éliminés quand même. Plus de 1 100 postes.", action: "Cette semaine, envoie un message de 3 lignes à ton manager avec UN résultat concret de ton dernier sprint. Pas un statut. Un résultat." },
     mid: { text: "Ton manager sait vaguement que tu fais du bon travail. Sauf que « vaguement » ne pèse rien quand quelqu'un demande « on coupe quoi ? ». Pas en danger immédiat, mais pas de filet non plus si le vent tourne.", action: "Prends ta contribution la plus significative du mois et reformule-la en une phrase que ton VP comprendrait sans contexte. Si tu n'y arrives pas, c'est ta zone de travail." },
     high: { text: "Ton impact est visible. Ton management sait ce que tu apportes et pourrait le défendre. Bonne base. Mais la visibilité, ça ne se stocke pas. Ça se renouvelle chaque trimestre.", action: "Est-ce que tu pourrais documenter tes 3 contributions majeures du trimestre en format avant/après chiffré ? Si oui, tu as un dossier. Si non, tu as un objectif." },
   },
@@ -263,7 +263,7 @@ function LandingScreen({ onStart }) {
           20 questions · 5 minutes · Un diagnostic clair
         </p>
         <p style={{ fontSize: 15, color: T.slateMuted, lineHeight: 1.7, marginBottom: 44, maxWidth: 440, marginLeft: "auto", marginRight: "auto" }}>
-          1 100 Scrum Masters virés chez Capital One. Des centaines d'autres chez Fidelity et dans les banques UK. Les SM qui survivent ne sont pas les meilleurs — ce sont ceux qui savent prouver leur valeur. Et toi, tu en es où ?
+          1 100 rôles agile éliminés chez Capital One. Des coupes massives chez Fidelity, dans les banques UK et ailleurs. Les rôles qui survivent ne sont pas les meilleurs. Ce sont ceux qui savent prouver leur valeur. Et toi, tu en es où ?
         </p>
         <button onClick={onStart} style={{ padding: "18px 52px", fontSize: 16, fontWeight: 700, fontFamily: T.f, background: T.accent, color: T.navy, border: "none", borderRadius: T.r, cursor: "pointer", boxShadow: `0 4px 24px ${T.accent}30` }}>
           Je fais le test
@@ -387,10 +387,10 @@ function ResultScreen({ answers, onRestart }) {
   }, [unlocked]);
 
   const handleShare = useCallback(() => {
-    const text = `Je viens de faire le SM Survival Score. Mon résultat : ${category.label} (${pct}/100). Et toi, tu en es où ?`;
-    if (navigator.share) navigator.share({ text });
+    const text = `Je viens de faire un diagnostic sur la solidité de mon rôle de Scrum Master. 20 questions, 5 minutes, et des pistes d'action que j'aurais aimé avoir avant → https://dub.sh/sm-survival-score`;
+    if (navigator.share) navigator.share({ text, url: "https://dub.sh/sm-survival-score" });
     else navigator.clipboard?.writeText(text);
-  }, [category.label, pct]);
+  }, []);
 
   return (
     <div style={{ fontFamily: T.f, background: T.surface }}>
@@ -474,8 +474,8 @@ function ResultScreen({ answers, onRestart }) {
         )}
 
         <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap", marginBottom: 24 }}>
-          <button onClick={handleShare} aria-label="Partager le résultat" style={{ padding: "12px 24px", fontSize: 13, fontWeight: 700, fontFamily: T.f, background: "#0077b5", color: T.white, border: "none", borderRadius: T.r, cursor: "pointer" }}>
-            Partage ton résultat
+          <button onClick={handleShare} aria-label="Partager le test" style={{ padding: "12px 24px", fontSize: 13, fontWeight: 700, fontFamily: T.f, background: "#0077b5", color: T.white, border: "none", borderRadius: T.r, cursor: "pointer" }}>
+            Envoie le test à un collègue SM
           </button>
           <button onClick={onRestart} aria-label="Refaire le test" style={{ padding: "12px 24px", fontSize: 13, fontWeight: 600, fontFamily: T.f, background: "transparent", color: T.slateMuted, border: "1px solid #e2e8f0", borderRadius: T.r, cursor: "pointer" }}>
             Refaire le test
@@ -483,7 +483,7 @@ function ResultScreen({ answers, onRestart }) {
         </div>
 
         <footer style={{ textAlign: "center", marginTop: 48, paddingTop: 24, borderTop: "1px solid #e2e8f0" }}>
-          <p style={{ fontSize: 12, color: T.slateLight }}>Un outil <span style={{ fontWeight: 700 }}>Collaboration Solved</span> — par Pierre-Cyril Denant</p>
+          <p style={{ fontSize: 12, color: T.slateLight }}>Un outil <a href="https://dub.sh/cs-website" target="_blank" rel="noopener noreferrer" style={{ fontWeight: 700, color: T.slateLight, textDecoration: "underline", textUnderlineOffset: 3 }}>Collaboration Solved</a> — par Pierre-Cyril Denant</p>
         </footer>
       </main>
     </div>
