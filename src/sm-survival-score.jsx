@@ -92,7 +92,7 @@ const DIAGNOSTICS = {
 };
 
 // ============================================================
-// SCORING UTILITIES (pure functions — testable)
+// SCORING UTILITIES
 // ============================================================
 
 export function computeDimensionScores(answers, questions = QUESTIONS, dimensions = DIMENSIONS) {
@@ -108,28 +108,19 @@ export function computeDimensionScores(answers, questions = QUESTIONS, dimension
 }
 
 export function computeGlobalScore(dimScores) {
-  const total = Object.values(dimScores).reduce((a, b) => a + b, 0);
-  return Math.round((total / 40) * 100);
+  return Math.round((Object.values(dimScores).reduce((a, b) => a + b, 0) / 40) * 100);
 }
 
 export function getCategory(pct) {
-  if (pct < 40) return { key: "vulnerable", label: "Vulnérable", color: "#ef4444" };
-  if (pct < 70) return { key: "stable", label: "Stable", color: "#f59e0b" };
-  return { key: "irreplaceable", label: "Irremplaçable", color: "#22c55e" };
+  if (pct < 40) return { key: "vulnerable", label: "Vulnérable", color: "#dc2626", bg: "#fef2f2" };
+  if (pct < 70) return { key: "stable", label: "Stable", color: "#f59e0b", bg: "#fffbeb" };
+  return { key: "irreplaceable", label: "Irremplaçable", color: "#006946", bg: "#ecfdf5" };
 }
 
-export function getDiagnosticLevel(score) {
-  if (score <= 3) return "low";
-  if (score <= 5) return "mid";
-  return "high";
-}
+export function getDiagnosticLevel(score) { return score <= 3 ? "low" : score <= 5 ? "mid" : "high"; }
 
 export function buildDimensionResults(dimScores, dimensions = DIMENSIONS) {
-  return dimensions.map(d => ({
-    ...d,
-    score: dimScores[d.id],
-    pct: Math.round((dimScores[d.id] / 8) * 100),
-  }));
+  return dimensions.map(d => ({ ...d, score: dimScores[d.id], pct: Math.round((dimScores[d.id] / 8) * 100) }));
 }
 
 export function isValidEmail(email) {
@@ -137,27 +128,44 @@ export function isValidEmail(email) {
 }
 
 // ============================================================
-// DESIGN TOKENS
+// DESIGN TOKENS — Brand: vert #006946, jaune #FFF200, crème #FBF3EB
 // ============================================================
 
 const T = {
-  navy: "#0f172a", navyLight: "#1e293b", navyMid: "#334155",
-  slate: "#475569", slateMuted: "#64748b", slateLight: "#94a3b8",
-  surface: "#f8fafc", white: "#ffffff", accent: "#f59e0b",
-  r: 10, rs: 6,
-  f: "'Source Sans 3', 'Source Sans Pro', -apple-system, sans-serif",
+  vert: "#006946",
+  vertDark: "#004d34",
+  vertLight: "#e6f5ef",
+  jaune: "#FFF200",
+  jauneMuted: "#e6d900",
+  creme: "#FBF3EB",
+  cremeDeep: "#f0e6d9",
+  white: "#ffffff",
+  text: "#1a1a1a",
+  textMid: "#4a4a4a",
+  textMuted: "#7a7a7a",
+  textLight: "#a3a3a3",
+  border: "#e8ddd1",
+  borderLight: "#f0e8de",
+  r: 16,
+  rLg: 20,
+  rSm: 10,
+  f: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif",
 };
 
 // ============================================================
-// GLOBAL STYLES (injected once via StyleProvider)
+// GLOBAL STYLES
 // ============================================================
 
 const GLOBAL_CSS = `
-  @import url('https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600;700;900&display=swap');
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  @keyframes fadeUp { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:translateY(0); } }
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;0,9..40,900;1,9..40,400&display=swap');
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: ${T.creme}; -webkit-font-smoothing: antialiased; }
+  @keyframes fadeUp { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:translateY(0); } }
   @keyframes fadeIn { from { opacity:0; } to { opacity:1; } }
-  @keyframes scaleIn { from { opacity:0; transform:scale(0.85); } to { opacity:1; transform:scale(1); } }
+  @keyframes scaleIn { from { opacity:0; transform:scale(0.88); } to { opacity:1; transform:scale(1); } }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+  }
 `;
 
 let stylesInjected = false;
@@ -174,6 +182,24 @@ function StyleProvider({ children }) {
 }
 
 // ============================================================
+// BENTO CARD — shared wrapper
+// ============================================================
+
+function BentoCard({ children, style = {}, className, ...props }) {
+  return (
+    <div style={{
+      background: T.white,
+      borderRadius: T.rLg,
+      padding: 24,
+      border: `1px solid ${T.borderLight}`,
+      ...style,
+    }} {...props}>
+      {children}
+    </div>
+  );
+}
+
+// ============================================================
 // COMPONENTS
 // ============================================================
 
@@ -182,27 +208,25 @@ function DiagnosticCard({ dimension, index }) {
   const diag = DIAGNOSTICS[dimension.id][level];
   const cat = getCategory(dimension.pct);
   const levelLabel = level === "low" ? "Vulnérable" : level === "mid" ? "À renforcer" : "Solide";
-  const levelBg = level === "low" ? "#fef2f2" : level === "mid" ? "#fffbeb" : "#f0fdf4";
 
   return (
-    <article
+    <BentoCard
+      style={{ borderLeft: `4px solid ${cat.color}`, animation: `fadeUp 0.3s ease-out ${index * 0.06}s both` }}
+      role="article"
       aria-label={`Diagnostic : ${dimension.name}`}
-      style={{ marginBottom: 16, background: T.white, border: "1px solid #e2e8f0", borderLeft: `4px solid ${cat.color}`, borderRadius: T.r, overflow: "hidden", animation: `fadeUp 0.4s ease-out ${index * 0.08}s both` }}
     >
-      <div style={{ padding: "20px 20px 16px" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12, flexWrap: "wrap", gap: 8 }}>
-          <h4 style={{ fontSize: 14, fontWeight: 700, color: T.navy, margin: 0, fontFamily: T.f }}>{dimension.name}</h4>
-          <span style={{ fontSize: 11, fontWeight: 700, color: cat.color, padding: "3px 10px", background: levelBg, borderRadius: 12, whiteSpace: "nowrap" }}>{levelLabel} — {dimension.score}/8</span>
-        </div>
-        <p style={{ fontSize: 14, lineHeight: 1.7, color: T.slate, fontFamily: T.f }}>{diag.text}</p>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12, flexWrap: "wrap", gap: 8 }}>
+        <h4 style={{ fontSize: 15, fontWeight: 700, color: T.text, margin: 0, fontFamily: T.f }}>{dimension.name}</h4>
+        <span style={{ fontSize: 11, fontWeight: 700, color: cat.color, padding: "4px 12px", background: cat.bg, borderRadius: 20, whiteSpace: "nowrap" }}>{levelLabel} — {dimension.score}/8</span>
       </div>
-      <div style={{ padding: "14px 20px", background: "#f8fafc", borderTop: "1px solid #f1f5f9" }}>
-        <p style={{ fontSize: 12, fontWeight: 700, color: T.navy, marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.04em", fontFamily: T.f }}>
-          {level === "high" ? "▲ Prochain niveau" : "⚡ Action immédiate"}
+      <p style={{ fontSize: 14, lineHeight: 1.75, color: T.textMid, fontFamily: T.f, marginBottom: 16 }}>{diag.text}</p>
+      <div style={{ padding: "14px 16px", background: T.creme, borderRadius: T.rSm }}>
+        <p style={{ fontSize: 12, fontWeight: 700, color: T.vert, marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.05em", fontFamily: T.f }}>
+          {level === "high" ? "Prochain niveau" : "Action immédiate"}
         </p>
-        <p style={{ fontSize: 13, lineHeight: 1.6, color: T.slate, fontFamily: T.f }}>{diag.action}</p>
+        <p style={{ fontSize: 13, lineHeight: 1.65, color: T.textMid, fontFamily: T.f }}>{diag.action}</p>
       </div>
-    </article>
+    </BentoCard>
   );
 }
 
@@ -212,32 +236,32 @@ function LockedDiagnosticCard({ dimension }) {
     <div
       aria-label={`Diagnostic verrouillé : ${dimension.name}`}
       role="region"
-      style={{ marginBottom: 16, background: T.white, border: "1px solid #e2e8f0", borderLeft: `4px solid ${cat.color}`, borderRadius: T.r, overflow: "hidden", position: "relative", minHeight: 140 }}
+      style={{ marginBottom: 0, background: T.white, border: `1px solid ${T.borderLight}`, borderLeft: `4px solid ${cat.color}`, borderRadius: T.rLg, overflow: "hidden", position: "relative", minHeight: 120 }}
     >
-      <div aria-hidden="true" style={{ filter: "blur(6px)", userSelect: "none", pointerEvents: "none", padding: "20px" }}>
+      <div aria-hidden="true" style={{ filter: "blur(6px)", userSelect: "none", pointerEvents: "none", padding: 24 }}>
         <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 12 }}>
-          <h4 style={{ fontSize: 14, fontWeight: 700, color: T.navy }}>{dimension.name}</h4>
-          <span style={{ fontSize: 11, color: T.slateMuted }}>{dimension.score}/8</span>
+          <h4 style={{ fontSize: 15, fontWeight: 700, color: T.text }}>{dimension.name}</h4>
+          <span style={{ fontSize: 11, color: T.textMuted }}>{dimension.score}/8</span>
         </div>
-        <p style={{ fontSize: 14, lineHeight: 1.7, color: T.slate }}>Lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt ut labore et dolore.</p>
+        <p style={{ fontSize: 14, lineHeight: 1.7, color: T.textMid }}>Lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt.</p>
       </div>
-      <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(255,255,255,0.3)" }}>
-        <div style={{ background: T.navy, color: T.white, padding: "8px 16px", borderRadius: 20, fontSize: 13, fontWeight: 600, fontFamily: T.f, display: "flex", alignItems: "center", gap: 6 }}>
-          <span aria-hidden="true">🔒</span> Diagnostic verrouillé
+      <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(251,243,235,0.4)" }}>
+        <div style={{ background: T.vert, color: T.white, padding: "8px 20px", borderRadius: 20, fontSize: 13, fontWeight: 600, fontFamily: T.f }}>
+          Verrouillé
         </div>
       </div>
     </div>
   );
 }
 
-function ProgressBar({ currentIndex, total }) {
+function ProgressBar({ currentIndex }) {
   return (
-    <div role="progressbar" aria-valuenow={currentIndex + 1} aria-valuemin={1} aria-valuemax={total} aria-label={`Question ${currentIndex + 1} sur ${total}`} style={{ display: "flex", gap: 3 }}>
+    <div role="progressbar" aria-valuenow={currentIndex + 1} aria-valuemin={1} aria-valuemax={20} aria-label={`Question ${currentIndex + 1} sur 20`} style={{ display: "flex", gap: 3 }}>
       {DIMENSIONS.map((d, i) => (
         <div key={d.id} style={{ flex: 1, display: "flex", gap: 2 }}>
           {[0, 1, 2, 3].map(q => {
             const idx = i * 4 + q;
-            return <div key={q} style={{ flex: 1, height: 3, borderRadius: 2, background: idx === currentIndex ? T.accent : idx < currentIndex + 1 ? T.slateMuted : T.navyMid, transition: "background 0.3s ease" }} />;
+            return <div key={q} style={{ flex: 1, height: 3, borderRadius: 2, background: idx === currentIndex ? T.jaune : idx < currentIndex + 1 ? T.vert : T.cremeDeep, transition: "background 0.2s ease" }} />;
           })}
         </div>
       ))}
@@ -251,24 +275,24 @@ function ProgressBar({ currentIndex, total }) {
 
 function LandingScreen({ onStart }) {
   return (
-    <div style={{ minHeight: "100vh", background: `linear-gradient(170deg, ${T.navy} 0%, #1a2744 50%, ${T.navyLight} 100%)`, display: "flex", alignItems: "center", justifyContent: "center", padding: "40px 20px", fontFamily: T.f }}>
-      <main style={{ maxWidth: 520, textAlign: "center", animation: "fadeUp 0.6s ease-out" }}>
-        <div style={{ display: "inline-block", padding: "6px 16px", fontSize: 12, fontWeight: 600, letterSpacing: "0.05em", textTransform: "uppercase", color: T.accent, border: `1px solid ${T.accent}40`, borderRadius: 20, marginBottom: 32 }}>
+    <div style={{ minHeight: "100vh", background: T.vert, display: "flex", alignItems: "center", justifyContent: "center", padding: "40px 20px", fontFamily: T.f }}>
+      <main style={{ maxWidth: 520, textAlign: "center", animation: "fadeUp 0.5s ease-out" }}>
+        <div style={{ display: "inline-block", padding: "6px 18px", fontSize: 12, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", color: T.jaune, border: `1px solid ${T.jaune}50`, borderRadius: 20, marginBottom: 36 }}>
           Diagnostic gratuit
         </div>
-        <h1 style={{ fontSize: "clamp(28px, 6vw, 40px)", fontWeight: 900, lineHeight: 1.15, color: T.white, marginBottom: 20, letterSpacing: "-0.02em" }}>
-          Ton rôle de Scrum Master<br />est-il en danger ?
+        <h1 style={{ fontSize: "clamp(30px, 7vw, 44px)", fontWeight: 900, lineHeight: 1.1, color: T.white, marginBottom: 20, letterSpacing: "-0.03em" }}>
+          Ton rôle de Scrum Master est-il en danger ?
         </h1>
-        <p style={{ fontSize: 17, fontWeight: 600, color: T.slateLight, marginBottom: 32, letterSpacing: "0.01em" }}>
+        <p style={{ fontSize: 17, fontWeight: 500, color: `${T.white}cc`, marginBottom: 32 }}>
           20 questions · 5 minutes · Un diagnostic clair
         </p>
-        <p style={{ fontSize: 15, color: T.slateMuted, lineHeight: 1.7, marginBottom: 44, maxWidth: 440, marginLeft: "auto", marginRight: "auto" }}>
+        <p style={{ fontSize: 15, color: `${T.white}99`, lineHeight: 1.75, marginBottom: 48, maxWidth: 440, marginLeft: "auto", marginRight: "auto" }}>
           1 100 rôles agile éliminés chez Capital One. Des coupes massives chez Fidelity, dans les banques UK et ailleurs. Les rôles qui survivent ne sont pas les meilleurs. Ce sont ceux qui savent prouver leur valeur. Et toi, tu en es où ?
         </p>
-        <button onClick={onStart} style={{ padding: "18px 52px", fontSize: 16, fontWeight: 700, fontFamily: T.f, background: T.accent, color: T.navy, border: "none", borderRadius: T.r, cursor: "pointer", boxShadow: `0 4px 24px ${T.accent}30` }}>
+        <button onClick={onStart} style={{ padding: "18px 56px", fontSize: 16, fontWeight: 700, fontFamily: T.f, background: T.jaune, color: T.vertDark, border: "none", borderRadius: T.r, cursor: "pointer", boxShadow: "0 4px 24px rgba(0,0,0,0.15)", minHeight: 56 }}>
           Je fais le test
         </button>
-        <p style={{ fontSize: 12, color: T.navyMid, marginTop: 20 }}>Gratuit · Sans inscription · Résultat immédiat</p>
+        <p style={{ fontSize: 12, color: `${T.white}60`, marginTop: 24 }}>Gratuit · Sans inscription · Résultat immédiat</p>
       </main>
     </div>
   );
@@ -278,19 +302,21 @@ function QuestionScreen({ questionIndex, question, selectedAnswer, onSelect, onN
   const dimInfo = DIMENSIONS.find(d => d.id === question.dimension);
 
   return (
-    <div style={{ minHeight: "100vh", background: T.white, fontFamily: T.f, display: "flex", flexDirection: "column" }}>
-      <header style={{ background: T.navy, padding: "16px 24px", position: "sticky", top: 0, zIndex: 10 }}>
+    <div style={{ minHeight: "100vh", background: T.creme, fontFamily: T.f, display: "flex", flexDirection: "column" }}>
+      {/* Top bar */}
+      <header style={{ background: T.vert, padding: "16px 24px", position: "sticky", top: 0, zIndex: 10 }}>
         <div style={{ maxWidth: 560, margin: "0 auto" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-            <span style={{ fontSize: 12, fontWeight: 600, color: T.accent, letterSpacing: "0.03em", textTransform: "uppercase" }}>{dimInfo.name}</span>
-            <span style={{ fontSize: 12, color: T.slateLight, fontFamily: "monospace" }}>{questionIndex + 1}/{total}</span>
+            <span style={{ fontSize: 12, fontWeight: 600, color: T.jaune, letterSpacing: "0.04em", textTransform: "uppercase" }}>{dimInfo.name}</span>
+            <span style={{ fontSize: 12, color: `${T.white}99`, fontFamily: "monospace" }}>{questionIndex + 1}/{total}</span>
           </div>
-          <ProgressBar currentIndex={questionIndex} total={total} />
+          <ProgressBar currentIndex={questionIndex} />
         </div>
       </header>
 
-      <main key={questionIndex} style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", maxWidth: 560, margin: "0 auto", padding: "40px 24px", width: "100%", animation: "fadeIn 0.25s ease-out" }}>
-        <h2 style={{ fontSize: "clamp(18px, 4.5vw, 22px)", fontWeight: 700, lineHeight: 1.45, color: T.navy, marginBottom: 36, letterSpacing: "-0.01em" }}>
+      {/* Question */}
+      <main key={questionIndex} style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", maxWidth: 560, margin: "0 auto", padding: "40px 24px", width: "100%", animation: "fadeIn 0.2s ease-out" }}>
+        <h2 style={{ fontSize: "clamp(18px, 4.5vw, 22px)", fontWeight: 700, lineHeight: 1.5, color: T.text, marginBottom: 32 }}>
           {question.text}
         </h2>
         <div role="radiogroup" aria-label="Choisis ta réponse" style={{ display: "flex", flexDirection: "column", gap: 10 }}>
@@ -299,26 +325,28 @@ function QuestionScreen({ questionIndex, question, selectedAnswer, onSelect, onN
             return (
               <button key={i} role="radio" aria-checked={sel} onClick={() => onSelect(i)} style={{
                 padding: "18px 20px", fontSize: 15, lineHeight: 1.5, fontFamily: T.f, textAlign: "left",
-                background: sel ? T.navy : T.white, color: sel ? T.white : T.navyLight,
-                border: `2px solid ${sel ? T.navy : "#e2e8f0"}`, borderRadius: T.r,
+                background: sel ? T.vert : T.white, color: sel ? T.white : T.text,
+                border: `2px solid ${sel ? T.vert : T.border}`, borderRadius: T.r,
                 cursor: "pointer", transition: "all 0.15s ease", fontWeight: sel ? 600 : 400,
+                minHeight: 56,
               }}>{a.text}</button>
             );
           })}
         </div>
       </main>
 
-      <nav style={{ borderTop: "1px solid #e2e8f0", padding: "16px 24px", background: T.white, position: "sticky", bottom: 0 }}>
+      {/* Bottom nav */}
+      <nav style={{ borderTop: `1px solid ${T.border}`, padding: "16px 24px", background: T.creme, position: "sticky", bottom: 0 }}>
         <div style={{ maxWidth: 560, margin: "0 auto", display: "flex", justifyContent: "space-between" }}>
           <button onClick={onPrev} disabled={questionIndex === 0} aria-label="Question précédente" style={{
             padding: "12px 28px", fontSize: 14, fontFamily: T.f, fontWeight: 600, background: "transparent",
-            color: questionIndex === 0 ? "#cbd5e1" : T.slateMuted, border: `1px solid ${questionIndex === 0 ? "#e2e8f0" : "#cbd5e1"}`,
-            borderRadius: T.r, cursor: questionIndex === 0 ? "default" : "pointer",
+            color: questionIndex === 0 ? T.textLight : T.textMuted, border: `1px solid ${T.border}`,
+            borderRadius: T.rSm, cursor: questionIndex === 0 ? "default" : "pointer", minHeight: 48,
           }}>Précédent</button>
           <button onClick={onNext} disabled={selectedAnswer === null} aria-label={questionIndex === total - 1 ? "Voir le résultat" : "Question suivante"} style={{
             padding: "12px 32px", fontSize: 14, fontFamily: T.f, fontWeight: 700,
-            background: selectedAnswer === null ? "#cbd5e1" : T.navy, color: T.white,
-            border: "none", borderRadius: T.r, cursor: selectedAnswer === null ? "default" : "pointer",
+            background: selectedAnswer === null ? T.textLight : T.vert, color: T.white,
+            border: "none", borderRadius: T.rSm, cursor: selectedAnswer === null ? "default" : "pointer", minHeight: 48,
           }}>{questionIndex === total - 1 ? "Voir mon résultat" : "Suivant"}</button>
         </div>
       </nav>
@@ -338,51 +366,25 @@ function ResultScreen({ answers, onRestart }) {
   const dimSorted = useMemo(() => [...dimOrdered].sort((a, b) => a.score - b.score), [dimOrdered]);
   const radarData = useMemo(() => dimOrdered.map(d => ({ dimension: d.shortName, score: d.score, fullMark: 8 })), [dimOrdered]);
 
-  // Load Kit embed script and watch for successful submission
   useEffect(() => {
     if (unlocked || !kitContainerRef.current) return;
-
-    // Load the Kit script
     const script = document.createElement("script");
     script.src = "https://collaboration-solved.kit.com/da72eeaa73/index.js";
     script.async = true;
     script.dataset.uid = "da72eeaa73";
     kitContainerRef.current.appendChild(script);
 
-    // Watch for Kit's success message in the DOM
-    const observer = new MutationObserver((mutations) => {
+    const observer = new MutationObserver(() => {
       const container = kitContainerRef.current;
       if (!container) return;
-
-      // Kit replaces the form with a success message after submission
-      // Check for common Kit success indicators
       const text = container.innerText.toLowerCase();
-      if (
-        text.includes("success") ||
-        text.includes("merci") ||
-        text.includes("thank") ||
-        text.includes("confirm") ||
-        text.includes("check your email") ||
-        text.includes("vérifi")
-      ) {
-        setUnlocked(true);
-        observer.disconnect();
+      if (text.includes("success") || text.includes("merci") || text.includes("thank") || text.includes("confirm") || text.includes("check your email") || text.includes("vérifi")) {
+        setUnlocked(true); observer.disconnect();
       }
-
-      // Also check if Kit added a success-state class or data attribute
       const successEl = container.querySelector("[data-state='success'], .formkit-alert-success, .formkit-success");
-      if (successEl) {
-        setUnlocked(true);
-        observer.disconnect();
-      }
+      if (successEl) { setUnlocked(true); observer.disconnect(); }
     });
-
-    observer.observe(kitContainerRef.current, {
-      childList: true,
-      subtree: true,
-      characterData: true,
-    });
-
+    observer.observe(kitContainerRef.current, { childList: true, subtree: true, characterData: true });
     return () => observer.disconnect();
   }, [unlocked]);
 
@@ -393,97 +395,102 @@ function ResultScreen({ answers, onRestart }) {
   }, []);
 
   return (
-    <div style={{ fontFamily: T.f, background: T.surface }}>
-      {/* Hero */}
-      <header style={{ background: `linear-gradient(170deg, ${T.navy} 0%, ${T.navyLight} 100%)`, padding: "48px 24px 56px", textAlign: "center", animation: "fadeIn 0.5s ease-out" }}>
+    <div style={{ fontFamily: T.f, background: T.creme, minHeight: "100vh" }}>
+      {/* Hero score */}
+      <header style={{ background: T.vert, padding: "48px 24px 56px", textAlign: "center", animation: "fadeIn 0.4s ease-out" }}>
         <div style={{ maxWidth: 520, margin: "0 auto" }}>
-          <p style={{ fontSize: 13, color: T.slateLight, marginBottom: 12, letterSpacing: "0.04em", textTransform: "uppercase", fontWeight: 600 }}>Ton score</p>
-          <div aria-label={`Score : ${pct} sur 100`} style={{ fontSize: "clamp(64px, 16vw, 88px)", fontWeight: 900, color: category.color, lineHeight: 1, letterSpacing: "-0.03em", animation: "scaleIn 0.5s ease-out 0.2s both" }}>{pct}</div>
-          <p style={{ fontSize: 16, color: T.slateLight, marginBottom: 20 }}>/100</p>
-          <div style={{ display: "inline-block", padding: "10px 28px", fontSize: 16, fontWeight: 700, color: T.navy, background: category.color, borderRadius: 24 }}>{category.label}</div>
+          <p style={{ fontSize: 12, color: `${T.white}99`, marginBottom: 12, letterSpacing: "0.06em", textTransform: "uppercase", fontWeight: 600 }}>Ton score</p>
+          <div aria-label={`Score : ${pct} sur 100`} style={{ fontSize: "clamp(64px, 18vw, 96px)", fontWeight: 900, color: category.key === "irreplaceable" ? T.jaune : category.color, lineHeight: 1, letterSpacing: "-0.04em", animation: "scaleIn 0.4s ease-out 0.15s both" }}>{pct}</div>
+          <p style={{ fontSize: 16, color: `${T.white}80`, marginBottom: 20 }}>/100</p>
+          <div style={{ display: "inline-block", padding: "10px 28px", fontSize: 15, fontWeight: 700, color: T.vertDark, background: T.jaune, borderRadius: 24 }}>{category.label}</div>
         </div>
       </header>
 
-      <main style={{ maxWidth: 560, margin: "0 auto", padding: "40px 24px 60px" }}>
-        {/* Global text */}
-        <section style={{ marginBottom: 44, animation: "fadeUp 0.5s ease-out 0.3s both" }}>
-          <h2 style={{ fontSize: "clamp(22px, 5vw, 28px)", fontWeight: 900, color: T.navy, marginBottom: 20, lineHeight: 1.2, letterSpacing: "-0.02em" }}>{globalResult.title}</h2>
-          {globalResult.paragraphs.map((p, i) => <p key={i} style={{ fontSize: 15, lineHeight: 1.75, color: T.slate, marginBottom: 14 }}>{p}</p>)}
-        </section>
+      {/* Bento content */}
+      <main style={{ maxWidth: 600, margin: "0 auto", padding: "32px 16px 60px" }}>
+        {/* Global text card */}
+        <BentoCard style={{ marginBottom: 16, animation: "fadeUp 0.4s ease-out 0.2s both" }}>
+          <h2 style={{ fontSize: "clamp(20px, 5vw, 26px)", fontWeight: 900, color: T.text, marginBottom: 16, lineHeight: 1.2, letterSpacing: "-0.02em" }}>{globalResult.title}</h2>
+          {globalResult.paragraphs.map((p, i) => <p key={i} style={{ fontSize: 15, lineHeight: 1.75, color: T.textMid, marginBottom: 12 }}>{p}</p>)}
+        </BentoCard>
 
-        {/* Radar */}
-        <section aria-label="Radar par dimension" style={{ marginBottom: 44, animation: "fadeUp 0.5s ease-out 0.4s both" }}>
-          <h3 style={{ fontSize: 14, fontWeight: 700, color: T.navy, marginBottom: 16, textTransform: "uppercase", letterSpacing: "0.06em" }}>Ton profil</h3>
-          <div style={{ background: T.white, borderRadius: T.r, border: "1px solid #e2e8f0", padding: "20px 8px" }}>
-            <div style={{ width: "100%", height: 280 }}>
+        {/* Bento grid: radar + bars side by side on desktop, stacked on mobile */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 16, marginBottom: 16 }}>
+          {/* Radar card */}
+          <BentoCard style={{ animation: "fadeUp 0.4s ease-out 0.3s both" }}>
+            <h3 style={{ fontSize: 13, fontWeight: 700, color: T.vert, marginBottom: 12, textTransform: "uppercase", letterSpacing: "0.06em" }}>Ton profil</h3>
+            <div style={{ width: "100%", height: 260 }}>
               <ResponsiveContainer>
-                <RadarChart data={radarData} cx="50%" cy="50%" outerRadius="68%">
-                  <PolarGrid stroke="#e2e8f0" />
-                  <PolarAngleAxis dataKey="dimension" tick={{ fontSize: 11, fill: T.slateMuted, fontFamily: T.f }} />
-                  <PolarRadiusAxis angle={90} domain={[0, 8]} tick={{ fontSize: 9, fill: T.slateLight }} tickCount={5} />
-                  <Radar dataKey="score" stroke={category.color} fill={category.color} fillOpacity={0.15} strokeWidth={2.5} dot={{ r: 4, fill: category.color }} />
+                <RadarChart data={radarData} cx="50%" cy="50%" outerRadius="65%">
+                  <PolarGrid stroke={T.border} />
+                  <PolarAngleAxis dataKey="dimension" tick={{ fontSize: 11, fill: T.textMuted, fontFamily: T.f }} />
+                  <PolarRadiusAxis angle={90} domain={[0, 8]} tick={{ fontSize: 9, fill: T.textLight }} tickCount={5} />
+                  <Radar dataKey="score" stroke={T.vert} fill={T.vert} fillOpacity={0.12} strokeWidth={2.5} dot={{ r: 4, fill: T.vert }} />
                 </RadarChart>
               </ResponsiveContainer>
             </div>
-          </div>
-        </section>
+          </BentoCard>
 
-        {/* Bars */}
-        <section aria-label="Scores par dimension" style={{ marginBottom: 44, animation: "fadeUp 0.5s ease-out 0.5s both" }}>
-          <h3 style={{ fontSize: 14, fontWeight: 700, color: T.navy, marginBottom: 16, textTransform: "uppercase", letterSpacing: "0.06em" }}>Score par dimension</h3>
-          <div style={{ background: T.white, borderRadius: T.r, border: "1px solid #e2e8f0", padding: "20px" }}>
+          {/* Scores card */}
+          <BentoCard style={{ animation: "fadeUp 0.4s ease-out 0.35s both" }}>
+            <h3 style={{ fontSize: 13, fontWeight: 700, color: T.vert, marginBottom: 16, textTransform: "uppercase", letterSpacing: "0.06em" }}>Par dimension</h3>
             {dimOrdered.map((d, i) => {
               const dc = getCategory(d.pct);
               return (
-                <div key={d.id} style={{ marginBottom: i < 4 ? 18 : 0 }}>
+                <div key={d.id} style={{ marginBottom: i < 4 ? 16 : 0 }}>
                   <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
-                    <span style={{ fontSize: 13, color: T.navyLight, fontWeight: 600 }}>{d.name}</span>
+                    <span style={{ fontSize: 13, color: T.text, fontWeight: 500 }}>{d.name}</span>
                     <span style={{ fontSize: 13, fontWeight: 700, color: dc.color, fontFamily: "monospace" }}>{d.score}/8</span>
                   </div>
-                  <div role="meter" aria-valuenow={d.score} aria-valuemin={0} aria-valuemax={8} aria-label={d.name} style={{ height: 6, background: "#f1f5f9", borderRadius: 3 }}>
-                    <div style={{ height: 6, width: `${Math.max(d.pct, 2)}%`, background: dc.color, borderRadius: 3, transition: "width 0.8s ease-out" }} />
+                  <div role="meter" aria-valuenow={d.score} aria-valuemin={0} aria-valuemax={8} aria-label={d.name} style={{ height: 6, background: T.cremeDeep, borderRadius: 3 }}>
+                    <div style={{ height: 6, width: `${Math.max(d.pct, 3)}%`, background: dc.color, borderRadius: 3, transition: "width 0.6s ease-out" }} />
                   </div>
                 </div>
               );
             })}
-          </div>
-        </section>
+          </BentoCard>
+        </div>
 
         {/* Diagnostics */}
-        <section aria-label="Diagnostics détaillés" style={{ marginBottom: 40 }}>
-          <h3 style={{ fontSize: 14, fontWeight: 700, color: T.navy, marginBottom: 20, textTransform: "uppercase", letterSpacing: "0.06em" }}>Diagnostic par dimension</h3>
+        <section aria-label="Diagnostics détaillés" style={{ display: "flex", flexDirection: "column", gap: 16, marginBottom: 16 }}>
+          <h3 style={{ fontSize: 13, fontWeight: 700, color: T.vert, textTransform: "uppercase", letterSpacing: "0.06em", paddingLeft: 4 }}>Diagnostic par dimension</h3>
           <DiagnosticCard dimension={dimSorted[0]} index={0} />
           {unlocked ? (
             dimSorted.slice(1).map((d, i) => <DiagnosticCard key={d.id} dimension={d} index={i + 1} />)
           ) : (
             <>
-              {dimSorted.slice(1).map(d => <LockedDiagnosticCard key={d.id} dimension={d} />)}
-              <div style={{ textAlign: "center", padding: "36px 28px", background: T.navy, borderRadius: T.r, marginTop: 24 }}>
-                <p style={{ fontSize: 18, fontWeight: 700, color: T.white, marginBottom: 8 }}>Débloque tes 4 autres diagnostics</p>
-                <p style={{ fontSize: 13, color: T.slateLight, marginBottom: 24, lineHeight: 1.6 }}>Entre ton email — tu recevras aussi une tactique concrète chaque semaine pour défendre ton rôle.</p>
-                <div ref={kitContainerRef} style={{ maxWidth: 380, margin: "0 auto" }} />
+              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                {dimSorted.slice(1).map(d => <LockedDiagnosticCard key={d.id} dimension={d} />)}
               </div>
+              <BentoCard style={{ background: T.vert, border: "none", textAlign: "center", padding: "36px 28px" }}>
+                <p style={{ fontSize: 18, fontWeight: 700, color: T.white, marginBottom: 8 }}>Débloque tes 4 autres diagnostics</p>
+                <p style={{ fontSize: 13, color: `${T.white}bb`, marginBottom: 24, lineHeight: 1.6 }}>Entre ton email pour voir tes résultats complets. Tu recevras aussi une tactique par semaine pour défendre ton rôle.</p>
+                <div ref={kitContainerRef} style={{ maxWidth: 380, margin: "0 auto" }} />
+              </BentoCard>
             </>
           )}
         </section>
 
+        {/* Confirmation */}
         {unlocked && (
-          <div role="alert" style={{ padding: "16px 20px", background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: T.r, marginBottom: 24, textAlign: "center", animation: "fadeUp 0.3s ease-out" }}>
-            <p style={{ fontSize: 14, color: "#166534", fontWeight: 600 }}>✓ C'est débloqué. Tu recevras ta première tactique cette semaine.</p>
-          </div>
+          <BentoCard style={{ background: "#ecfdf5", border: "1px solid #a7f3d0", marginBottom: 16, textAlign: "center", animation: "fadeUp 0.3s ease-out" }} role="alert">
+            <p style={{ fontSize: 14, color: T.vert, fontWeight: 600 }}>C'est débloqué. Tu recevras ta première tactique cette semaine.</p>
+          </BentoCard>
         )}
 
-        <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap", marginBottom: 24 }}>
-          <button onClick={handleShare} aria-label="Partager le test" style={{ padding: "12px 24px", fontSize: 13, fontWeight: 700, fontFamily: T.f, background: "#0077b5", color: T.white, border: "none", borderRadius: T.r, cursor: "pointer" }}>
+        {/* Actions */}
+        <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap", marginBottom: 32 }}>
+          <button onClick={handleShare} aria-label="Partager le test" style={{ padding: "14px 28px", fontSize: 14, fontWeight: 700, fontFamily: T.f, background: T.vert, color: T.white, border: "none", borderRadius: T.rSm, cursor: "pointer", minHeight: 48 }}>
             Envoie le test à un collègue SM
           </button>
-          <button onClick={onRestart} aria-label="Refaire le test" style={{ padding: "12px 24px", fontSize: 13, fontWeight: 600, fontFamily: T.f, background: "transparent", color: T.slateMuted, border: "1px solid #e2e8f0", borderRadius: T.r, cursor: "pointer" }}>
+          <button onClick={onRestart} aria-label="Refaire le test" style={{ padding: "14px 28px", fontSize: 14, fontWeight: 600, fontFamily: T.f, background: "transparent", color: T.textMuted, border: `1px solid ${T.border}`, borderRadius: T.rSm, cursor: "pointer", minHeight: 48 }}>
             Refaire le test
           </button>
         </div>
 
-        <footer style={{ textAlign: "center", marginTop: 48, paddingTop: 24, borderTop: "1px solid #e2e8f0" }}>
-          <p style={{ fontSize: 12, color: T.slateLight }}>Un outil <a href="https://dub.sh/cs-website" target="_blank" rel="noopener noreferrer" style={{ fontWeight: 700, color: T.slateLight, textDecoration: "underline", textUnderlineOffset: 3 }}>Collaboration Solved</a> — par Pierre-Cyril Denant</p>
+        {/* Footer */}
+        <footer style={{ textAlign: "center", paddingTop: 24, borderTop: `1px solid ${T.border}` }}>
+          <p style={{ fontSize: 12, color: T.textLight }}>Un outil <a href="https://dub.sh/cs-website" target="_blank" rel="noopener noreferrer" style={{ fontWeight: 700, color: T.textMuted, textDecoration: "underline", textUnderlineOffset: 3 }}>Collaboration Solved</a> — par Pierre-Cyril Denant</p>
         </footer>
       </main>
     </div>
