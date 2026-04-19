@@ -132,7 +132,7 @@ export function isValidEmail(email) {
 // ============================================================
 
 // Replace with your Google Apps Script deployment URL
-const ANALYTICS_URL = "";
+const ANALYTICS_URL = "https://script.google.com/macros/s/AKfycbxSSFKyZsQvhbwwSAZTyolhHQ9RzTYhIGrQwYYoGYVzyjfnFjRRPYfnzqgVAgrQ211o/exec";
 
 function trackEvent(event, data = {}) {
   if (!ANALYTICS_URL) return;
