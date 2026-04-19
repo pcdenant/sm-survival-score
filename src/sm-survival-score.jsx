@@ -128,6 +128,33 @@ export function isValidEmail(email) {
 }
 
 // ============================================================
+// ANALYTICS — anonymous webhook to Google Sheet
+// ============================================================
+
+// Replace with your Google Apps Script deployment URL
+const ANALYTICS_URL = "";
+
+function trackEvent(event, data = {}) {
+  if (!ANALYTICS_URL) return;
+  try {
+    const payload = { timestamp: new Date().toISOString(), event, ...data };
+    // Fire and forget — navigator.sendBeacon for reliability on page unload
+    if (navigator.sendBeacon) {
+      navigator.sendBeacon(ANALYTICS_URL, JSON.stringify(payload));
+    } else {
+      fetch(ANALYTICS_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+        keepalive: true,
+      }).catch(() => {});
+    }
+  } catch {
+    // Silent fail — analytics should never break the app
+  }
+}
+
+// ============================================================
 // DESIGN TOKENS — Brand: vert #006946, jaune #FFF200, crème #FBF3EB
 // ============================================================
 
@@ -366,6 +393,20 @@ function ResultScreen({ answers, onRestart }) {
   const dimSorted = useMemo(() => [...dimOrdered].sort((a, b) => a.score - b.score), [dimOrdered]);
   const radarData = useMemo(() => dimOrdered.map(d => ({ dimension: d.shortName, score: d.score, fullMark: 8 })), [dimOrdered]);
 
+  // Track quiz completion (once)
+  useEffect(() => {
+    trackEvent("quiz_completed", {
+      score_global: pct,
+      category: category.label,
+      weakest_dim: dimSorted[0]?.shortName || "",
+      visibility: dimScores.visibility,
+      proof: dimScores.proof,
+      business: dimScores.business,
+      autonomy: dimScores.autonomy,
+      strategic: dimScores.strategic,
+    });
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   useEffect(() => {
     if (unlocked || !kitContainerRef.current) return;
     const script = document.createElement("script");
@@ -379,10 +420,10 @@ function ResultScreen({ answers, onRestart }) {
       if (!container) return;
       const text = container.innerText.toLowerCase();
       if (text.includes("success") || text.includes("merci") || text.includes("thank") || text.includes("confirm") || text.includes("check your email") || text.includes("vérifi")) {
-        setUnlocked(true); observer.disconnect();
+        trackEvent("diagnostics_unlocked"); setUnlocked(true); observer.disconnect();
       }
       const successEl = container.querySelector("[data-state='success'], .formkit-alert-success, .formkit-success");
-      if (successEl) { setUnlocked(true); observer.disconnect(); }
+      if (successEl) { trackEvent("diagnostics_unlocked"); setUnlocked(true); observer.disconnect(); }
     });
     observer.observe(kitContainerRef.current, { childList: true, subtree: true, characterData: true });
     return () => observer.disconnect();
@@ -508,7 +549,7 @@ export default function SMSurvivalScore() {
 
   useEffect(() => { window.scrollTo(0, 0); }, [screen]);
 
-  const handleStart = useCallback(() => { setScreen("quiz"); setCurrentQ(0); }, []);
+  const handleStart = useCallback(() => { trackEvent("quiz_started"); setScreen("quiz"); setCurrentQ(0); }, []);
   const handleSelect = useCallback((i) => { setAnswers(prev => { const a = [...prev]; a[currentQ] = i; return a; }); }, [currentQ]);
   const handleNext = useCallback(() => { if (currentQ === QUESTIONS.length - 1) setScreen("result"); else setCurrentQ(p => p + 1); }, [currentQ]);
   const handlePrev = useCallback(() => { if (currentQ > 0) setCurrentQ(p => p - 1); }, [currentQ]);
