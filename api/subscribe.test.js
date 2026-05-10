@@ -84,7 +84,7 @@ await describe("METHOD VALIDATION", async () => {
   const res = mockRes();
   await handler(reqGet, res);
   assertEqual(res._status, 405, "GET → 405");
-  assertEqual(res._json, { error: "Method not allowed" }, "GET → Method not allowed");
+  assertEqual(res._json, { error: "Méthode non autorisée" }, "GET → Méthode non autorisée");
 
   const reqDelete = mockReq("DELETE");
   const res2 = mockRes();
