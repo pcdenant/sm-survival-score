@@ -218,6 +218,7 @@ const GLOBAL_CSS = `
   @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;0,9..40,900;1,9..40,400&display=swap');
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   body { background: ${T.creme}; -webkit-font-smoothing: antialiased; }
+  button:focus-visible { outline: 2px solid ${T.white}; outline-offset: 2px; box-shadow: 0 0 0 4px ${T.vert}; }
   @keyframes fadeUp { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:translateY(0); } }
   @keyframes fadeIn { from { opacity:0; } to { opacity:1; } }
   @keyframes scaleIn { from { opacity:0; transform:scale(0.88); } to { opacity:1; transform:scale(1); } }
@@ -288,7 +289,7 @@ function DiagnosticCard({ dimension, index }) {
   );
 }
 
-function LockedDiagnosticCard({ dimension }) {
+function LockedDiagnosticCard({ dimension, onUnlockClick }) {
   const cat = getCategory(dimension.pct);
   return (
     <div
@@ -304,9 +305,9 @@ function LockedDiagnosticCard({ dimension }) {
         <p style={{ fontSize: 14, lineHeight: 1.7, color: T.textMid }}>Lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt.</p>
       </div>
       <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(251,243,235,0.4)" }}>
-        <div style={{ background: T.vert, color: T.white, padding: "8px 20px", borderRadius: 20, fontSize: 13, fontWeight: 600, fontFamily: T.f }}>
-          Verrouillé
-        </div>
+        <button onClick={onUnlockClick} aria-label="Déverrouiller les diagnostics complets" style={{ background: T.vert, color: T.white, padding: "8px 20px", borderRadius: 20, fontSize: 13, fontWeight: 600, fontFamily: T.f, border: "none", cursor: "pointer" }}>
+          Déverrouiller
+        </button>
       </div>
     </div>
   );
@@ -389,6 +390,22 @@ function LandingScreen({ onStart }) {
 
 function QuestionScreen({ questionIndex, question, selectedAnswer, onSelect, onNext, onPrev, total }) {
   const dimInfo = DIMENSIONS.find(d => d.id === question.dimension);
+  const answerRefs = useRef([]);
+
+  const handleAnswerKey = useCallback((e, i) => {
+    const n = question.answers.length;
+    if (e.key === "ArrowDown" || e.key === "ArrowRight") {
+      e.preventDefault();
+      const next = (i + 1) % n;
+      onSelect(next);
+      answerRefs.current[next]?.focus();
+    } else if (e.key === "ArrowUp" || e.key === "ArrowLeft") {
+      e.preventDefault();
+      const prev = (i - 1 + n) % n;
+      onSelect(prev);
+      answerRefs.current[prev]?.focus();
+    }
+  }, [question.answers.length, onSelect]);
 
   return (
     <div style={{ minHeight: "100vh", background: T.creme, fontFamily: T.f, display: "flex", flexDirection: "column" }}>
@@ -412,13 +429,22 @@ function QuestionScreen({ questionIndex, question, selectedAnswer, onSelect, onN
           {question.answers.map((a, i) => {
             const sel = selectedAnswer === i;
             return (
-              <button key={i} role="radio" aria-checked={sel} onClick={() => onSelect(i)} style={{
-                padding: "18px 20px", fontSize: 15, lineHeight: 1.5, fontFamily: T.f, textAlign: "left",
-                background: sel ? T.vert : T.white, color: sel ? T.white : T.text,
-                border: `2px solid ${sel ? T.vert : T.border}`, borderRadius: T.r,
-                cursor: "pointer", transition: "all 0.15s ease", fontWeight: sel ? 600 : 400,
-                minHeight: 56,
-              }}>{a.text}</button>
+              <button
+                key={i}
+                ref={el => { answerRefs.current[i] = el; }}
+                role="radio"
+                aria-checked={sel}
+                onClick={() => onSelect(i)}
+                onKeyDown={(e) => handleAnswerKey(e, i)}
+                tabIndex={sel || (selectedAnswer === null && i === 0) ? 0 : -1}
+                style={{
+                  padding: "18px 20px", fontSize: 15, lineHeight: 1.5, fontFamily: T.f, textAlign: "left",
+                  background: sel ? T.vert : T.white, color: sel ? T.white : T.text,
+                  border: `2px solid ${sel ? T.vert : T.border}`, borderRadius: T.r,
+                  cursor: "pointer", transition: "all 0.15s ease", fontWeight: sel ? 600 : 400,
+                  minHeight: 56,
+                }}
+              >{a.text}</button>
             );
           })}
         </div>
@@ -468,6 +494,11 @@ function ResultScreen({ answers, onRestart }) {
     });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+  const handleScrollToUnlock = useCallback(() => {
+    document.getElementById("unlock-form")?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, []);
+
+
   const handleShare = useCallback(() => {
     const text = `Je viens de faire un diagnostic sur la solidité de mon rôle de Scrum Master. 20 questions, 5 minutes, et des pistes d'action que j'aurais aimé avoir avant → https://dub.sh/sm-survival-score`;
     if (navigator.share) navigator.share({ text, url: "https://dub.sh/sm-survival-score" });
@@ -480,7 +511,7 @@ function ResultScreen({ answers, onRestart }) {
       <header style={{ background: T.vert, padding: "48px 24px 56px", textAlign: "center", animation: "fadeIn 0.4s ease-out" }}>
         <div style={{ maxWidth: 520, margin: "0 auto" }}>
           <p style={{ fontSize: 12, color: `${T.white}99`, marginBottom: 12, letterSpacing: "0.06em", textTransform: "uppercase", fontWeight: 600 }}>Ton score</p>
-          <div aria-label={`Score : ${globalScore} sur 100`} style={{ fontSize: "clamp(64px, 18vw, 96px)", fontWeight: 900, color: category.key === "irreplaceable" ? T.jaune : category.color, lineHeight: 1, letterSpacing: "-0.04em", animation: "scaleIn 0.4s ease-out 0.15s both" }}>{globalScore}</div>
+          <div aria-label={`Score : ${globalScore} sur 100`} style={{ fontSize: "clamp(64px, 18vw, 96px)", fontWeight: 900, color: category.key === "irreplaceable" ? T.jaune : category.color, lineHeight: 1, letterSpacing: "-0.04em", animation: "scaleIn 0.4s ease-out 0.15s both", willChange: "transform, opacity" }}>{globalScore}</div>
           <p style={{ fontSize: 16, color: `${T.white}80`, marginBottom: 20 }}>/100</p>
           <div style={{ display: "inline-block", padding: "10px 28px", fontSize: 15, fontWeight: 700, color: T.vertDark, background: T.jaune, borderRadius: 24 }}>{category.label}</div>
         </div>
@@ -499,7 +530,7 @@ function ResultScreen({ answers, onRestart }) {
           {/* Radar card */}
           <BentoCard style={{ animation: "fadeUp 0.4s ease-out 0.3s both" }}>
             <h3 style={{ fontSize: 13, fontWeight: 700, color: T.vert, marginBottom: 12, textTransform: "uppercase", letterSpacing: "0.06em" }}>Ton profil</h3>
-            <div style={{ width: "100%", height: 260 }}>
+            <div style={{ width: "100%", height: 260 }} role="img" aria-label={`Radar chart de ton profil : ${radarData.map(d => `${d.dimension} ${d.score}/8`).join(", ")}`}>
               <ResponsiveContainer>
                 <RadarChart data={radarData} cx="50%" cy="50%" outerRadius="65%">
                   <PolarGrid stroke={T.border} />
@@ -540,9 +571,9 @@ function ResultScreen({ answers, onRestart }) {
           ) : (
             <>
               <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                {dimensionsSortedByScore.slice(1).map(dim => <LockedDiagnosticCard key={dim.id} dimension={dim} />)}
+                {dimensionsSortedByScore.slice(1).map(dim => <LockedDiagnosticCard key={dim.id} dimension={dim} onUnlockClick={handleScrollToUnlock} />)}
               </div>
-              <BentoCard style={{ background: T.vert, border: "none", textAlign: "center", padding: "36px 28px" }}>
+              <BentoCard id="unlock-form" style={{ background: T.vert, border: "none", textAlign: "center", padding: "36px 28px" }}>
                 <p style={{ fontSize: 18, fontWeight: 700, color: T.white, marginBottom: 8 }}>Débloque tes 4 autres diagnostics</p>
                 <p style={{ fontSize: 13, color: `${T.white}bb`, marginBottom: 24, lineHeight: 1.6 }}>Entre ton email pour voir tes résultats complets. Tu recevras aussi une tactique par semaine pour défendre ton rôle.</p>
                 <div ref={kitContainerRef} style={{ maxWidth: 380, margin: "0 auto" }} />
