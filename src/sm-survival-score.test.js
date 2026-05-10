@@ -359,6 +359,67 @@ describe("PERSONA SCENARIOS (Karim/Sophie)", () => {
 });
 
 // ============================================================
+// BUILD ABANDON PAYLOAD
+// ============================================================
+
+// Mirrors SCREEN constant and buildAbandonPayload from sm-survival-score.jsx
+const SCREEN = { LANDING: "landing", QUIZ: "quiz", RESULT: "result" };
+
+function buildAbandonPayload(screen, currentQ, answers, questions = QUESTIONS_STRUCTURE) {
+  if (screen !== SCREEN.QUIZ) return null;
+  return {
+    questionIndex: currentQ,
+    questionNumber: currentQ + 1,
+    dimension: questions[currentQ]?.dimension ?? null,
+    answersGiven: answers.filter(a => a !== null).length,
+  };
+}
+
+describe("buildAbandonPayload", () => {
+  const emptyAnswers = Array(20).fill(null);
+
+  assert(buildAbandonPayload(SCREEN.LANDING, 0, emptyAnswers) === null,
+    "Returns null on landing screen");
+
+  assert(buildAbandonPayload(SCREEN.RESULT, 19, emptyAnswers) === null,
+    "Returns null on result screen");
+
+  const p0 = buildAbandonPayload(SCREEN.QUIZ, 0, emptyAnswers);
+  assert(p0 !== null, "Returns payload on quiz screen");
+  assertEqual(p0.questionIndex, 0, "Q1: questionIndex is 0-based");
+  assertEqual(p0.questionNumber, 1, "Q1: questionNumber is 1-based");
+  assertEqual(p0.dimension, "visibility", "Q1: dimension is visibility");
+  assertEqual(p0.answersGiven, 0, "Q1: 0 answers given on empty quiz");
+
+  // Q17 (index 16) — identifiée comme potentiellement bloquante dans la spec
+  const p16 = buildAbandonPayload(SCREEN.QUIZ, 16, emptyAnswers);
+  assertEqual(p16.questionIndex, 16, "Q17: questionIndex is 16");
+  assertEqual(p16.questionNumber, 17, "Q17: questionNumber is 17");
+  assertEqual(p16.dimension, "strategic", "Q17: dimension is strategic");
+
+  // Last question (index 19)
+  const p19 = buildAbandonPayload(SCREEN.QUIZ, 19, emptyAnswers);
+  assertEqual(p19.questionIndex, 19, "Q20: questionIndex is 19");
+  assertEqual(p19.questionNumber, 20, "Q20: questionNumber is 20");
+  assertEqual(p19.dimension, "strategic", "Q20: dimension is strategic");
+
+  // answersGiven counts non-null entries
+  const partial = [...emptyAnswers];
+  partial[0] = 1; partial[3] = 0; partial[7] = 2; partial[11] = 1; partial[15] = 0;
+  const pPartial = buildAbandonPayload(SCREEN.QUIZ, 8, partial);
+  assertEqual(pPartial.answersGiven, 5, "answersGiven counts only non-null answers");
+
+  // All answers given
+  const full = Array(20).fill(0);
+  const pFull = buildAbandonPayload(SCREEN.QUIZ, 10, full);
+  assertEqual(pFull.answersGiven, 20, "answersGiven = 20 when all answered");
+
+  // Out-of-bounds index returns null dimension
+  const pOob = buildAbandonPayload(SCREEN.QUIZ, 99, emptyAnswers);
+  assertEqual(pOob.dimension, null, "dimension is null for out-of-bounds index");
+});
+
+// ============================================================
 // RESULTS
 // ============================================================
 

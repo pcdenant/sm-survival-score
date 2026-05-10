@@ -182,6 +182,16 @@ function trackEvent(event, data = {}) {
   }
 }
 
+export function buildAbandonPayload(screen, currentQ, answers) {
+  if (screen !== SCREEN.QUIZ) return null;
+  return {
+    questionIndex: currentQ,
+    questionNumber: currentQ + 1,
+    dimension: QUESTIONS[currentQ]?.dimension ?? null,
+    answersGiven: answers.filter(a => a !== null).length,
+  };
+}
+
 // ============================================================
 // DESIGN TOKENS — Brand: vert #006946, jaune #FFF200, crème #FBF3EB
 // ============================================================
@@ -631,6 +641,26 @@ export default function SMSurvivalScore() {
   const [answers, setAnswers] = useState(() => Array(QUESTIONS.length).fill(null));
 
   useEffect(() => { window.scrollTo(0, 0); }, [screen]);
+
+  useEffect(() => {
+    const handleAbandon = () => {
+      const payload = buildAbandonPayload(screen, currentQ, answers);
+      if (!payload) return;
+      trackEvent('quiz_abandoned', payload);
+    };
+
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') handleAbandon();
+    };
+
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    window.addEventListener('pagehide', handleAbandon);
+
+    return () => {
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+      window.removeEventListener('pagehide', handleAbandon);
+    };
+  }, [screen, currentQ, answers]);
 
   const handleStart = useCallback(() => { trackEvent("quiz_started"); setScreen(SCREEN.QUIZ); setCurrentQ(0); }, []);
   const handleSelect = useCallback((i) => { setAnswers(prev => { const a = [...prev]; a[currentQ] = i; return a; }); }, [currentQ]);
