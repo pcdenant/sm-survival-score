@@ -6,11 +6,56 @@ import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Responsi
 // ============================================================
 
 const DIMENSIONS = [
-  { id: "visibility", name: "Visibilité de ton impact", shortName: "Visibilité" },
-  { id: "proof", name: "Maîtrise des preuves", shortName: "Preuves" },
-  { id: "business", name: "Langage business", shortName: "Business" },
-  { id: "autonomy", name: "Autonomie de ton équipe", shortName: "Autonomie" },
-  { id: "strategic", name: "Positionnement stratégique", shortName: "Stratégique" },
+  {
+    id: "visibility",
+    name: "Visibilité de ton impact",
+    shortName: "Visibilité",
+    diagnostics: {
+      low: { text: "Ton management ne voit pas ce que tu fais. Personne ne le sait. Et dans une réorg, ce qui est invisible est le premier coupé. Chez Capital One, l'entreprise a reconnu que le travail des rôles agile était « critique ». Elle les a éliminés quand même. Plus de 1 100 postes.", action: "Cette semaine, envoie un message de 3 lignes à ton manager avec UN résultat concret de ton dernier sprint. Pas un statut. Un résultat." },
+      mid: { text: "Ton manager sait vaguement que tu fais du bon travail. Sauf que « vaguement » ne pèse rien quand quelqu'un demande « on coupe quoi ? ». Pas en danger immédiat, mais pas de filet non plus si le vent tourne.", action: "Prends ta contribution la plus significative du mois et reformule-la en une phrase que ton VP comprendrait sans contexte. Si tu n'y arrives pas, c'est ta zone de travail." },
+      high: { text: "Ton impact est visible. Ton management sait ce que tu apportes et pourrait le défendre. Bonne base. Mais la visibilité, ça ne se stocke pas. Ça se renouvelle chaque trimestre.", action: "Est-ce que tu pourrais documenter tes 3 contributions majeures du trimestre en format avant/après chiffré ? Si oui, tu as un dossier. Si non, tu as un objectif." },
+    },
+  },
+  {
+    id: "proof",
+    name: "Maîtrise des preuves",
+    shortName: "Preuves",
+    diagnostics: {
+      low: { text: "Tu n'as pas de données pour appuyer ce que tu fais. Quand quelqu'un te demande « c'est quoi ta valeur ajoutée ? », tu réponds avec des mots. Les mots se discutent. Les chiffres, non. Et les entreprises ne gardent pas les gens qui n'ont que des mots.", action: "Ouvre Jira (ou ton équivalent) et note deux chiffres : le nombre d'items livrés ce sprint et le nombre du sprint précédent. C'est ta première donnée. Pas besoin de plus pour commencer." },
+      mid: { text: "Tu as des réflexes data, mais c'est pas encore un système. Tu regardes Jira de temps en temps, tu sais à peu près ce qui se passe. Si on te demandait de prouver une amélioration, par contre, tu devrais fouiller. Tu vois les problèmes mais tu ne peux pas les documenter quand ça compte.", action: "Choisis UNE métrique simple (items livrés, ou nombre de blocages résolus) et suis-la chaque sprint pendant un mois. Au bout de 4 sprints, tu as une tendance. Une tendance, c'est une preuve." },
+      high: { text: "Tu sais utiliser tes données pour poser un diagnostic et appuyer tes actions. La majorité des SM n'en sont pas là. La question : est-ce que ces données arrivent jusqu'à ton management, ou est-ce qu'elles restent dans ta tête ?", action: "Prends ton meilleur avant/après chiffré et transforme-le en un mini-cas de 5 lignes. Si ton manager peut le lire et comprendre l'impact en 30 secondes, t'as un asset réutilisable." },
+    },
+  },
+  {
+    id: "business",
+    name: "Langage business",
+    shortName: "Business",
+    diagnostics: {
+      low: { text: "Tu parles Scrum à des gens qui parlent business. Tu dis « sprint goal » quand ils veulent entendre « engagement tenu ». Tu dis « impediment » quand ils veulent entendre « risque maîtrisé ». C'est pas un problème de compétence, c'est un problème de traduction. Et quand ton VP ne comprend pas ce que tu dis, il conclut que ce que tu fais n'a pas de valeur.", action: "Prends la dernière phrase que tu as dite en jargon Scrum à ton manager et réécris-la en termes de coût, risque ou délai. Une seule phrase. Entraîne-toi sur celle-là." },
+      mid: { text: "Tu commences à parler le bon langage, mais c'est pas encore un réflexe. Tu switches entre Scrum et business selon le contexte, et parfois tu te trompes de registre. Ton manager retient les moments où tu as parlé « sprint velocity ». Pas ceux où tu as parlé « prédictibilité de livraison ».", action: "Avant ta prochaine réunion avec le management, prépare une phrase. Une seule. Qui traduit un résultat d'équipe en impact business. Pas improviser. Préparer." },
+      high: { text: "Tu parles le langage de ceux qui décident. Rare chez les SM. La plupart restent enfermés dans le vocabulaire Scrum. Ton management te comprend, et ça change tout dans ta capacité à influencer.", action: "Est-ce que tu pourrais chiffrer le coût d'une semaine de retard pour ton équipe ? Si oui, tu as un argument que même un CFO écoute. Si non, c'est ta prochaine étape." },
+    },
+  },
+  {
+    id: "autonomy",
+    name: "Autonomie de ton équipe",
+    shortName: "Autonomie",
+    diagnostics: {
+      low: { text: "Ton équipe dépend de toi pour fonctionner. Si tu pars, les événements sautent, les problèmes s'accumulent, personne ne prend le relais. Ça rassure à court terme. Tu te sens utile. Mais une équipe dépendante, c'est un SM qui n'a pas fait son vrai travail. Et un management qui le voit se dit « il est devenu un goulot ».", action: "Choisis UN événement Scrum cette semaine et demande à quelqu'un de l'équipe de le faciliter. Toi, tu observes." },
+      mid: { text: "Ton équipe se débrouille à peu près sans toi, mais c'est fragile. Les réflexes ne sont pas ancrés. Ça tient parce que tu es là en filet de sécurité. Le piège : l'équipe fonctionne, personne ne sait que c'est grâce à toi. Et si personne ne le sait, tu es remplaçable.", action: "Identifie une chose que ton équipe fait maintenant qu'elle ne faisait pas il y a 6 mois. Formule-la en une phrase. C'est le début de ton narratif d'autonomie." },
+      high: { text: "Ton équipe est autonome et tu sais raconter pourquoi. Tu as créé quelque chose qui tourne, et tu peux le prouver. Maintenant, faut pas te reposer dessus. L'autonomie, ça s'entretient.", action: "Est-ce que tu as documenté le chemin ? « L'équipe était à X, elle est maintenant à Y, voilà ce que j'ai fait. » Si ce récit existe quelque part, tu as un asset. Si c'est juste dans ta tête, ça reste invisible." },
+    },
+  },
+  {
+    id: "strategic",
+    name: "Positionnement stratégique",
+    shortName: "Stratégique",
+    diagnostics: {
+      low: { text: "Tu es perçu comme un facilitateur de cérémonies. Ton manager te présente comme « celui qui gère les rituels Scrum », tu n'es pas consulté avant les décisions, et tu n'as pas d'objectif lié à un résultat business. Position la plus exposée possible. Dans la tête de ceux qui décident, tu es un coût opérationnel. Et les coûts opérationnels, ça se coupe.", action: "Demande à ton manager un objectif mesurable pour le prochain trimestre. Pas « améliorer l'agilité de l'équipe ». Un résultat : réduire les délais, améliorer la prédictibilité. Si ton manager ne sait pas quoi te donner, c'est un signal en soi." },
+      mid: { text: "Tu n'es pas dans la case « animateur de réunions », mais tu n'es pas non plus dans la pièce quand les vraies décisions se prennent. Zone grise. Utile mais pas indispensable. Cette zone est confortable, sauf que c'est exactement là que le couperet tombe en premier. Personne ne te vise, mais personne ne te protège.", action: "Demande à ton manager quelles sont les prochaines décisions stratégiques qui vont affecter ton équipe (roadmap, réorg, changement de priorités). Puis propose-lui un point de vue chiffré avant que la décision soit prise. Le simple fait de poser la question change ta position." },
+      high: { text: "Ton management te consulte, tu as des objectifs mesurables, et on te présente en parlant de résultats. T'es pas un rôle qu'on questionne. T'es une personne qu'on veut garder.", action: "Est-ce que tu pourrais former un autre SM à atteindre cette position ? Si oui, tu es en train de passer de SM irremplaçable à leader qui multiplie l'impact." },
+    },
+  },
 ];
 
 const QUESTIONS = [
@@ -63,33 +108,16 @@ const GLOBAL_RESULTS = {
   },
 };
 
-const DIAGNOSTICS = {
-  visibility: {
-    low: { text: "Ton management ne voit pas ce que tu fais. Personne ne le sait. Et dans une réorg, ce qui est invisible est le premier coupé. Chez Capital One, l'entreprise a reconnu que le travail des rôles agile était « critique ». Elle les a éliminés quand même. Plus de 1 100 postes.", action: "Cette semaine, envoie un message de 3 lignes à ton manager avec UN résultat concret de ton dernier sprint. Pas un statut. Un résultat." },
-    mid: { text: "Ton manager sait vaguement que tu fais du bon travail. Sauf que « vaguement » ne pèse rien quand quelqu'un demande « on coupe quoi ? ». Pas en danger immédiat, mais pas de filet non plus si le vent tourne.", action: "Prends ta contribution la plus significative du mois et reformule-la en une phrase que ton VP comprendrait sans contexte. Si tu n'y arrives pas, c'est ta zone de travail." },
-    high: { text: "Ton impact est visible. Ton management sait ce que tu apportes et pourrait le défendre. Bonne base. Mais la visibilité, ça ne se stocke pas. Ça se renouvelle chaque trimestre.", action: "Est-ce que tu pourrais documenter tes 3 contributions majeures du trimestre en format avant/après chiffré ? Si oui, tu as un dossier. Si non, tu as un objectif." },
-  },
-  proof: {
-    low: { text: "Tu n'as pas de données pour appuyer ce que tu fais. Quand quelqu'un te demande « c'est quoi ta valeur ajoutée ? », tu réponds avec des mots. Les mots se discutent. Les chiffres, non. Et les entreprises ne gardent pas les gens qui n'ont que des mots.", action: "Ouvre Jira (ou ton équivalent) et note deux chiffres : le nombre d'items livrés ce sprint et le nombre du sprint précédent. C'est ta première donnée. Pas besoin de plus pour commencer." },
-    mid: { text: "Tu as des réflexes data, mais c'est pas encore un système. Tu regardes Jira de temps en temps, tu sais à peu près ce qui se passe. Si on te demandait de prouver une amélioration, par contre, tu devrais fouiller. Tu vois les problèmes mais tu ne peux pas les documenter quand ça compte.", action: "Choisis UNE métrique simple (items livrés, ou nombre de blocages résolus) et suis-la chaque sprint pendant un mois. Au bout de 4 sprints, tu as une tendance. Une tendance, c'est une preuve." },
-    high: { text: "Tu sais utiliser tes données pour poser un diagnostic et appuyer tes actions. La majorité des SM n'en sont pas là. La question : est-ce que ces données arrivent jusqu'à ton management, ou est-ce qu'elles restent dans ta tête ?", action: "Prends ton meilleur avant/après chiffré et transforme-le en un mini-cas de 5 lignes. Si ton manager peut le lire et comprendre l'impact en 30 secondes, t'as un asset réutilisable." },
-  },
-  business: {
-    low: { text: "Tu parles Scrum à des gens qui parlent business. Tu dis « sprint goal » quand ils veulent entendre « engagement tenu ». Tu dis « impediment » quand ils veulent entendre « risque maîtrisé ». C'est pas un problème de compétence, c'est un problème de traduction. Et quand ton VP ne comprend pas ce que tu dis, il conclut que ce que tu fais n'a pas de valeur.", action: "Prends la dernière phrase que tu as dite en jargon Scrum à ton manager et réécris-la en termes de coût, risque ou délai. Une seule phrase. Entraîne-toi sur celle-là." },
-    mid: { text: "Tu commences à parler le bon langage, mais c'est pas encore un réflexe. Tu switches entre Scrum et business selon le contexte, et parfois tu te trompes de registre. Ton manager retient les moments où tu as parlé « sprint velocity ». Pas ceux où tu as parlé « prédictibilité de livraison ».", action: "Avant ta prochaine réunion avec le management, prépare une phrase. Une seule. Qui traduit un résultat d'équipe en impact business. Pas improviser. Préparer." },
-    high: { text: "Tu parles le langage de ceux qui décident. Rare chez les SM. La plupart restent enfermés dans le vocabulaire Scrum. Ton management te comprend, et ça change tout dans ta capacité à influencer.", action: "Est-ce que tu pourrais chiffrer le coût d'une semaine de retard pour ton équipe ? Si oui, tu as un argument que même un CFO écoute. Si non, c'est ta prochaine étape." },
-  },
-  autonomy: {
-    low: { text: "Ton équipe dépend de toi pour fonctionner. Si tu pars, les événements sautent, les problèmes s'accumulent, personne ne prend le relais. Ça rassure à court terme. Tu te sens utile. Mais une équipe dépendante, c'est un SM qui n'a pas fait son vrai travail. Et un management qui le voit se dit « il est devenu un goulot ».", action: "Choisis UN événement Scrum cette semaine et demande à quelqu'un de l'équipe de le faciliter. Toi, tu observes." },
-    mid: { text: "Ton équipe se débrouille à peu près sans toi, mais c'est fragile. Les réflexes ne sont pas ancrés. Ça tient parce que tu es là en filet de sécurité. Le piège : l'équipe fonctionne, personne ne sait que c'est grâce à toi. Et si personne ne le sait, tu es remplaçable.", action: "Identifie une chose que ton équipe fait maintenant qu'elle ne faisait pas il y a 6 mois. Formule-la en une phrase. C'est le début de ton narratif d'autonomie." },
-    high: { text: "Ton équipe est autonome et tu sais raconter pourquoi. Tu as créé quelque chose qui tourne, et tu peux le prouver. Maintenant, faut pas te reposer dessus. L'autonomie, ça s'entretient.", action: "Est-ce que tu as documenté le chemin ? « L'équipe était à X, elle est maintenant à Y, voilà ce que j'ai fait. » Si ce récit existe quelque part, tu as un asset. Si c'est juste dans ta tête, ça reste invisible." },
-  },
-  strategic: {
-    low: { text: "Tu es perçu comme un facilitateur de cérémonies. Ton manager te présente comme « celui qui gère les rituels Scrum », tu n'es pas consulté avant les décisions, et tu n'as pas d'objectif lié à un résultat business. Position la plus exposée possible. Dans la tête de ceux qui décident, tu es un coût opérationnel. Et les coûts opérationnels, ça se coupe.", action: "Demande à ton manager un objectif mesurable pour le prochain trimestre. Pas « améliorer l'agilité de l'équipe ». Un résultat : réduire les délais, améliorer la prédictibilité. Si ton manager ne sait pas quoi te donner, c'est un signal en soi." },
-    mid: { text: "Tu n'es pas dans la case « animateur de réunions », mais tu n'es pas non plus dans la pièce quand les vraies décisions se prennent. Zone grise. Utile mais pas indispensable. Cette zone est confortable, sauf que c'est exactement là que le couperet tombe en premier. Personne ne te vise, mais personne ne te protège.", action: "Demande à ton manager quelles sont les prochaines décisions stratégiques qui vont affecter ton équipe (roadmap, réorg, changement de priorités). Puis propose-lui un point de vue chiffré avant que la décision soit prise. Le simple fait de poser la question change ta position." },
-    high: { text: "Ton management te consulte, tu as des objectifs mesurables, et on te présente en parlant de résultats. T'es pas un rôle qu'on questionne. T'es une personne qu'on veut garder.", action: "Est-ce que tu pourrais former un autre SM à atteindre cette position ? Si oui, tu es en train de passer de SM irremplaçable à leader qui multiplie l'impact." },
-  },
-};
+
+// ============================================================
+// CONSTANTS
+// ============================================================
+
+const MAX_SCORE = 40;
+const MAX_DIM_SCORE = 8;
+const SCORE_THRESHOLDS = { low: 40, mid: 70 };
+const QUESTIONS_PER_DIM = 4;
+const SCREEN = { LANDING: "landing", QUIZ: "quiz", RESULT: "result" };
 
 // ============================================================
 // SCORING UTILITIES
@@ -97,7 +125,7 @@ const DIAGNOSTICS = {
 
 export function computeDimensionScores(answers, questions = QUESTIONS, dimensions = DIMENSIONS) {
   const scores = {};
-  dimensions.forEach(d => (scores[d.id] = 0));
+  dimensions.forEach(dim => (scores[dim.id] = 0));
   questions.forEach((q, i) => {
     const sel = answers[i];
     if (sel !== null && sel !== undefined && q.answers[sel]) {
@@ -107,20 +135,20 @@ export function computeDimensionScores(answers, questions = QUESTIONS, dimension
   return scores;
 }
 
-export function computeGlobalScore(dimScores) {
-  return Math.round((Object.values(dimScores).reduce((a, b) => a + b, 0) / 40) * 100);
+export function computeGlobalScore(dimensionScores) {
+  return Math.round((Object.values(dimensionScores).reduce((a, b) => a + b, 0) / MAX_SCORE) * 100);
 }
 
-export function getCategory(pct) {
-  if (pct < 40) return { key: "vulnerable", label: "Vulnérable", color: "#dc2626", bg: "#fef2f2" };
-  if (pct < 70) return { key: "stable", label: "Stable", color: "#f59e0b", bg: "#fffbeb" };
+export function getCategory(percentage) {
+  if (percentage < SCORE_THRESHOLDS.low) return { key: "vulnerable", label: "Vulnérable", color: "#dc2626", bg: "#fef2f2" };
+  if (percentage < SCORE_THRESHOLDS.mid) return { key: "stable", label: "Stable", color: "#f59e0b", bg: "#fffbeb" };
   return { key: "irreplaceable", label: "Irremplaçable", color: "#006946", bg: "#ecfdf5" };
 }
 
 export function getDiagnosticLevel(score) { return score <= 3 ? "low" : score <= 5 ? "mid" : "high"; }
 
-export function buildDimensionResults(dimScores, dimensions = DIMENSIONS) {
-  return dimensions.map(d => ({ ...d, score: dimScores[d.id], pct: Math.round((dimScores[d.id] / 8) * 100) }));
+export function buildDimensionResults(dimensionScores, dimensions = DIMENSIONS) {
+  return dimensions.map(dim => ({ ...dim, score: dimensionScores[dim.id], pct: Math.round((dimensionScores[dim.id] / MAX_DIM_SCORE) * 100) }));
 }
 
 export function isValidEmail(email) {
@@ -178,6 +206,9 @@ const T = {
   rSm: 10,
   f: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif",
 };
+// Button style helpers — used in ResultScreen actions (share + restart)
+T.btnAction = { fontSize: 14, fontWeight: 700, fontFamily: T.f, background: T.vert, color: T.white, border: "none", borderRadius: T.rSm, cursor: "pointer", minHeight: 48, padding: "14px 28px" };
+T.btnGhost = { fontSize: 14, fontWeight: 600, fontFamily: T.f, background: "transparent", color: T.textMuted, border: `1px solid ${T.border}`, borderRadius: T.rSm, cursor: "pointer", minHeight: 48, padding: "14px 28px" };
 
 // ============================================================
 // GLOBAL STYLES
@@ -232,7 +263,7 @@ function BentoCard({ children, style = {}, className, ...props }) {
 
 function DiagnosticCard({ dimension, index }) {
   const level = getDiagnosticLevel(dimension.score);
-  const diag = DIAGNOSTICS[dimension.id][level];
+  const diag = dimension.diagnostics[level];
   const cat = getCategory(dimension.pct);
   const levelLabel = level === "low" ? "Vulnérable" : level === "mid" ? "À renforcer" : "Solide";
 
@@ -283,17 +314,48 @@ function LockedDiagnosticCard({ dimension }) {
 
 function ProgressBar({ currentIndex }) {
   return (
-    <div role="progressbar" aria-valuenow={currentIndex + 1} aria-valuemin={1} aria-valuemax={20} aria-label={`Question ${currentIndex + 1} sur 20`} style={{ display: "flex", gap: 3 }}>
-      {DIMENSIONS.map((d, i) => (
-        <div key={d.id} style={{ flex: 1, display: "flex", gap: 2 }}>
-          {[0, 1, 2, 3].map(q => {
-            const idx = i * 4 + q;
+    <div role="progressbar" aria-valuenow={currentIndex + 1} aria-valuemin={1} aria-valuemax={QUESTIONS.length} aria-label={`Question ${currentIndex + 1} sur ${QUESTIONS.length}`} style={{ display: "flex", gap: 3 }}>
+      {DIMENSIONS.map((dim, i) => (
+        <div key={dim.id} style={{ flex: 1, display: "flex", gap: 2 }}>
+          {Array.from({ length: QUESTIONS_PER_DIM }, (_, q) => {
+            const idx = i * QUESTIONS_PER_DIM + q;
             return <div key={q} style={{ flex: 1, height: 3, borderRadius: 2, background: idx === currentIndex ? T.jaune : idx < currentIndex + 1 ? T.vert : T.cremeDeep, transition: "background 0.2s ease" }} />;
           })}
         </div>
       ))}
     </div>
   );
+}
+
+// ============================================================
+// HOOKS
+// ============================================================
+
+function useKitFormUnlock() {
+  const [unlocked, setUnlocked] = useState(false);
+  const containerRef = useRef(null);
+
+  useEffect(() => {
+    if (unlocked || !containerRef.current) return;
+    const script = document.createElement("script");
+    script.src = "https://collaboration-solved.kit.com/da72eeaa73/index.js";
+    script.async = true;
+    script.dataset.uid = "da72eeaa73";
+    containerRef.current.appendChild(script);
+
+    const SUCCESS_KEYWORDS = ["success", "merci", "thank", "confirm", "check your email", "vérifi"];
+    const observer = new MutationObserver(() => {
+      const container = containerRef.current;
+      if (!container) return;
+      const byText = SUCCESS_KEYWORDS.some(kw => container.innerText.toLowerCase().includes(kw));
+      const byElement = !!container.querySelector("[data-state='success'], .formkit-alert-success, .formkit-success");
+      if (byText || byElement) { trackEvent("diagnostics_unlocked"); setUnlocked(true); observer.disconnect(); }
+    });
+    observer.observe(containerRef.current, { childList: true, subtree: true, characterData: true });
+    return () => observer.disconnect();
+  }, [unlocked]);
+
+  return { unlocked, containerRef };
 }
 
 // ============================================================
@@ -382,52 +444,29 @@ function QuestionScreen({ questionIndex, question, selectedAnswer, onSelect, onN
 }
 
 function ResultScreen({ answers, onRestart }) {
-  const [unlocked, setUnlocked] = useState(false);
-  const kitContainerRef = useRef(null);
+  const { unlocked, containerRef: kitContainerRef } = useKitFormUnlock();
 
-  const dimScores = useMemo(() => computeDimensionScores(answers), [answers]);
-  const pct = useMemo(() => computeGlobalScore(dimScores), [dimScores]);
-  const category = useMemo(() => getCategory(pct), [pct]);
+  const dimensionScores = useMemo(() => computeDimensionScores(answers), [answers]);
+  const globalScore = useMemo(() => computeGlobalScore(dimensionScores), [dimensionScores]);
+  const category = useMemo(() => getCategory(globalScore), [globalScore]);
   const globalResult = useMemo(() => GLOBAL_RESULTS[category.key], [category.key]);
-  const dimOrdered = useMemo(() => buildDimensionResults(dimScores), [dimScores]);
-  const dimSorted = useMemo(() => [...dimOrdered].sort((a, b) => a.score - b.score), [dimOrdered]);
-  const radarData = useMemo(() => dimOrdered.map(d => ({ dimension: d.shortName, score: d.score, fullMark: 8 })), [dimOrdered]);
+  const dimensionResults = useMemo(() => buildDimensionResults(dimensionScores), [dimensionScores]);
+  const dimensionsSortedByScore = useMemo(() => [...dimensionResults].sort((a, b) => a.score - b.score), [dimensionResults]);
+  const radarData = useMemo(() => dimensionResults.map(dim => ({ dimension: dim.shortName, score: dim.score, fullMark: MAX_DIM_SCORE })), [dimensionResults]);
 
   // Track quiz completion (once)
   useEffect(() => {
     trackEvent("quiz_completed", {
-      score_global: pct,
+      score_global: globalScore,
       category: category.label,
-      weakest_dim: dimSorted[0]?.shortName || "",
-      visibility: dimScores.visibility,
-      proof: dimScores.proof,
-      business: dimScores.business,
-      autonomy: dimScores.autonomy,
-      strategic: dimScores.strategic,
+      weakest_dim: dimensionsSortedByScore[0]?.shortName || "",
+      visibility: dimensionScores.visibility,
+      proof: dimensionScores.proof,
+      business: dimensionScores.business,
+      autonomy: dimensionScores.autonomy,
+      strategic: dimensionScores.strategic,
     });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
-  useEffect(() => {
-    if (unlocked || !kitContainerRef.current) return;
-    const script = document.createElement("script");
-    script.src = "https://collaboration-solved.kit.com/da72eeaa73/index.js";
-    script.async = true;
-    script.dataset.uid = "da72eeaa73";
-    kitContainerRef.current.appendChild(script);
-
-    const observer = new MutationObserver(() => {
-      const container = kitContainerRef.current;
-      if (!container) return;
-      const text = container.innerText.toLowerCase();
-      if (text.includes("success") || text.includes("merci") || text.includes("thank") || text.includes("confirm") || text.includes("check your email") || text.includes("vérifi")) {
-        trackEvent("diagnostics_unlocked"); setUnlocked(true); observer.disconnect();
-      }
-      const successEl = container.querySelector("[data-state='success'], .formkit-alert-success, .formkit-success");
-      if (successEl) { trackEvent("diagnostics_unlocked"); setUnlocked(true); observer.disconnect(); }
-    });
-    observer.observe(kitContainerRef.current, { childList: true, subtree: true, characterData: true });
-    return () => observer.disconnect();
-  }, [unlocked]);
 
   const handleShare = useCallback(() => {
     const text = `Je viens de faire un diagnostic sur la solidité de mon rôle de Scrum Master. 20 questions, 5 minutes, et des pistes d'action que j'aurais aimé avoir avant → https://dub.sh/sm-survival-score`;
@@ -441,7 +480,7 @@ function ResultScreen({ answers, onRestart }) {
       <header style={{ background: T.vert, padding: "48px 24px 56px", textAlign: "center", animation: "fadeIn 0.4s ease-out" }}>
         <div style={{ maxWidth: 520, margin: "0 auto" }}>
           <p style={{ fontSize: 12, color: `${T.white}99`, marginBottom: 12, letterSpacing: "0.06em", textTransform: "uppercase", fontWeight: 600 }}>Ton score</p>
-          <div aria-label={`Score : ${pct} sur 100`} style={{ fontSize: "clamp(64px, 18vw, 96px)", fontWeight: 900, color: category.key === "irreplaceable" ? T.jaune : category.color, lineHeight: 1, letterSpacing: "-0.04em", animation: "scaleIn 0.4s ease-out 0.15s both" }}>{pct}</div>
+          <div aria-label={`Score : ${globalScore} sur 100`} style={{ fontSize: "clamp(64px, 18vw, 96px)", fontWeight: 900, color: category.key === "irreplaceable" ? T.jaune : category.color, lineHeight: 1, letterSpacing: "-0.04em", animation: "scaleIn 0.4s ease-out 0.15s both" }}>{globalScore}</div>
           <p style={{ fontSize: 16, color: `${T.white}80`, marginBottom: 20 }}>/100</p>
           <div style={{ display: "inline-block", padding: "10px 28px", fontSize: 15, fontWeight: 700, color: T.vertDark, background: T.jaune, borderRadius: 24 }}>{category.label}</div>
         </div>
@@ -475,16 +514,16 @@ function ResultScreen({ answers, onRestart }) {
           {/* Scores card */}
           <BentoCard style={{ animation: "fadeUp 0.4s ease-out 0.35s both" }}>
             <h3 style={{ fontSize: 13, fontWeight: 700, color: T.vert, marginBottom: 16, textTransform: "uppercase", letterSpacing: "0.06em" }}>Par dimension</h3>
-            {dimOrdered.map((d, i) => {
-              const dc = getCategory(d.pct);
+            {dimensionResults.map((dim, i) => {
+              const dimCategory = getCategory(dim.pct);
               return (
-                <div key={d.id} style={{ marginBottom: i < 4 ? 16 : 0 }}>
+                <div key={dim.id} style={{ marginBottom: i < dimensionResults.length - 1 ? 16 : 0 }}>
                   <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
-                    <span style={{ fontSize: 13, color: T.text, fontWeight: 500 }}>{d.name}</span>
-                    <span style={{ fontSize: 13, fontWeight: 700, color: dc.color, fontFamily: "monospace" }}>{d.score}/8</span>
+                    <span style={{ fontSize: 13, color: T.text, fontWeight: 500 }}>{dim.name}</span>
+                    <span style={{ fontSize: 13, fontWeight: 700, color: dimCategory.color, fontFamily: "monospace" }}>{dim.score}/{MAX_DIM_SCORE}</span>
                   </div>
-                  <div role="meter" aria-valuenow={d.score} aria-valuemin={0} aria-valuemax={8} aria-label={d.name} style={{ height: 6, background: T.cremeDeep, borderRadius: 3 }}>
-                    <div style={{ height: 6, width: `${Math.max(d.pct, 3)}%`, background: dc.color, borderRadius: 3, transition: "width 0.6s ease-out" }} />
+                  <div role="meter" aria-valuenow={dim.score} aria-valuemin={0} aria-valuemax={MAX_DIM_SCORE} aria-label={dim.name} style={{ height: 6, background: T.cremeDeep, borderRadius: 3 }}>
+                    <div style={{ height: 6, width: `${Math.max(dim.pct, 3)}%`, background: dimCategory.color, borderRadius: 3, transition: "width 0.6s ease-out" }} />
                   </div>
                 </div>
               );
@@ -495,13 +534,13 @@ function ResultScreen({ answers, onRestart }) {
         {/* Diagnostics */}
         <section aria-label="Diagnostics détaillés" style={{ display: "flex", flexDirection: "column", gap: 16, marginBottom: 16 }}>
           <h3 style={{ fontSize: 13, fontWeight: 700, color: T.vert, textTransform: "uppercase", letterSpacing: "0.06em", paddingLeft: 4 }}>Diagnostic par dimension</h3>
-          <DiagnosticCard dimension={dimSorted[0]} index={0} />
+          <DiagnosticCard dimension={dimensionsSortedByScore[0]} index={0} />
           {unlocked ? (
-            dimSorted.slice(1).map((d, i) => <DiagnosticCard key={d.id} dimension={d} index={i + 1} />)
+            dimensionsSortedByScore.slice(1).map((dim, i) => <DiagnosticCard key={dim.id} dimension={dim} index={i + 1} />)
           ) : (
             <>
               <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                {dimSorted.slice(1).map(d => <LockedDiagnosticCard key={d.id} dimension={d} />)}
+                {dimensionsSortedByScore.slice(1).map(dim => <LockedDiagnosticCard key={dim.id} dimension={dim} />)}
               </div>
               <BentoCard style={{ background: T.vert, border: "none", textAlign: "center", padding: "36px 28px" }}>
                 <p style={{ fontSize: 18, fontWeight: 700, color: T.white, marginBottom: 8 }}>Débloque tes 4 autres diagnostics</p>
@@ -521,10 +560,10 @@ function ResultScreen({ answers, onRestart }) {
 
         {/* Actions */}
         <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap", marginBottom: 32 }}>
-          <button onClick={handleShare} aria-label="Partager le test" style={{ padding: "14px 28px", fontSize: 14, fontWeight: 700, fontFamily: T.f, background: T.vert, color: T.white, border: "none", borderRadius: T.rSm, cursor: "pointer", minHeight: 48 }}>
+          <button onClick={handleShare} aria-label="Partager le test" style={T.btnAction}>
             Envoie le test à un collègue SM
           </button>
-          <button onClick={onRestart} aria-label="Refaire le test" style={{ padding: "14px 28px", fontSize: 14, fontWeight: 600, fontFamily: T.f, background: "transparent", color: T.textMuted, border: `1px solid ${T.border}`, borderRadius: T.rSm, cursor: "pointer", minHeight: 48 }}>
+          <button onClick={onRestart} aria-label="Refaire le test" style={T.btnGhost}>
             Refaire le test
           </button>
         </div>
@@ -543,22 +582,22 @@ function ResultScreen({ answers, onRestart }) {
 // ============================================================
 
 export default function SMSurvivalScore() {
-  const [screen, setScreen] = useState("landing");
+  const [screen, setScreen] = useState(SCREEN.LANDING);
   const [currentQ, setCurrentQ] = useState(0);
   const [answers, setAnswers] = useState(() => Array(QUESTIONS.length).fill(null));
 
   useEffect(() => { window.scrollTo(0, 0); }, [screen]);
 
-  const handleStart = useCallback(() => { trackEvent("quiz_started"); setScreen("quiz"); setCurrentQ(0); }, []);
+  const handleStart = useCallback(() => { trackEvent("quiz_started"); setScreen(SCREEN.QUIZ); setCurrentQ(0); }, []);
   const handleSelect = useCallback((i) => { setAnswers(prev => { const a = [...prev]; a[currentQ] = i; return a; }); }, [currentQ]);
-  const handleNext = useCallback(() => { if (currentQ === QUESTIONS.length - 1) setScreen("result"); else setCurrentQ(p => p + 1); }, [currentQ]);
+  const handleNext = useCallback(() => { if (currentQ === QUESTIONS.length - 1) setScreen(SCREEN.RESULT); else setCurrentQ(p => p + 1); }, [currentQ]);
   const handlePrev = useCallback(() => { if (currentQ > 0) setCurrentQ(p => p - 1); }, [currentQ]);
-  const handleRestart = useCallback(() => { setAnswers(Array(QUESTIONS.length).fill(null)); setCurrentQ(0); setScreen("landing"); }, []);
+  const handleRestart = useCallback(() => { setAnswers(Array(QUESTIONS.length).fill(null)); setCurrentQ(0); setScreen(SCREEN.LANDING); }, []);
 
   return (
     <StyleProvider>
-      {screen === "landing" && <LandingScreen onStart={handleStart} />}
-      {screen === "quiz" && (
+      {screen === SCREEN.LANDING && <LandingScreen onStart={handleStart} />}
+      {screen === SCREEN.QUIZ && (
         <QuestionScreen
           questionIndex={currentQ}
           question={QUESTIONS[currentQ]}
@@ -569,7 +608,7 @@ export default function SMSurvivalScore() {
           total={QUESTIONS.length}
         />
       )}
-      {screen === "result" && <ResultScreen answers={answers} onRestart={handleRestart} />}
+      {screen === SCREEN.RESULT && <ResultScreen answers={answers} onRestart={handleRestart} />}
     </StyleProvider>
   );
 }

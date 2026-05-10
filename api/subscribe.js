@@ -3,15 +3,16 @@
 // The Kit API key is stored as an environment variable on the hosting platform.
 // The client never sees it.
 
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 export default async function handler(req, res) {
-  // Only allow POST
   if (req.method !== "POST") {
-    return res.status(405).json({ error: "Method not allowed" });
+    return res.status(405).json({ error: "Méthode non autorisée" });
   }
 
   const { email } = req.body;
 
-  if (!email || !email.includes("@") || !email.includes(".")) {
+  if (!email || !EMAIL_REGEX.test(email)) {
     return res.status(400).json({ error: "Email invalide" });
   }
 
@@ -23,9 +24,11 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: "Configuration serveur manquante" });
   }
 
+  const KIT_API_URL = `https://api.kit.com/v4/forms/${FORM_ID}/subscribers`;
+
   try {
     const response = await fetch(
-      `https://api.kit.com/v4/forms/${FORM_ID}/subscribers`,
+      KIT_API_URL,
       {
         method: "POST",
         headers: {
