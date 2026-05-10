@@ -5,22 +5,25 @@
 
 ## 1. PROJECT
 
-**Name:** [PROJECT NAME]
-**Purpose:** [One sentence. Problem solved. For whom.]
-**Status:** [ ] Exploration · [ ] MVP · [ ] Production
+**Name:** SM Survival Score
+**Purpose:** Diagnostic interactif pour Scrum Masters — mesurer la solidité de leur rôle face aux réductions d'effectifs et générer un plan d'action personnalisé.
+**Status:** [ ] Exploration · [ ] MVP · [x] Production
 **Owner:** Pierre-Cyril Denant
 
 **Stack:**
-- Frontend: [React + TypeScript / Next.js App Router]
-- Backend: [Node.js + TypeScript / Next.js API Routes]
-- DB: [PostgreSQL / SQLite / MongoDB]
-- Styling: [Tailwind / CSS Modules]
-- Deploy: [Vercel / Railway / Fly.io]
+- Frontend: React 18 + Vite 5 (JavaScript, pas TypeScript)
+- Backend: Vercel Functions (serverless)
+- DB: Aucune — données statiques dans le code source
+- Styling: CSS inline avec design tokens (objet `T`) — pas de Tailwind
+- Deploy: Vercel
 
 **Key decisions:**
-- [e.g. Server Components by default, Client Components explicit]
-- [e.g. No ORM — raw SQL with pg]
-- [e.g. useState + Context only, no Redux]
+- Un seul fichier composant (`src/sm-survival-score.jsx`) — pas de split en sous-composants séparés
+- Zéro routing — navigation gérée par état `screen` (landing / quiz / result)
+- Logique de scoring exportée comme fonctions pures testables sans React
+- Styles 100% inline via tokens centralisés — pas de fichier CSS
+- Kit (ConvertKit) intégré via script embed côté client + serverless function `/api/subscribe` côté serveur
+- Analytics fire-and-forget via `navigator.sendBeacon` vers Google Apps Script
 
 ---
 
@@ -105,16 +108,14 @@
 
 | Usage | Lib |
 |---|---|
-| Validation | zod |
-| HTTP client | native fetch or ky |
-| Dates | date-fns (not moment) |
-| Tests | vitest or jest |
-| Component tests | React Testing Library |
-| E2E | Playwright (critical paths only) |
-| Styles | Tailwind CSS |
-| Icons | lucide-react |
+| Charts | recharts (déjà en production) |
+| HTTP client | native fetch |
+| Tests | Node.js vanilla (zéro dépendances — intentionnel) |
+| Fonts | Google Fonts (DM Sans, via CSS @import) |
 
-**Before adding any lib:** Can it be done natively in < 20 lines? Repo active (< 6 months)? License MIT/Apache 2.0? If yes to all → propose it, wait for approval.
+**Libs actuellement installées :** react, react-dom, recharts, @vitejs/plugin-react, vite
+
+**Avant d'ajouter une lib :** Est-ce que ça peut se faire nativement en < 20 lignes ? Repo actif (< 6 mois) ? Licence MIT/Apache 2.0 ? Si oui → propose, attends l'approbation.
 
 ---
 
@@ -140,18 +141,27 @@ docs: update API endpoint documentation
 ```
 /
 ├── src/
-│   ├── app/          # Next.js App Router OR Express entry
-│   ├── components/   # UI components (no business logic)
-│   ├── features/     # Feature modules (logic + UI co-located)
-│   ├── lib/          # Shared utilities, clients, helpers
-│   ├── hooks/        # Custom React hooks
-│   ├── services/     # External APIs, business logic
-│   ├── repositories/ # DB access layer
-│   ├── types/        # Shared TypeScript types
-│   └── config/       # App config, env access
-├── tests/            # Mirrors src/ structure
-├── .env.example
-└── CLAUDE.md
+│   ├── main.jsx                  # Point d'entrée React (monte SMSurvivalScore)
+│   └── sm-survival-score.jsx     # Tout : données, logique, composants, styles
+├── api/
+│   └── subscribe.js              # Vercel Function : POST email → Kit API
+├── index.html                    # Shell HTML (lang="fr", meta SEO)
+├── vite.config.js
+├── package.json
+├── .env.example                  # Variables requises : KIT_API_KEY, KIT_FORM_ID
+├── README.md
+├── CHANGELOG.md
+└── ARCHITECTURE.md               # Détail technique (flux, composants, API)
 ```
 
-*Updated: [DATE]*
+**Fichier central :** `src/sm-survival-score.jsx` contient dans l'ordre :
+1. DATA (DIMENSIONS, QUESTIONS, GLOBAL_RESULTS, DIAGNOSTICS)
+2. SCORING UTILITIES (fonctions pures exportées)
+3. ANALYTICS (trackEvent via sendBeacon)
+4. DESIGN TOKENS (objet T)
+5. GLOBAL STYLES (StyleProvider)
+6. COMPOSANTS (BentoCard, DiagnosticCard, LockedDiagnosticCard, ProgressBar)
+7. SCREENS (LandingScreen, QuestionScreen, ResultScreen)
+8. APP ROOT (SMSurvivalScore — état global, navigation)
+
+*Updated: 2026-05-10*
