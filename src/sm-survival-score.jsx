@@ -370,17 +370,30 @@ function LandingScreen({ onStart }) {
         <div style={{ display: "inline-block", padding: "6px 18px", fontSize: 12, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", color: T.jaune, border: `1px solid ${T.jaune}50`, borderRadius: 20, marginBottom: 36 }}>
           Diagnostic gratuit
         </div>
-        <h1 style={{ fontSize: "clamp(30px, 7vw, 44px)", fontWeight: 900, lineHeight: 1.1, color: T.white, marginBottom: 20, letterSpacing: "-0.03em" }}>
-          Ton rôle de Scrum Master est-il en danger ?
+        <h1 style={{ fontSize: "clamp(30px, 7vw, 44px)", fontWeight: 900, lineHeight: 1.15, color: T.white, marginBottom: 20, letterSpacing: "-0.03em" }}>
+          <span style={{ display: "block" }}>Ton rôle est en danger.</span>
+          <span style={{ display: "block", fontWeight: 700 }}>Tu ne sais pas encore où.</span>
         </h1>
-        <p style={{ fontSize: 17, fontWeight: 500, color: `${T.white}cc`, marginBottom: 32 }}>
-          20 questions · 5 minutes · Un diagnostic clair
+        <p style={{ fontSize: 17, fontWeight: 500, color: `${T.white}cc`, marginBottom: 0 }}>
+          20 questions · 5 min · Score sur 5 dimensions
         </p>
-        <p style={{ fontSize: 15, color: `${T.white}99`, lineHeight: 1.75, marginBottom: 48, maxWidth: 440, marginLeft: "auto", marginRight: "auto" }}>
-          1 100 rôles agile éliminés chez Capital One. Des coupes massives chez Fidelity, dans les banques UK et ailleurs. Les rôles qui survivent ne sont pas les meilleurs. Ce sont ceux qui savent prouver leur valeur. Et toi, tu en es où ?
-        </p>
+        <hr style={{ border: "none", borderTop: `1px solid ${T.white}20`, width: 60, margin: "32px auto" }} />
+        <div style={{ fontSize: 15, color: `${T.white}99`, lineHeight: 1.75, marginBottom: 48, maxWidth: 440, marginLeft: "auto", marginRight: "auto", textAlign: "left" }}>
+          <p style={{ marginBottom: 20 }}>
+            En janvier 2023, Capital One a dissous sa famille de rôles agile. 1 100 postes. Dans leur communiqué, ces personnes étaient qualifiées de « critiques ». Elles ont été éliminées quand même.
+          </p>
+          <p style={{ marginBottom: 20 }}>
+            Selon ScrumAlliance, 18% des Scrum Masters ont été touchés par des licenciements depuis 2022. Des outils vendent aujourd'hui 85% des responsabilités visibles du SM en abonnement mensuel, pour un fragment de ton salaire. La direction peut faire le calcul.
+          </p>
+          <p style={{ marginBottom: 20, color: `${T.white}cc`, fontStyle: "italic", fontWeight: 600 }}>
+            Le risque n'est pas toujours là où tu crois.<br />C'est ça, l'angle mort métier.
+          </p>
+          <p style={{ marginBottom: 0 }}>
+            Ce diagnostic mesure ta situation sur 5 dimensions. Tu repars avec un score et un plan d'action par zone de vulnérabilité.
+          </p>
+        </div>
         <button onClick={onStart} style={{ padding: "18px 56px", fontSize: 16, fontWeight: 700, fontFamily: T.f, background: T.jaune, color: T.vertDark, border: "none", borderRadius: T.r, cursor: "pointer", boxShadow: "0 4px 24px rgba(0,0,0,0.15)", minHeight: 56 }}>
-          Je fais le test
+          Voir mes angles morts
         </button>
         <p style={{ fontSize: 12, color: `${T.white}60`, marginTop: 24 }}>Gratuit · Sans inscription · Résultat immédiat</p>
       </main>
