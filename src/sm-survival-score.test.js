@@ -86,6 +86,14 @@ function isValidEmail(email) {
   return typeof email === "string" && email.includes("@") && email.includes(".");
 }
 
+function buildDimensionResults(dimScores, dimensions = DIMENSIONS) {
+  return dimensions.map(d => ({
+    ...d,
+    score: dimScores[d.id],
+    pct: Math.round((dimScores[d.id] / 8) * 100),
+  }));
+}
+
 // ============================================================
 // TEST FRAMEWORK (minimal, zero dependencies)
 // ============================================================
@@ -292,6 +300,33 @@ describe("SCORING MATH — PERCENTAGE ROUNDING", () => {
   // 16/40 = 40% → exactly 40
   const scores16 = { visibility: 4, proof: 4, business: 4, autonomy: 4, strategic: 0 };
   assertEqual(computeGlobalScore(scores16), 40, "16/40 = exactly 40%");
+});
+
+describe("BUILD DIMENSION RESULTS", () => {
+  const allZero = { visibility: 0, proof: 0, business: 0, autonomy: 0, strategic: 0 };
+  const allMax  = { visibility: 8, proof: 8, business: 8, autonomy: 8, strategic: 8 };
+  const mixed   = { visibility: 4, proof: 3, business: 5, autonomy: 0, strategic: 8 };
+
+  const zeroResults = buildDimensionResults(allZero);
+  assert(zeroResults.length === 5, "Returns one entry per dimension");
+  zeroResults.forEach(d => {
+    assert(d.score === 0, `${d.id}: score=0 when all zeros`);
+    assert(d.pct === 0, `${d.id}: pct=0 when all zeros`);
+  });
+
+  const maxResults = buildDimensionResults(allMax);
+  maxResults.forEach(d => {
+    assert(d.score === 8, `${d.id}: score=8 at max`);
+    assert(d.pct === 100, `${d.id}: pct=100 at max`);
+  });
+
+  const mixedResults = buildDimensionResults(mixed);
+  assertEqual(mixedResults.find(d => d.id === "visibility").pct, 50, "4/8 → pct=50");
+  assertEqual(mixedResults.find(d => d.id === "proof").pct, 38, "3/8 → pct=38 (arrondi)");
+  assertEqual(mixedResults.find(d => d.id === "business").pct, 63, "5/8 → pct=63 (arrondi)");
+
+  const first = buildDimensionResults(allMax)[0];
+  assert(first.id === "visibility" && first.name === "Visibilité de ton impact" && first.shortName === "Visibilité", "Métadonnées dimension préservées");
 });
 
 describe("PERSONA SCENARIOS (Karim/Sophie)", () => {
