@@ -8,7 +8,7 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "test": "node src/sm-survival-score.test.js"
+    "test": "node src/sm-survival-score.test.js && node api/subscribe.test.js"
   },
   "dependencies": {
     "react": "^18.3.1",
