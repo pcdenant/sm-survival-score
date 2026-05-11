@@ -76,8 +76,8 @@ function computeGlobalScore(dimScores) {
 }
 
 function getCategory(pct) {
-  if (pct < 40) return { key: "vulnerable", label: "Vulnérable", color: "#ef4444" };
-  if (pct < 70) return { key: "stable", label: "Stable", color: "#f59e0b" };
+  if (pct < 45) return { key: "vulnerable", label: "Vulnérable", color: "#ef4444" };
+  if (pct < 75) return { key: "stable", label: "Stable", color: "#f59e0b" };
   return { key: "irreplaceable", label: "Irremplaçable", color: "#22c55e" };
 }
 
@@ -240,9 +240,9 @@ describe("CATEGORY BOUNDARIES", () => {
   // Exact boundaries
   assertEqual(getCategory(0).key, "vulnerable", "0% = vulnerable");
   assertEqual(getCategory(39).key, "vulnerable", "39% = vulnerable");
-  assertEqual(getCategory(40).key, "stable", "40% = stable (boundary)");
+  assertEqual(getCategory(45).key, "stable", "45% = stable (boundary)");
   assertEqual(getCategory(69).key, "stable", "69% = stable");
-  assertEqual(getCategory(70).key, "irreplaceable", "70% = irreplaceable (boundary)");
+  assertEqual(getCategory(75).key, "irreplaceable", "75% = irreplaceable (boundary)");
   assertEqual(getCategory(100).key, "irreplaceable", "100% = irreplaceable");
 
   // Labels in French
