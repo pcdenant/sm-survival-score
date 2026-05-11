@@ -458,6 +458,9 @@ describe("WORDING INTEGRITY v1.2 — strings applied", () => {
     "Il décrirait ton rôle — facilitation, cérémonies Scrum — sans l'accrocher à aucun résultat",
     "On mesurerait une perte concrète — une livraison ralentie, un risque non géré",
     "On sentirait un vide, mais personne ne pourrait le chiffrer",
+    // Q20 fix
+    "Si ton poste disparaissait demain, quelle serait la réaction dans ton organisation ?",
+    "Ça passerait probablement inaperçu — quelqu'un absorberait le rôle rapidement",
   ];
 
   expected.forEach(str => {
@@ -494,6 +497,9 @@ describe("WORDING INTEGRITY v1.2 — old strings removed", () => {
     "« C'est notre Scrum Master, il gère les cérémonies Scrum »",
     "Faible — ma valeur est démontrée",
     "Moyen — ça dépendrait du contexte",
+    // Q20 fix
+    "Si ton entreprise annonçait une réduction de coûts demain, comment tu classerais le risque pour ton poste ?",
+    "Élevé — je serais probablement sur la liste",
   ];
 
   removed.forEach(str => {
