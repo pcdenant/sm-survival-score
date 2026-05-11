@@ -127,6 +127,7 @@ Tracking anonyme via `navigator.sendBeacon` vers un Google Apps Script déployé
 Événements trackés :
 - `quiz_started`
 - `quiz_completed` (avec score, catégorie, dimension la plus faible, scores par dimension)
+- `quiz_abandoned` (avec index de question, dimension, nombre de réponses données)
 - `diagnostics_unlocked`
 
 ---

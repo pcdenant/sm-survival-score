@@ -7,6 +7,17 @@ Versionning basé sur [Semantic Versioning](https://semver.org/lang/fr/).
 
 ---
 
+## [1.1.0] — 2026-05-11
+
+### Modifié
+- **Wording v1.2** — Reformulation du texte de 14 questions et options pour plus de clarté et d'impact (Q1, Q2, Q3, Q4, Q6, Q7, Q8, Q9, Q12, Q13, Q14, Q15, Q17, Q20). Aucun changement de scoring ni de logique de calcul.
+- **Q20** — Question et option score 0 réécrites pour aligner l'angle éditorial sur l'impact de l'absence du SM, cohérent avec les options score 2 et 1.
+
+### Tests
+- Nouveau bloc `WORDING INTEGRITY v1.2` dans la suite de tests : vérifie la présence des strings finales et l'absence des anciennes pour les 14 questions modifiées.
+
+---
+
 ## [1.0.0] — 2025-05-10
 
 ### Ajouté
