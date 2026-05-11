@@ -1,13 +1,18 @@
 /**
  * SM Survival Score — Test Suite
- * 
+ *
  * Tests the scoring utilities, data integrity, and edge cases.
  * Run in any JS environment (Node, browser console, or test runner).
- * 
+ *
  * Usage:
  *   node sm-survival-score.test.js
  *   OR import and call runAllTests()
  */
+
+import { readFileSync } from "fs";
+import { join, dirname } from "path";
+import { fileURLToPath } from "url";
+const __dirname = dirname(fileURLToPath(import.meta.url));
 
 // ============================================================
 // Import scoring utilities (inline for portability)
@@ -417,6 +422,49 @@ describe("buildAbandonPayload", () => {
   // Out-of-bounds index returns null dimension
   const pOob = buildAbandonPayload(SCREEN.QUIZ, 99, emptyAnswers);
   assertEqual(pOob.dimension, null, "dimension is null for out-of-bounds index");
+});
+
+// ============================================================
+// WORDING INTEGRITY v1.2
+// Reads sm-survival-score.jsx as raw text and checks exact strings.
+// ============================================================
+
+describe("WORDING INTEGRITY v1.2 — strings applied", () => {
+  const src = readFileSync(join(__dirname, "sm-survival-score.jsx"), "utf8");
+
+  // "After" strings that must be present
+  const expected = [
+    "Ces trente derniers jours, as-tu communiqué un résultat chiffré à ton manager ?",
+    "J'ai communiqué des résultats, mais rien de chiffré",
+    "En dehors des réunions, ton manager pourrait citer de mémoire une contribution concrète de ta part ce trimestre ?",
+    "Oui, j'ai au moins un allié qui tient à moi — pas juste au rôle",
+    "Je l'utilise pour diagnostiquer ce qui bloque — et décider quoi faire",
+    "Pourrais-tu montrer à ton manager un avant/après chiffré qui prouve l'impact d'une de tes actions ?",
+    "Rarement — j'apprends la décision en même temps que tout le monde",
+  ];
+
+  expected.forEach(str => {
+    assert(src.includes(str), `PRESENT: "${str.slice(0, 60)}..."`);
+  });
+});
+
+describe("WORDING INTEGRITY v1.2 — old strings removed", () => {
+  const src = readFileSync(join(__dirname, "sm-survival-score.jsx"), "utf8");
+
+  // "Before" strings that must no longer appear
+  const removed = [
+    "Dans le dernier mois, as-tu communiqué à ton manager un résultat visible et chiffré de tes actions en tant que SM ?",
+    "J'ai communiqué des choses, mais rien de chiffré",
+    "Mis à part la facilitation des réunions, ton manager pourrait citer de mémoire une contribution concrète que tu as faite ce trimestre ?",
+    "Oui, j'ai au moins un allié qui tient à moi spécifiquement",
+    "J'en tire des signaux pour suivre la santé de mon équipe et agir",
+    "Pourrais-tu montrer à ton manager un avant/après chiffré qui prouve qu'une de tes actions a amélioré quelque chose ?",
+    "Jamais, je suis mis devant le fait accompli",
+  ];
+
+  removed.forEach(str => {
+    assert(!src.includes(str), `REMOVED: "${str.slice(0, 60)}..."`);
+  });
 });
 
 // ============================================================
