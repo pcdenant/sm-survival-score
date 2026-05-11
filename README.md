@@ -108,9 +108,9 @@ Chaque dimension est notée sur 8. Le score global est sur 100.
 
 | Score | Catégorie |
 |---|---|
-| 0 – 39 | Vulnérable |
-| 40 – 69 | Stable |
-| 70 – 100 | Irremplaçable |
+| 0 – 44 | Vulnérable |
+| 45 – 74 | Stable |
+| 75 – 100 | Irremplaçable |
 
 ---
 

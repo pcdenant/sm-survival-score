@@ -7,6 +7,13 @@ Versionning basé sur [Semantic Versioning](https://semver.org/lang/fr/).
 
 ---
 
+## [1.2.0] — 2026-05-11
+
+### Modifié
+- **Seuils de scoring** — ajustement des frontières de catégories : Vulnérable 0–44% (était 0–39%), Stable 45–74% (était 40–69%), Irremplaçable 75–100% (était 70–100%).
+
+---
+
 ## [1.1.0] — 2026-05-11
 
 ### Modifié
