@@ -508,6 +508,49 @@ describe("WORDING INTEGRITY v1.2 — old strings removed", () => {
 });
 
 // ============================================================
+// WORDING INTEGRITY v1.3 (textes globaux — SPEC P1)
+// ============================================================
+
+describe("WORDING INTEGRITY v1.3 — global texts applied", () => {
+  const src = readFileSync(join(__dirname, "sm-survival-score.jsx"), "utf8");
+
+  const expected = [
+    "La question n'est pas si tu mérites ce poste.",
+    "Avec ce score, probablement non.",
+    "Les rôles agile qui ont été coupés chez Capital One",
+    "La matière est souvent là. C'est la traduction qui manque.",
+    "Sauf que « stable » a une durée de validité.",
+    "quelqu'un doit défendre ton poste en 5 minutes",
+    "La plupart des SMs qui font ce test n'arrivent pas ici.",
+    "Ce qui te rend irremplaçable aujourd'hui ne te le reste pas automatiquement.",
+    "Le genre de trou qui ne se voit pas tant qu'on ne le cherche pas activement.",
+  ];
+
+  expected.forEach(str => {
+    assert(src.includes(str), `PRESENT: "${str.slice(0, 60)}..."`);
+  });
+});
+
+describe("WORDING INTEGRITY v1.3 — old global texts removed", () => {
+  const src = readFileSync(join(__dirname, "sm-survival-score.jsx"), "utf8");
+
+  const removed = [
+    "Soyons clairs. Si quelqu'un dans ta direction",
+    "Ton travail est invisible. Tes preuves n'existent pas.",
+    "les coupes chez Fidelity, les banques UK",
+    "Chaque zone de vulnérabilité ci-dessous peut se corriger.",
+    "Ton management sait à peu près ce que tu fais",
+    "Ton impact est visible, tes preuves existent",
+    "Tu tiens le coup. Mais tu as des angles morts.",
+    "Tu es bien positionné. Ne lâche rien.",
+  ];
+
+  removed.forEach(str => {
+    assert(!src.includes(str), `REMOVED: "${str.slice(0, 60)}..."`);
+  });
+});
+
+// ============================================================
 // RESULTS
 // ============================================================
 
