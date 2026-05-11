@@ -69,7 +69,7 @@ npm run build
 npm test
 ```
 
-La suite de tests vérifie la logique de scoring, les frontières de catégories, la validation email et les scénarios personas.
+La suite de tests vérifie la logique de scoring, les frontières de catégories, la validation email, les scénarios personas et l'intégrité du wording des questions.
 
 ---
 
