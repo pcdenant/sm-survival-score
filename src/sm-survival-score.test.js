@@ -425,15 +425,15 @@ describe("buildAbandonPayload", () => {
 });
 
 // ============================================================
-// WORDING INTEGRITY v1.2
+// WORDING INTEGRITY v1.2 (complete — all 14 questions)
 // Reads sm-survival-score.jsx as raw text and checks exact strings.
 // ============================================================
 
 describe("WORDING INTEGRITY v1.2 — strings applied", () => {
   const src = readFileSync(join(__dirname, "sm-survival-score.jsx"), "utf8");
 
-  // "After" strings that must be present
   const expected = [
+    // Batch 1 (PR #7)
     "Ces trente derniers jours, as-tu communiqué un résultat chiffré à ton manager ?",
     "J'ai communiqué des résultats, mais rien de chiffré",
     "En dehors des réunions, ton manager pourrait citer de mémoire une contribution concrète de ta part ce trimestre ?",
@@ -441,6 +441,23 @@ describe("WORDING INTEGRITY v1.2 — strings applied", () => {
     "Je l'utilise pour diagnostiquer ce qui bloque — et décider quoi faire",
     "Pourrais-tu montrer à ton manager un avant/après chiffré qui prouve l'impact d'une de tes actions ?",
     "Rarement — j'apprends la décision en même temps que tout le monde",
+    // Batch 2 (gap changes)
+    "J'ai une réponse précise — avec un chiffre ou un exemple concret derrière",
+    "Un chiffre ou un fait — j'aurais pu me défendre si on m'avait poussé",
+    "Une bonne raison, mais rien à montrer si on avait insisté",
+    "Risque, coût, délai, prédictibilité — avec des chiffres pour illustrer",
+    "Un mix : je traduis parfois en termes business, parfois je reste en mode Scrum",
+    "Le vocabulaire de mon rôle (sprint, backlog, rétro) — je traduis rarement",
+    "L'équipe tourne — et je peux expliquer comment j'ai construit ça",
+    "Ça ralentit. Certaines choses tombent",
+    "Les événements sautent ou il faut un back-up",
+    "Oui — et cette personne l'a déjà fait sans moi",
+    "J'ai commencé, mais c'est pas encore ancré",
+    "Oui, c'est la norme — j'ai activement construit ça",
+    "Il citerait des résultats concrets ou des risques que tu as évités",
+    "Il décrirait ton rôle — facilitation, cérémonies Scrum — sans l'accrocher à aucun résultat",
+    "On mesurerait une perte concrète — une livraison ralentie, un risque non géré",
+    "On sentirait un vide, mais personne ne pourrait le chiffrer",
   ];
 
   expected.forEach(str => {
@@ -451,8 +468,8 @@ describe("WORDING INTEGRITY v1.2 — strings applied", () => {
 describe("WORDING INTEGRITY v1.2 — old strings removed", () => {
   const src = readFileSync(join(__dirname, "sm-survival-score.jsx"), "utf8");
 
-  // "Before" strings that must no longer appear
   const removed = [
+    // Batch 1 (PR #7)
     "Dans le dernier mois, as-tu communiqué à ton manager un résultat visible et chiffré de tes actions en tant que SM ?",
     "J'ai communiqué des choses, mais rien de chiffré",
     "Mis à part la facilitation des réunions, ton manager pourrait citer de mémoire une contribution concrète que tu as faite ce trimestre ?",
@@ -460,6 +477,23 @@ describe("WORDING INTEGRITY v1.2 — old strings removed", () => {
     "J'en tire des signaux pour suivre la santé de mon équipe et agir",
     "Pourrais-tu montrer à ton manager un avant/après chiffré qui prouve qu'une de tes actions a amélioré quelque chose ?",
     "Jamais, je suis mis devant le fait accompli",
+    // Batch 2 (gap changes)
+    "J'ai une réponse claire et concrète",
+    "Des données ou des faits observables",
+    "Mon expérience et mon instinct",
+    "Risque, coût, délai, prédictibilité\"",
+    "Un mix de Scrum et de business, selon le contexte",
+    "Vélocité, sprint goal, impediments, backlog",
+    "L'équipe tourne normalement",
+    "Ça ralentit, certaines choses tombent",
+    "C'est le chaos, les événements sautent",
+    "L'équipe s'en charge elle-même",
+    "Un collègue prend le relais",
+    "Oui, c'est la norme\"",
+    "En parlant de résultats ou de performance d'équipe",
+    "« C'est notre Scrum Master, il gère les cérémonies Scrum »",
+    "Faible — ma valeur est démontrée",
+    "Moyen — ça dépendrait du contexte",
   ];
 
   removed.forEach(str => {
