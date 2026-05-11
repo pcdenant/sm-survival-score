@@ -83,27 +83,26 @@ const QUESTIONS = [
 
 const GLOBAL_RESULTS = {
   vulnerable: {
-    title: "Ton rôle est en danger.",
     paragraphs: [
-      "Soyons clairs. Si quelqu'un dans ta direction demandait demain « pourquoi on paie un Scrum Master ? », personne n'aurait de réponse solide. Ton travail est invisible. Tes preuves n'existent pas. Et tu parles un langage que ton management ne comprend pas.",
-      "Les rôles agile éliminés chez Capital One, les coupes chez Fidelity, les banques UK ? Même pattern. Le travail était reconnu. Les postes ont sauté quand même. Parce que l'impact était invisible au moment de la décision.",
-      "Chaque zone de vulnérabilité ci-dessous peut se corriger. Pas en 6 mois. Cette semaine. Commence par tes dimensions les plus faibles.",
+      "La question n'est pas si tu mérites ce poste. La question, c'est si quelqu'un dans ta direction pourrait défendre ce poste si on le lui demandait demain.",
+      "Avec ce score, probablement non.",
+      "Les rôles agile qui ont été coupés chez Capital One n'étaient pas forcément moins bons que leurs collègues. Ils étaient moins défendables. Ce n'est pas la même chose.",
+      "La matière est souvent là. C'est la traduction qui manque.",
+      "Tes diagnostics ci-dessous te montrent où tu es exposé.",
     ],
   },
   stable: {
-    title: "Tu tiens le coup. Mais tu as des angles morts.",
     paragraphs: [
-      "Tu n'es pas en danger immédiat. Ton management sait à peu près ce que tu fais, et tu n'es pas le premier nom sur la liste. Sauf que « à peu près » ne protège de rien quand une réorg arrive.",
-      "Ton score montre des bases solides dans certaines dimensions et des trous dans d'autres. Ces trous, c'est là que le risque se planque. Il suffit qu'un VP pose la mauvaise question au mauvais moment, et un SM stable bascule en vulnérable.",
-      "Regarde le radar. Tes zones fortes te protègent. Tes zones faibles, c'est ton chantier des 30 prochains jours.",
+      "Tu n'es pas en danger immédiat. Ton profil est assez solide pour traverser les décisions ordinaires.",
+      "Sauf que « stable » a une durée de validité. Quand une réorg arrive ou qu'une direction change, quelqu'un doit défendre ton poste en 5 minutes devant quelqu'un qui ne te connaît pas.",
+      "Ton score dit qu'il y a des endroits où cette défense ne tiendrait pas. Tes diagnostics ci-dessous te montrent lesquels.",
     ],
   },
   irreplaceable: {
-    title: "Tu es bien positionné. Ne lâche rien.",
     paragraphs: [
-      "Ton impact est visible, tes preuves existent, et ton management te voit comme un levier. Pas comme un coût. La plupart des SM qui font ce test n'arrivent pas ici.",
-      "Attention quand même. Irremplaçable aujourd'hui ne veut pas dire blindé demain. La visibilité, ça s'entretient chaque trimestre. Les preuves d'il y a six mois ne te protègent pas de la prochaine réorg.",
-      "Regarde tes dimensions. Même avec un bon score global, une seule zone faible peut devenir un angle mort.",
+      "La plupart des SMs qui font ce test n'arrivent pas ici. Ce score dit que tu as construit quelque chose de difficile à couper.",
+      "Ça demande de l'entretien. Ce qui te rend irremplaçable aujourd'hui ne te le reste pas automatiquement. Les contextes changent, les directions changent.",
+      "Regarde quand même le détail. Il y a souvent un angle mort, même à ce niveau. Le genre de trou qui ne se voit pas tant qu'on ne le cherche pas activement.",
     ],
   },
 };
@@ -544,7 +543,6 @@ function ResultScreen({ answers, onRestart }) {
       <main style={{ maxWidth: 600, margin: "0 auto", padding: "32px 16px 60px" }}>
         {/* Global text card */}
         <BentoCard style={{ marginBottom: 16, animation: "fadeUp 0.4s ease-out 0.2s both" }}>
-          <h2 style={{ fontSize: "clamp(20px, 5vw, 26px)", fontWeight: 900, color: T.text, marginBottom: 16, lineHeight: 1.2, letterSpacing: "-0.02em" }}>{globalResult.title}</h2>
           {globalResult.paragraphs.map((p, i) => <p key={i} style={{ fontSize: 15, lineHeight: 1.75, color: T.textMid, marginBottom: 12 }}>{p}</p>)}
         </BentoCard>
 
