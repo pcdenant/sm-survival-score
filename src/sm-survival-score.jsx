@@ -115,7 +115,7 @@ const GLOBAL_RESULTS = {
 
 const MAX_SCORE = 40;
 const MAX_DIM_SCORE = 8;
-const SCORE_THRESHOLDS = { low: 40, mid: 70 };
+const SCORE_THRESHOLDS = { low: 45, mid: 75 };
 const QUESTIONS_PER_DIM = 4;
 const SCREEN = { LANDING: "landing", QUIZ: "quiz", RESULT: "result" };
 
