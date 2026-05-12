@@ -593,7 +593,11 @@ function ResultScreen({ answers, onRestart }) {
   const category = useMemo(() => getCategory(globalScore), [globalScore]);
   const globalResult = useMemo(() => GLOBAL_RESULTS[category.key], [category.key]);
   const dimensionResults = useMemo(() => buildDimensionResults(dimensionScores), [dimensionScores]);
-  const dimensionsSortedByScore = useMemo(() => [...dimensionResults].sort((a, b) => a.score - b.score), [dimensionResults]);
+  const dimensionScoresPct = useMemo(() => Object.fromEntries(dimensionResults.map(d => [d.id, d.pct])), [dimensionResults]);
+  const priorityDimId = useMemo(() => getPriorityDimension(dimensionScoresPct), [dimensionScoresPct]);
+  const orderedDimIds = useMemo(() => getOrderedDimensions(dimensionScoresPct), [dimensionScoresPct]);
+  const orderedDimResults = useMemo(() => orderedDimIds.map(id => dimensionResults.find(d => d.id === id)), [orderedDimIds, dimensionResults]);
+  const priorityDimResult = useMemo(() => dimensionResults.find(d => d.id === priorityDimId), [priorityDimId, dimensionResults]);
   const radarData = useMemo(() => dimensionResults.map(dim => ({ dimension: dim.shortName, score: dim.score, fullMark: MAX_DIM_SCORE })), [dimensionResults]);
 
   // Track quiz completion (once)
@@ -601,7 +605,7 @@ function ResultScreen({ answers, onRestart }) {
     trackEvent("quiz_completed", {
       score_global: globalScore,
       category: category.label,
-      weakest_dim: dimensionsSortedByScore[0]?.shortName || "",
+      priority_dim: priorityDimResult?.shortName || "",
       visibility: dimensionScores.visibility,
       proof: dimensionScores.proof,
       business: dimensionScores.business,
@@ -677,16 +681,19 @@ function ResultScreen({ answers, onRestart }) {
           </BentoCard>
         </div>
 
+        {/* Signal de priorité — au-dessus des diagnostics */}
+        <PrioritySignal priorityDimId={priorityDimId} />
+
         {/* Diagnostics */}
         <section aria-label="Diagnostics détaillés" style={{ display: "flex", flexDirection: "column", gap: 16, marginBottom: 16 }}>
           <h3 style={{ fontSize: 13, fontWeight: 700, color: T.vert, textTransform: "uppercase", letterSpacing: "0.06em", paddingLeft: 4 }}>Diagnostic par dimension</h3>
-          <DiagnosticCard dimension={dimensionsSortedByScore[0]} index={0} />
+          <DiagnosticCard dimension={priorityDimResult} index={0} />
           {unlocked ? (
-            dimensionsSortedByScore.slice(1).map((dim, i) => <DiagnosticCard key={dim.id} dimension={dim} index={i + 1} />)
+            orderedDimResults.filter(d => d.id !== priorityDimId).map((dim, i) => <DiagnosticCard key={dim.id} dimension={dim} index={i + 1} />)
           ) : (
             <>
               <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                {dimensionsSortedByScore.slice(1).map(dim => <LockedDiagnosticCard key={dim.id} dimension={dim} onUnlockClick={handleScrollToUnlock} />)}
+                {orderedDimResults.filter(d => d.id !== priorityDimId).map(dim => <LockedDiagnosticCard key={dim.id} dimension={dim} onUnlockClick={handleScrollToUnlock} />)}
               </div>
               <BentoCard id="unlock-form" style={{ background: T.vert, border: "none", textAlign: "center", padding: "36px 28px" }}>
                 <p style={{ fontSize: 18, fontWeight: 700, color: T.white, marginBottom: 8 }}>Débloque tes 4 autres diagnostics</p>
