@@ -657,6 +657,31 @@ describe("getOrderedDimensions", () => {
 });
 
 // ============================================================
+// WORDING INTEGRITY — PrioritySignal texts
+// ============================================================
+
+describe("WORDING INTEGRITY — PrioritySignal texts applied", () => {
+  const src = readFileSync(join(__dirname, "sm-survival-score.jsx"), "utf8");
+
+  const expected = [
+    "Ton angle mort le plus urgent : ce que ton management retient de toi.",
+    "Tant que cette dimension reste faible, le reste ne protège pas ton poste.",
+    "Ton angle mort le plus urgent : comment tu es perçu.",
+    "la perception de ton rôle s'est figée à un niveau trop bas.",
+    "Ton angle mort le plus urgent : tes preuves.",
+    "Ce trou-là, il se referme. Mais pas tout seul.",
+    "Ton angle mort le plus urgent : ton langage.",
+    "C'est la dernière étape, et souvent la plus manquée.",
+    "Ton angle mort le plus urgent : l'autonomie de ton équipe.",
+    "perçu comme une dépendance, pas comme une valeur.",
+  ];
+
+  expected.forEach(str => {
+    assert(src.includes(str), `PRESENT: "${str.slice(0, 70)}"`);
+  });
+});
+
+// ============================================================
 // RESULTS
 // ============================================================
 
