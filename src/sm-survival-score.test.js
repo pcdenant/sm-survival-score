@@ -58,6 +58,41 @@ const QUESTIONS_STRUCTURE = [
 
 // ---- Scoring functions (mirrored from component) ----
 
+// ─── Algorithme pondéré (miroir de sm-survival-score.jsx) ──────────────────
+
+const DIMENSION_WEIGHTS = {
+  visibility: 5,
+  strategic: 4,
+  proof: 3,
+  business: 2,
+  autonomy: 1,
+};
+
+const DIMENSIONS_BY_WEIGHT_DESC = ['visibility', 'strategic', 'proof', 'business', 'autonomy'];
+
+function computePriorityScore(scorePct, dimId) {
+  return (1 - scorePct / 100) * DIMENSION_WEIGHTS[dimId];
+}
+
+function getPriorityDimension(dimensionScoresPct) {
+  let maxPs = -1;
+  let priorityId = null;
+  for (const id of DIMENSIONS_BY_WEIGHT_DESC) {
+    const ps = computePriorityScore(dimensionScoresPct[id], id);
+    if (ps > maxPs) { maxPs = ps; priorityId = id; }
+  }
+  return priorityId;
+}
+
+function getOrderedDimensions(dimensionScoresPct) {
+  return [...DIMENSIONS_BY_WEIGHT_DESC]
+    .map(id => ({ id, ps: computePriorityScore(dimensionScoresPct[id], id) }))
+    .sort((a, b) => b.ps !== a.ps ? b.ps - a.ps : DIMENSION_WEIGHTS[b.id] - DIMENSION_WEIGHTS[a.id])
+    .map(({ id }) => id);
+}
+
+// ───────────────────────────────────────────────────────────────────────────
+
 function computeDimensionScores(answers, questions = QUESTIONS_STRUCTURE, dimensions = DIMENSIONS) {
   const scores = {};
   dimensions.forEach(d => (scores[d.id] = 0));
@@ -548,6 +583,77 @@ describe("WORDING INTEGRITY v1.3 — old global texts removed", () => {
   removed.forEach(str => {
     assert(!src.includes(str), `REMOVED: "${str.slice(0, 60)}..."`);
   });
+});
+
+// ============================================================
+// ALGORITHME PONDÉRÉ — getPriorityDimension
+// ============================================================
+
+describe("getPriorityDimension", () => {
+  // Cas clé de la SPEC : autonomy=0% ne doit pas gagner face à visibility=40%
+  assertEqual(
+    getPriorityDimension({ visibility: 40, proof: 60, business: 70, autonomy: 0, strategic: 60 }),
+    "visibility",
+    "autonomy=0%, visibility=40% → visibility gagne (poids survie > score brut)"
+  );
+
+  assertEqual(
+    getPriorityDimension({ visibility: 0, proof: 0, business: 0, autonomy: 0, strategic: 0 }),
+    "visibility",
+    "tous à 0% → visibility (poids maximal)"
+  );
+
+  assertEqual(
+    getPriorityDimension({ visibility: 100, proof: 75, business: 80, autonomy: 50, strategic: 0 }),
+    "strategic",
+    "visibility=100%, strategic=0% → strategic"
+  );
+
+  // Tie-break : visibility=50% → ps=(0.5)×5=2.5 | strategic=37.5% → ps=(0.625)×4=2.5
+  assertEqual(
+    getPriorityDimension({ visibility: 50, proof: 80, business: 90, autonomy: 80, strategic: 37.5 }),
+    "visibility",
+    "tie-break : ps égal à 2.5 pour visibility et strategic → visibility gagne (poids 5 > 4)"
+  );
+
+  // Profil avancé : visibility/strategic forts → proof exposé
+  // visibility=80%: ps=(0.2)×5=1.0 | strategic=75%: ps=(0.25)×4=1.0 | proof=20%: ps=(0.8)×3=2.4
+  assertEqual(
+    getPriorityDimension({ visibility: 80, proof: 20, business: 75, autonomy: 0, strategic: 75 }),
+    "proof",
+    "profil avancé (visibility/strategic forts, proof=20%) → proof prioritaire"
+  );
+
+  assertEqual(
+    getPriorityDimension({ visibility: 100, proof: 100, business: 100, autonomy: 100, strategic: 100 }),
+    "visibility",
+    "tous à 100% → visibility (tous ps=0, visibility en tête par ordre de parcours)"
+  );
+});
+
+// ============================================================
+// ALGORITHME PONDÉRÉ — getOrderedDimensions
+// ============================================================
+
+describe("getOrderedDimensions", () => {
+  assert(
+    getOrderedDimensions({ visibility: 50, proof: 50, business: 50, autonomy: 50, strategic: 50 }).length === 5,
+    "retourne 5 dimensions"
+  );
+
+  const scores1 = { visibility: 40, proof: 60, business: 70, autonomy: 0, strategic: 55 };
+  assert(
+    getOrderedDimensions(scores1)[0] === getPriorityDimension(scores1),
+    "premier élément = getPriorityDimension()"
+  );
+
+  // visibility/strategic/proof/business=100% → ps=0. autonomy=0% → ps=(1)×1=1.
+  // Ordre attendu : autonomy(ps=1), puis tie-break décroissant par poids parmi ps=0 :
+  // visibility(w=5), strategic(w=4), proof(w=3), business(w=2)
+  const scores2 = { visibility: 100, proof: 100, business: 100, autonomy: 0, strategic: 100 };
+  const ordered2 = getOrderedDimensions(scores2);
+  assertEqual(ordered2[0], "autonomy", "autonomy seule dimension non résolue → première");
+  assertEqual(ordered2[4], "business", "tie-break en bas : poids le plus faible (business=2) → dernier");
 });
 
 // ============================================================

@@ -155,6 +155,62 @@ export function isValidEmail(email) {
 }
 
 // ============================================================
+// SCORING — Algorithme pondéré (Signal de priorité dimension)
+// ============================================================
+
+/**
+ * Poids de survie par dimension.
+ * Visibility = condition nécessaire de tout (invisible = premier coupé).
+ * Strategic = dimension la plus prédictive du risque de licenciement.
+ */
+export const DIMENSION_WEIGHTS = {
+  visibility: 5,
+  strategic: 4,
+  proof: 3,
+  business: 2,
+  autonomy: 1,
+};
+
+// Ordre fixe décroissant par poids — garantit le tie-break
+const DIMENSIONS_BY_WEIGHT_DESC = ['visibility', 'strategic', 'proof', 'business', 'autonomy'];
+
+function computePriorityScore(scorePct, dimId) {
+  return (1 - scorePct / 100) * DIMENSION_WEIGHTS[dimId];
+}
+
+/**
+ * Retourne l'ID de la dimension prioritaire selon l'algorithme pondéré.
+ * priorityScore = (1 − score_normalized) × weight
+ *
+ * @param {{ visibility: number, proof: number, business: number, autonomy: number, strategic: number }} dimensionScoresPct
+ *   Scores en % (0–100) — utiliser le champ `.pct` de buildDimensionResults
+ * @returns {string} ID de la dimension prioritaire
+ */
+export function getPriorityDimension(dimensionScoresPct) {
+  let maxPs = -1;
+  let priorityId = null;
+  for (const id of DIMENSIONS_BY_WEIGHT_DESC) {
+    const ps = computePriorityScore(dimensionScoresPct[id], id);
+    if (ps > maxPs) { maxPs = ps; priorityId = id; }
+  }
+  return priorityId;
+}
+
+/**
+ * Retourne les 5 IDs de dimension ordonnés du plus au moins critique.
+ * Utilisé pour l'ordre d'affichage des diagnostics post-gate.
+ *
+ * @param {{ visibility: number, proof: number, business: number, autonomy: number, strategic: number }} dimensionScoresPct
+ * @returns {string[]}
+ */
+export function getOrderedDimensions(dimensionScoresPct) {
+  return [...DIMENSIONS_BY_WEIGHT_DESC]
+    .map(id => ({ id, ps: computePriorityScore(dimensionScoresPct[id], id) }))
+    .sort((a, b) => b.ps !== a.ps ? b.ps - a.ps : DIMENSION_WEIGHTS[b.id] - DIMENSION_WEIGHTS[a.id])
+    .map(({ id }) => id);
+}
+
+// ============================================================
 // ANALYTICS — anonymous webhook to Google Sheet
 // ============================================================
 
