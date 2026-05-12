@@ -394,6 +394,44 @@ function ProgressBar({ currentIndex }) {
 }
 
 // ============================================================
+// PRIORITY SIGNAL — textes éditoriaux par dimension
+// ============================================================
+
+const SIGNAL_TEXTS = {
+  visibility: {
+    title: 'Ton angle mort le plus urgent : ce que ton management retient de toi.',
+    body: "Tant que cette dimension reste faible, le reste ne protège pas ton poste. C'est la condition de base.",
+  },
+  strategic: {
+    title: 'Ton angle mort le plus urgent : comment tu es perçu.',
+    body: "C'est la dimension la plus liée aux décisions de licenciement. Pas parce que tu travailles mal. Parce que la perception de ton rôle s'est figée à un niveau trop bas.",
+  },
+  proof: {
+    title: 'Ton angle mort le plus urgent : tes preuves.',
+    body: "Tu peux être visible et quand même n'avoir rien à montrer quand la question arrive. Ce trou-là, il se referme. Mais pas tout seul.",
+  },
+  business: {
+    title: 'Ton angle mort le plus urgent : ton langage.',
+    body: "Ton travail existe. Le problème, c'est qu'il n'est pas traduit dans un format que la direction comprend. C'est la dernière étape, et souvent la plus manquée.",
+  },
+  autonomy: {
+    title: "Ton angle mort le plus urgent : l'autonomie de ton équipe.",
+    body: "Un SM dont l'équipe ne peut pas fonctionner sans lui est perçu comme une dépendance, pas comme une valeur. Ça change la lecture de ton rôle en comité de direction.",
+  },
+};
+
+function PrioritySignal({ priorityDimId }) {
+  const signal = SIGNAL_TEXTS[priorityDimId];
+  if (!signal) return null;
+  return (
+    <div style={{ backgroundColor: '#1a1a2e', borderLeft: '3px solid #FFF200', borderRadius: 4, padding: '14px 18px', margin: '20px 0 24px 0' }}>
+      <p style={{ fontWeight: 600, fontSize: '0.95rem', color: '#FFF200', margin: '0 0 6px 0', fontFamily: T.f }}>{signal.title}</p>
+      <p style={{ fontSize: '0.9rem', color: '#e8e8e8', margin: 0, lineHeight: 1.5, fontFamily: T.f }}>{signal.body}</p>
+    </div>
+  );
+}
+
+// ============================================================
 // HOOKS
 // ============================================================
 
