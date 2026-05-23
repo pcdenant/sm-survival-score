@@ -551,6 +551,116 @@ describe("WORDING INTEGRITY v1.3 — old global texts removed", () => {
 });
 
 // ============================================================
+// STORAGE UTILITIES
+// ============================================================
+
+// Mirror of storage functions from sm-survival-score.jsx for Node.js testing
+const STORAGE_KEY_TEST = "sm-survival-score-state";
+const VALID_SCREENS_TEST = ["landing", "quiz", "result"];
+const QUESTIONS_COUNT_TEST = 20;
+
+function isValidQuizStateTest(state) {
+  if (!state || typeof state !== "object") return false;
+  if (!Array.isArray(state.answers) || state.answers.length !== QUESTIONS_COUNT_TEST) return false;
+  if (!state.answers.every(a => a === null || a === 0 || a === 1 || a === 2)) return false;
+  if (typeof state.currentQ !== "number" || state.currentQ < 0 || state.currentQ >= QUESTIONS_COUNT_TEST) return false;
+  if (!VALID_SCREENS_TEST.includes(state.screen)) return false;
+  return true;
+}
+
+function saveQuizStateTest(state) {
+  try { localStorage.setItem(STORAGE_KEY_TEST, JSON.stringify(state)); } catch (_) {}
+}
+
+function loadQuizStateTest() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY_TEST);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (!isValidQuizStateTest(parsed)) return null;
+    return parsed;
+  } catch (_) { return null; }
+}
+
+function clearQuizStateTest() {
+  try { localStorage.removeItem(STORAGE_KEY_TEST); } catch (_) {}
+}
+
+function makeMockLocalStorage() {
+  const store = {};
+  return {
+    getItem: (k) => store[k] ?? null,
+    setItem: (k, v) => { store[k] = v; },
+    removeItem: (k) => { delete store[k]; },
+  };
+}
+
+const freshAnswers = () => Array(QUESTIONS_COUNT_TEST).fill(null);
+const partialAnswers = () => { const a = freshAnswers(); a[0] = 0; a[1] = 2; a[2] = 1; a[3] = 0; a[4] = 1; return a; };
+
+describe("STORAGE UTILITIES", () => {
+  // Test 1: returns null when storage is empty
+  global.localStorage = makeMockLocalStorage();
+  assert(loadQuizStateTest() === null, "loadQuizState returns null when storage empty");
+
+  // Test 2: round-trip — save then load returns identical state
+  const stateToSave = { answers: partialAnswers(), currentQ: 5, screen: "quiz" };
+  global.localStorage = makeMockLocalStorage();
+  saveQuizStateTest(stateToSave);
+  const loaded = loadQuizStateTest();
+  assertEqual(loaded, stateToSave, "round-trip: saveQuizState then loadQuizState returns identical state");
+
+  // Test 3: clearQuizState removes the key
+  global.localStorage = makeMockLocalStorage();
+  saveQuizStateTest({ answers: freshAnswers(), currentQ: 0, screen: "landing" });
+  clearQuizStateTest();
+  assert(loadQuizStateTest() === null, "clearQuizState removes stored state");
+
+  // Test 4: corrupted JSON is rejected
+  global.localStorage = makeMockLocalStorage();
+  global.localStorage.setItem(STORAGE_KEY_TEST, "not-valid-json{{{");
+  assert(loadQuizStateTest() === null, "loadQuizState returns null for corrupted JSON");
+
+  // Test 5: wrong answers length is rejected
+  global.localStorage = makeMockLocalStorage();
+  const tooShort = { answers: [0, 1, 2], currentQ: 0, screen: "quiz" };
+  global.localStorage.setItem(STORAGE_KEY_TEST, JSON.stringify(tooShort));
+  assert(loadQuizStateTest() === null, "loadQuizState returns null when answers array has wrong length");
+
+  // Test 6: invalid answer value (3) is rejected
+  global.localStorage = makeMockLocalStorage();
+  const badAnswers = freshAnswers(); badAnswers[0] = 3;
+  const badAnswerState = { answers: badAnswers, currentQ: 0, screen: "quiz" };
+  global.localStorage.setItem(STORAGE_KEY_TEST, JSON.stringify(badAnswerState));
+  assert(loadQuizStateTest() === null, "loadQuizState returns null when answers contain invalid value (3)");
+
+  // Test 7: out-of-bounds currentQ is rejected
+  global.localStorage = makeMockLocalStorage();
+  const badQ = { answers: freshAnswers(), currentQ: 99, screen: "quiz" };
+  global.localStorage.setItem(STORAGE_KEY_TEST, JSON.stringify(badQ));
+  assert(loadQuizStateTest() === null, "loadQuizState returns null when currentQ is out of bounds");
+
+  // Test 8: invalid screen value is rejected
+  global.localStorage = makeMockLocalStorage();
+  const badScreen = { answers: freshAnswers(), currentQ: 0, screen: "unknown" };
+  global.localStorage.setItem(STORAGE_KEY_TEST, JSON.stringify(badScreen));
+  assert(loadQuizStateTest() === null, "loadQuizState returns null when screen value is invalid");
+
+  // Test 9: saveQuizState does not throw when localStorage throws
+  global.localStorage = { setItem: () => { throw new Error("QuotaExceededError"); }, getItem: () => null, removeItem: () => {} };
+  let threw = false;
+  try { saveQuizStateTest({ answers: freshAnswers(), currentQ: 0, screen: "landing" }); } catch (_) { threw = true; }
+  assert(!threw, "saveQuizState does not throw when localStorage throws");
+
+  // Test 10: valid partial-progress state (quiz mid-way) is accepted
+  global.localStorage = makeMockLocalStorage();
+  const midState = { answers: partialAnswers(), currentQ: 5, screen: "quiz" };
+  saveQuizStateTest(midState);
+  const midLoaded = loadQuizStateTest();
+  assert(midLoaded !== null && midLoaded.currentQ === 5 && midLoaded.screen === "quiz", "loadQuizState correctly restores mid-quiz state");
+});
+
+// ============================================================
 // RESULTS
 // ============================================================
 

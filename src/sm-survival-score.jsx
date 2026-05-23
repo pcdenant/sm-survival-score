@@ -155,6 +155,39 @@ export function isValidEmail(email) {
 }
 
 // ============================================================
+// STORAGE UTILITIES — localStorage quiz persistence
+// ============================================================
+
+const STORAGE_KEY = "sm-survival-score-state";
+
+function isValidQuizState(state) {
+  if (!state || typeof state !== "object") return false;
+  if (!Array.isArray(state.answers) || state.answers.length !== QUESTIONS.length) return false;
+  if (!state.answers.every(a => a === null || a === 0 || a === 1 || a === 2)) return false;
+  if (typeof state.currentQ !== "number" || state.currentQ < 0 || state.currentQ >= QUESTIONS.length) return false;
+  if (![SCREEN.LANDING, SCREEN.QUIZ, SCREEN.RESULT].includes(state.screen)) return false;
+  return true;
+}
+
+export function saveQuizState(state) {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (_) {}
+}
+
+export function loadQuizState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (!isValidQuizState(parsed)) return null;
+    return parsed;
+  } catch (_) { return null; }
+}
+
+export function clearQuizState() {
+  try { localStorage.removeItem(STORAGE_KEY); } catch (_) {}
+}
+
+// ============================================================
 // ANALYTICS — anonymous webhook to Google Sheet
 // ============================================================
 
@@ -634,11 +667,19 @@ function ResultScreen({ answers, onRestart }) {
 // ============================================================
 
 export default function SMSurvivalScore() {
-  const [screen, setScreen] = useState(SCREEN.LANDING);
-  const [currentQ, setCurrentQ] = useState(0);
-  const [answers, setAnswers] = useState(() => Array(QUESTIONS.length).fill(null));
+  const [screen, setScreen] = useState(() => loadQuizState()?.screen ?? SCREEN.LANDING);
+  const [currentQ, setCurrentQ] = useState(() => loadQuizState()?.currentQ ?? 0);
+  const [answers, setAnswers] = useState(() => loadQuizState()?.answers ?? Array(QUESTIONS.length).fill(null));
 
   useEffect(() => { window.scrollTo(0, 0); }, [screen]);
+
+  useEffect(() => {
+    if (screen === SCREEN.LANDING && answers.every(a => a === null)) {
+      clearQuizState();
+    } else {
+      saveQuizState({ answers, currentQ, screen });
+    }
+  }, [answers, currentQ, screen]);
 
   useEffect(() => {
     const handleAbandon = () => {
@@ -664,7 +705,7 @@ export default function SMSurvivalScore() {
   const handleSelect = useCallback((i) => { setAnswers(prev => { const a = [...prev]; a[currentQ] = i; return a; }); }, [currentQ]);
   const handleNext = useCallback(() => { if (currentQ === QUESTIONS.length - 1) setScreen(SCREEN.RESULT); else setCurrentQ(p => p + 1); }, [currentQ]);
   const handlePrev = useCallback(() => { if (currentQ > 0) setCurrentQ(p => p - 1); }, [currentQ]);
-  const handleRestart = useCallback(() => { setAnswers(Array(QUESTIONS.length).fill(null)); setCurrentQ(0); setScreen(SCREEN.LANDING); }, []);
+  const handleRestart = useCallback(() => { clearQuizState(); setAnswers(Array(QUESTIONS.length).fill(null)); setCurrentQ(0); setScreen(SCREEN.LANDING); }, []);
 
   return (
     <StyleProvider>
