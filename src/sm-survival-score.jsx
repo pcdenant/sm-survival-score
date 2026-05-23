@@ -371,39 +371,48 @@ function ProgressBar({ currentIndex }) {
 }
 
 // ============================================================
-// HOOKS
-// ============================================================
-
-function useKitFormUnlock() {
-  const [unlocked, setUnlocked] = useState(false);
-  const containerRef = useRef(null);
-
-  useEffect(() => {
-    if (unlocked || !containerRef.current) return;
-    const script = document.createElement("script");
-    script.src = "https://collaboration-solved.kit.com/da72eeaa73/index.js";
-    script.async = true;
-    script.dataset.uid = "da72eeaa73";
-    containerRef.current.appendChild(script);
-
-    const SUCCESS_KEYWORDS = ["success", "merci", "thank", "confirm", "check your email", "vérifi"];
-    const observer = new MutationObserver(() => {
-      const container = containerRef.current;
-      if (!container) return;
-      const byText = SUCCESS_KEYWORDS.some(kw => container.innerText.toLowerCase().includes(kw));
-      const byElement = !!container.querySelector("[data-state='success'], .formkit-alert-success, .formkit-success");
-      if (byText || byElement) { trackEvent("diagnostics_unlocked"); setUnlocked(true); observer.disconnect(); }
-    });
-    observer.observe(containerRef.current, { childList: true, subtree: true, characterData: true });
-    return () => observer.disconnect();
-  }, [unlocked]);
-
-  return { unlocked, containerRef };
-}
-
-// ============================================================
 // SCREENS
 // ============================================================
+
+function GhostSignupForm({ onSuccess }) {
+  const [email, setEmail] = useState("");
+  const [status, setStatus] = useState("idle"); // "idle" | "submitting" | "error"
+
+  const handleSubmit = useCallback(async (e) => {
+    e.preventDefault();
+    if (!isValidEmail(email)) { setStatus("error"); return; }
+    setStatus("submitting");
+    try {
+      const res = await fetch("/api/subscribe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+      if (res.ok) { onSuccess(); } else { setStatus("error"); }
+    } catch { setStatus("error"); }
+  }, [email, onSuccess]);
+
+  return (
+    <form onSubmit={handleSubmit} noValidate style={{ display: "flex", flexDirection: "column", gap: 12, maxWidth: 380, margin: "0 auto" }}>
+      <div style={{ display: "flex", gap: 8 }}>
+        <input
+          type="email" value={email} onChange={(e) => setEmail(e.target.value)}
+          placeholder="ton@email.com" required
+          style={{ flex: 1, padding: "10px 14px", borderRadius: 8, border: `1px solid ${T.white}40`,
+            background: `${T.white}15`, color: T.white, fontSize: 14, outline: "none" }}
+        />
+        <button type="submit" disabled={status === "submitting"}
+          style={{ padding: "10px 20px", borderRadius: 8, background: T.jaune, color: T.vert,
+            fontWeight: 700, fontSize: 14, border: "none", cursor: status === "submitting" ? "wait" : "pointer" }}>
+          {status === "submitting" ? "..." : "Déverrouiller"}
+        </button>
+      </div>
+      {status === "error" && (
+        <p style={{ fontSize: 12, color: T.jaune, margin: 0 }}>Email invalide ou erreur — réessaie.</p>
+      )}
+    </form>
+  );
+}
 
 function LandingScreen({ onStart }) {
   return (
@@ -525,7 +534,7 @@ function QuestionScreen({ questionIndex, question, selectedAnswer, onSelect, onN
 }
 
 function ResultScreen({ answers, onRestart }) {
-  const { unlocked, containerRef: kitContainerRef } = useKitFormUnlock();
+  const [unlocked, setUnlocked] = useState(false);
 
   const dimensionScores = useMemo(() => computeDimensionScores(answers), [answers]);
   const globalScore = useMemo(() => computeGlobalScore(dimensionScores), [dimensionScores]);
@@ -630,7 +639,7 @@ function ResultScreen({ answers, onRestart }) {
               <BentoCard id="unlock-form" style={{ background: T.vert, border: "none", textAlign: "center", padding: "36px 28px" }}>
                 <p style={{ fontSize: 18, fontWeight: 700, color: T.white, marginBottom: 8 }}>Débloque tes 4 autres diagnostics</p>
                 <p style={{ fontSize: 13, color: `${T.white}bb`, marginBottom: 24, lineHeight: 1.6 }}>Entre ton email pour voir tes résultats complets. Tu recevras aussi une tactique par semaine pour défendre ton rôle.</p>
-                <div ref={kitContainerRef} style={{ maxWidth: 380, margin: "0 auto" }} />
+                <GhostSignupForm onSuccess={() => { setUnlocked(true); trackEvent("diagnostics_unlocked"); }} />
               </BentoCard>
             </>
           )}
