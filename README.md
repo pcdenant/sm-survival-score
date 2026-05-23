@@ -22,9 +22,10 @@ Ce diagnostic mesure 5 dimensions clés et donne un plan d'action personnalisé.
 | Graphiques | Recharts |
 | Styles | CSS-in-JS inline (design tokens) |
 | API serverless | Vercel Functions |
-| Email | Kit (ConvertKit) |
+| Email / CRM | Ghost Admin API (JWT HS256) |
 | Analytics | Google Apps Script (webhook) |
 | Tests | Node.js vanilla (zéro dépendances) |
+| E2E | Playwright |
 
 ---
 
@@ -65,11 +66,17 @@ npm run build
 
 ## Tests
 
+Unit tests :
 ```bash
 npm test
 ```
 
-La suite de tests vérifie la logique de scoring, les frontières de catégories, la validation email, les scénarios personas et l'intégrité du wording des questions.
+E2E tests (Playwright) :
+```bash
+npm run test:e2e
+```
+
+La suite de tests vérifie la logique de scoring, les frontières de catégories, la validation email, les scénarios personas, l'intégrité du wording, et les flows d'inscription + unlock.
 
 ---
 
@@ -79,8 +86,8 @@ Copier `.env.example` en `.env` et remplir :
 
 | Variable | Description |
 |---|---|
-| `KIT_API_KEY` | Clé API Kit (ConvertKit) |
-| `KIT_FORM_ID` | ID du formulaire Kit |
+| `GHOST_ADMIN_API_KEY` | Clé API Admin de Ghost |
+| `GHOST_URL` | URL du site Ghost (ex: `https://your-ghost.ghost.io`) |
 
 Ces variables sont utilisées **uniquement côté serveur** (Vercel Functions). Elles ne sont jamais exposées au client.
 

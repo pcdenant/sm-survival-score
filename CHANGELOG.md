@@ -7,6 +7,56 @@ Versionning basé sur [Semantic Versioning](https://semver.org/lang/fr/).
 
 ---
 
+## [1.5.0] — 2026-05-23
+
+### Ajouté
+- **UnlockModal** — Modal centré qui apparaît après la soumission email pour confirmer l'inscription et inviter l'utilisateur à vérifier son email (spams inclus)
+- **Téléchargement PDF** — Bouton "Télécharger mon plan d'action" qui utilise `window.print()` (zéro dépendances) ; CSS `@media print` masque l'UI pour un PDF propre
+- **Tests E2E Playwright** — 3 nouveaux tests validant le modal : apparition du titre, affichage de l'email soumis, fermeture du modal
+
+### Modifié
+- **Bannière d'unlock** — Suppression de la bannière verte "C'est débloqué..." remplacée par le modal plus informatif
+- **GhostSignupForm** — Callback `onSuccess` passe maintenant l'email soumis pour l'afficher dans le modal
+
+### Tests
+- +5 assertions d'intégrité de wording pour vérifier la présence des textes du modal et l'absence de l'ancienne bannière
+
+---
+
+## [1.4.0] — 2026-05-23
+
+### Modifié
+- **Inscription email** — Migration de ConvertKit (Kit) vers **Ghost Admin API** avec authentification JWT HS256
+- **API serverless** — `/api/subscribe` réécrite pour appeler Ghost au lieu de Kit, gère 201 (créé) et 409 (membre existant) comme succès
+- **Label membre** — Les email soumis reçoivent automatiquement le label "SM Score" dans Ghost
+
+### Supprimé
+- `useKitFormUnlock()` hook utilisant MutationObserver (approche fragile)
+- Injection de script Kit côté client (intégration directe disparue)
+
+### Tests
+- +27 nouveaux tests unitaires pour Ghost API : JWT HS256, validation email, gestion des codes HTTP, erreurs réseau
+- 5 tests E2E Playwright couvrant le flow complet : accès au formulaire, succès API, erreurs, doublon (409)
+
+---
+
+## [1.3.0] — 2026-05-23
+
+### Ajouté
+- **Persistance localStorage** — Quiz progress sauvegardé automatiquement; l'utilisateur qui rafraîchit la page en cours de diagnostic reprend à la même question avec ses réponses
+- **3 fonctions pures exportées** : `saveQuizState`, `loadQuizState`, `clearQuizState` pour persistance transparente (testables sans React)
+
+### Modifié
+- **Lazy init setState** — `screen`, `currentQ` et `answers` restaurés depuis localStorage au mount
+- **Cleanup auto** — localStorage effacé automatiquement si l'état revient au landing vierge
+- **handleRestart** — appelle `clearQuizState()` avant réinitialisation
+
+### Tests
+- +10 nouveaux tests pour storage utilities : round-trip, corruption, recovery, edge cases
+- Tests mockent localStorage en Node.js (zéro dépendance)
+
+---
+
 ## [1.2.0] — 2026-05-11
 
 ### Modifié

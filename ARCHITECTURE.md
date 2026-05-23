@@ -11,7 +11,7 @@ Browser
   │     └── React app (3 écrans)
   │
   └── /api/subscribe → Vercel Function
-                         └── Kit API (email)
+                         └── Ghost Admin API (JWT HS256)
 ```
 
 ---
@@ -31,9 +31,20 @@ ResultScreen
     ├── Barres par dimension
     ├── DiagnosticCard #1 (dimension la plus faible) — toujours visible
     └── DiagnosticCards #2–5 — verrouillées jusqu'à email
-          │ email soumis → Kit form embed (script externe)
-          │ MutationObserver détecte le succès
-          └── Unlock → 4 cards supplémentaires visibles
+          │ email soumis → GhostSignupForm
+          │ POST /api/subscribe → Ghost Admin API
+          ├── 201 / 409 (succès)
+          │   ├── UnlockModal apparaît
+          │   │   ├── Affiche l'email soumis
+          │   │   ├── Avertit de vérifier spams
+          │   │   ├── Bouton "Télécharger plan d'action (PDF)"
+          │   │   │   └── window.print() → boîte d'impression (zéro dep)
+          │   │   └── Bouton "Voir mes résultats" → ferme modal
+          │   │
+          │   └── Unlock → 4 cards + modal visibles
+          │
+          └── 4xx / 5xx (erreur)
+              └── Message d'erreur affiché, modal masqué
 ```
 
 ---
@@ -43,6 +54,7 @@ ResultScreen
 ### `SMSurvivalScore` (racine)
 - Gère l'état global : écran courant, index question, tableau de réponses
 - Unique source de vérité pour la navigation
+- **localStorage** : restaure l'état du quiz à chaque reload via lazy init des `useState` ; persiste automatiquement via `useEffect` ; nettoie si retour au landing vierge
 
 ### `LandingScreen`
 - Ecran de présentation statique
@@ -54,9 +66,26 @@ ResultScreen
 
 ### `ResultScreen`
 - Calcule les scores via `useMemo` (pas de re-calcul inutile)
+- Gère 3 états : `unlocked` (booléen), `showModal` (booléen), `subscribedEmail` (string)
+- `GhostSignupForm` : formulaire email soumettant à `/api/subscribe`
+- `UnlockModal` : confirmation post-inscription avec email visible, spam warning, bouton PDF
 - `DiagnosticCard` : diagnostic + action par dimension déverrouillée
 - `LockedDiagnosticCard` : aperçu flou pour les dimensions verrouillées
-- Kit embed via injection de `<script>` dans un ref DOM, `MutationObserver` pour détecter la confirmation
+
+### `GhostSignupForm`
+- Formulaire email simple avec validation côté client
+- Soumet à `POST /api/subscribe` avec email
+- Gère les états loading/erreur
+- Callback `onSuccess(email)` passe l'email pour l'afficher dans le modal
+
+### `UnlockModal`
+- Modal centré affiché après succès d'inscription
+- `role="dialog"` pour l'accessibilité
+- Affiche ✓, titre "Diagnostics déverrouillés", email et avertissement spams
+- Bouton PDF : appelle `flushSync(() => onClose())` puis `window.print()` → print dialog
+- Bouton "Voir mes résultats" ferme le modal
+- Fermeture via clic sur le fond sombre (background dismiss)
+- CSS `@media print` : modal et UI masquées, seul le contenu imprimable visible
 
 ### `BentoCard`
 - Wrapper visuel partagé (fond blanc, border-radius, border)
@@ -79,6 +108,9 @@ Toutes les fonctions pures sont exportées depuis `sm-survival-score.jsx` pour p
 | `getDiagnosticLevel(score)` | `low` / `mid` / `high` pour un score 0–8 |
 | `buildDimensionResults(dimScores)` | Enrichit chaque dimension avec score + % |
 | `isValidEmail(email)` | Validation légère (présence @ et .) |
+| `saveQuizState(state)` | Persiste le quiz (screen, currentQ, answers) dans localStorage |
+| `loadQuizState()` | Restaure l'état du quiz depuis localStorage ; retourne `null` si invalide |
+| `clearQuizState()` | Efface l'état du quiz depuis localStorage |
 
 ---
 
@@ -99,24 +131,34 @@ Aucune API de contenu. Aucun CMS. Modification directe dans le code source.
 
 ### `POST /api/subscribe`
 
-Reçoit un email, l'inscrit au formulaire Kit configuré en variable d'environnement.
+Reçoit un email, l'inscrit à Ghost via l'Admin API avec authentification JWT HS256.
 
 ```
 Client → POST /api/subscribe { email }
              │
              ▼
-        Validation email
+        Validation email (regex : ^[^\s@]+@[^\s@]+\.[^\s@]+$)
              │
              ▼
-        Kit API v4 POST /forms/{FORM_ID}/subscribers
+        Création JWT HS256
+        (header.payload.signature)
              │
              ▼
-        200 { success: true }  /  4xx/5xx { error }
+        Ghost Admin API POST /members/ + label "SM Score"
+             │
+             ├→ 201 (créé) / 409 (doublon) = succès
+             │   └→ 200 { success: true }
+             │
+             └→ 422 / 5xx = erreur
+                 └→ 500 { error: message }
 ```
 
-La clé API Kit n'est jamais exposée côté client.
+**Authentification JWT HS256 :**
+- `header` : `{ alg: "HS256", typ: "JWT", kid: GHOST_ADMIN_API_KEY }`
+- `payload` : `{ iss: "Admin API", aud: "/admin/", iat: now, exp: now+5min }`
+- `signature` : HMAC-SHA256(header.payload, GHOST_ADMIN_API_KEY)
 
-> **Note** : Le formulaire Kit est aussi intégré directement en embed client-side (script Kit). La serverless function `/api/subscribe` est une alternative serveur disponible mais non utilisée par le flow principal.
+Les clés `GHOST_ADMIN_API_KEY` et `GHOST_URL` ne sont jamais exposées côté client (variables serveur Vercel uniquement).
 
 ---
 
@@ -135,6 +177,8 @@ Tracking anonyme via `navigator.sendBeacon` vers un Google Apps Script déployé
 ## Contraintes de design
 
 - **Zéro CSS externe** : tout le styling est inline avec des tokens centralisés dans `T`
-- **Zéro store externe** : `useState` suffit pour 3 écrans
+- **Zéro store externe** : `useState` suffit pour 3 écrans + modal
 - **Zéro routing** : navigation gérée par un état `screen` (landing / quiz / result)
-- **Zéro backend obligatoire** : l'app fonctionne en statique ; Kit est intégré par script client
+- **Zéro dépendance pour PDF** : `window.print()` native + CSS `@media print` pour masquer l'UI
+- **Zéro dépendance pour crypto** : Node.js `crypto.createHmac` pour JWT HS256 (serverless)
+- **Accessibility first** : ARIA roles, modal, dialog, reduced-motion, progressbar, radiogroup
