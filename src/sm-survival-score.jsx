@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import { flushSync } from "react-dom";
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer } from "recharts";
 
 // ============================================================
@@ -267,6 +268,9 @@ const GLOBAL_CSS = `
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
   }
+  @media print {
+    .no-print { display: none !important; }
+  }
 `;
 
 let stylesInjected = false;
@@ -388,7 +392,7 @@ function GhostSignupForm({ onSuccess }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email }),
       });
-      if (res.ok) { onSuccess(); } else { setStatus("error"); }
+      if (res.ok) { onSuccess(email); } else { setStatus("error"); }
     } catch { setStatus("error"); }
   }, [email, onSuccess]);
 
@@ -411,6 +415,47 @@ function GhostSignupForm({ onSuccess }) {
         <p style={{ fontSize: 12, color: T.jaune, margin: 0 }}>Email invalide ou erreur — réessaie.</p>
       )}
     </form>
+  );
+}
+
+function UnlockModal({ email, onClose }) {
+  const handlePrint = useCallback(() => {
+    flushSync(() => onClose());
+    window.print();
+  }, [onClose]);
+
+  return (
+    <div
+      role="dialog" aria-modal="true" aria-labelledby="modal-title"
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+      className="no-print"
+      style={{ position: "fixed", inset: 0, background: "rgba(11,36,25,0.65)",
+        display: "flex", alignItems: "center", justifyContent: "center",
+        zIndex: 1000, padding: 24 }}>
+      <div style={{ background: T.white, borderRadius: T.rLg, maxWidth: 440,
+        width: "100%", padding: "40px 32px", textAlign: "center" }}>
+        <p style={{ fontSize: 32, marginBottom: 16 }}>✓</p>
+        <h2 id="modal-title" style={{ fontSize: 20, fontWeight: 800, color: T.vert, marginBottom: 12 }}>
+          Diagnostics déverrouillés
+        </h2>
+        <p style={{ fontSize: 14, color: T.textMuted, lineHeight: 1.65, marginBottom: 28 }}>
+          Un email a été envoyé à <strong style={{ color: T.text }}>{email}</strong>.
+          Vérifie aussi tes spams — sans confirmation, tu ne recevras pas les conseils de la semaine.
+        </p>
+        <button onClick={handlePrint} style={{ display: "block", width: "100%",
+          padding: "14px 24px", background: T.vert, color: T.white, fontWeight: 700,
+          fontSize: 15, fontFamily: T.f, border: "none", borderRadius: T.r,
+          cursor: "pointer", marginBottom: 12 }}>
+          Télécharger mon plan d'action (PDF)
+        </button>
+        <button onClick={onClose} style={{ display: "block", width: "100%",
+          padding: "12px 24px", background: "transparent", color: T.textMuted,
+          fontWeight: 600, fontSize: 14, fontFamily: T.f,
+          border: `1px solid ${T.border}`, borderRadius: T.r, cursor: "pointer" }}>
+          Voir mes résultats
+        </button>
+      </div>
+    </div>
   );
 }
 
@@ -535,6 +580,8 @@ function QuestionScreen({ questionIndex, question, selectedAnswer, onSelect, onN
 
 function ResultScreen({ answers, onRestart }) {
   const [unlocked, setUnlocked] = useState(false);
+  const [showModal, setShowModal] = useState(false);
+  const [subscribedEmail, setSubscribedEmail] = useState("");
 
   const dimensionScores = useMemo(() => computeDimensionScores(answers), [answers]);
   const globalScore = useMemo(() => computeGlobalScore(dimensionScores), [dimensionScores]);
@@ -639,21 +686,14 @@ function ResultScreen({ answers, onRestart }) {
               <BentoCard id="unlock-form" style={{ background: T.vert, border: "none", textAlign: "center", padding: "36px 28px" }}>
                 <p style={{ fontSize: 18, fontWeight: 700, color: T.white, marginBottom: 8 }}>Débloque tes 4 autres diagnostics</p>
                 <p style={{ fontSize: 13, color: `${T.white}bb`, marginBottom: 24, lineHeight: 1.6 }}>Entre ton email pour voir tes résultats complets. Tu recevras aussi une tactique par semaine pour défendre ton rôle.</p>
-                <GhostSignupForm onSuccess={() => { setUnlocked(true); trackEvent("diagnostics_unlocked"); }} />
+                <GhostSignupForm onSuccess={(email) => { setUnlocked(true); setShowModal(true); setSubscribedEmail(email); trackEvent("diagnostics_unlocked"); }} />
               </BentoCard>
             </>
           )}
         </section>
 
-        {/* Confirmation */}
-        {unlocked && (
-          <BentoCard style={{ background: "#ecfdf5", border: "1px solid #a7f3d0", marginBottom: 16, textAlign: "center", animation: "fadeUp 0.3s ease-out" }} role="alert">
-            <p style={{ fontSize: 14, color: T.vert, fontWeight: 600 }}>C'est débloqué. Tu recevras ta première tactique cette semaine.</p>
-          </BentoCard>
-        )}
-
         {/* Actions */}
-        <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap", marginBottom: 32 }}>
+        <div className="no-print" style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap", marginBottom: 32 }}>
           <button onClick={handleShare} aria-label="Partager le test" style={T.btnAction}>
             Envoie le test à un collègue SM
           </button>
@@ -667,6 +707,7 @@ function ResultScreen({ answers, onRestart }) {
           <p style={{ fontSize: 12, color: T.textLight }}>Un outil <a href="https://dub.sh/cs-website" target="_blank" rel="noopener noreferrer" style={{ fontWeight: 700, color: T.textMuted, textDecoration: "underline", textUnderlineOffset: 3 }}>Collaboration Solved</a> — par Pierre-Cyril Denant</p>
         </footer>
       </main>
+      {showModal && <UnlockModal email={subscribedEmail} onClose={() => setShowModal(false)} />}
     </div>
   );
 }
