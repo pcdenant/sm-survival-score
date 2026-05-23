@@ -661,6 +661,19 @@ describe("STORAGE UTILITIES", () => {
 });
 
 // ============================================================
+// FORM MIGRATION — Kit → Ghost
+// ============================================================
+
+describe("FORM MIGRATION — Kit → Ghost", () => {
+  const srcJsx = readFileSync(join(__dirname, "sm-survival-score.jsx"), "utf8");
+  assert(!srcJsx.includes("da72eeaa73"),                   "REMOVED: Kit embed UID da72eeaa73");
+  assert(!srcJsx.includes("collaboration-solved.kit.com"), "REMOVED: Kit embed script URL");
+  assert(!srcJsx.includes("useKitFormUnlock"),             "REMOVED: useKitFormUnlock hook");
+  assert(srcJsx.includes("GhostSignupForm"),               "PRESENT: GhostSignupForm component");
+  assert(srcJsx.includes("/api/subscribe"),                "PRESENT: /api/subscribe fetch");
+});
+
+// ============================================================
 // RESULTS
 // ============================================================
 

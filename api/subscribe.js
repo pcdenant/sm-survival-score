@@ -1,62 +1,46 @@
-// /api/subscribe.js
-// Serverless function — works on Vercel (default) and Netlify (with adapter)
-// The Kit API key is stored as an environment variable on the hosting platform.
-// The client never sees it.
+import { createHmac } from "crypto";
 
-const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+export function createGhostToken(apiKey) {
+  const [id, secret] = apiKey.split(":");
+  const header = Buffer.from(JSON.stringify({ alg: "HS256", kid: id, typ: "JWT" })).toString("base64url");
+  const now = Math.floor(Date.now() / 1000);
+  const payload = Buffer.from(JSON.stringify({ iat: now, exp: now + 300, aud: "/ghost/api/admin/" })).toString("base64url");
+  const sig = createHmac("sha256", Buffer.from(secret, "hex")).update(`${header}.${payload}`).digest("base64url");
+  return `${header}.${payload}.${sig}`;
+}
 
 export default async function handler(req, res) {
-  if (req.method !== "POST") {
-    return res.status(405).json({ error: "Méthode non autorisée" });
-  }
+  if (req.method !== "POST") return res.status(405).json({ error: "Méthode non autorisée" });
 
   const { email } = req.body;
-
-  if (!email || !EMAIL_REGEX.test(email)) {
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
     return res.status(400).json({ error: "Email invalide" });
-  }
 
-  const API_KEY = process.env.KIT_API_KEY;
-  const FORM_ID = process.env.KIT_FORM_ID;
-
-  if (!API_KEY || !FORM_ID) {
-    console.error("Missing KIT_API_KEY or KIT_FORM_ID environment variables");
+  const { GHOST_ADMIN_API_KEY, GHOST_URL } = process.env;
+  if (!GHOST_ADMIN_API_KEY || !GHOST_URL) {
+    console.error("Missing GHOST_ADMIN_API_KEY or GHOST_URL");
     return res.status(500).json({ error: "Configuration serveur manquante" });
   }
 
-  const KIT_API_URL = `https://api.kit.com/v4/forms/${FORM_ID}/subscribers`;
-
   try {
-    const response = await fetch(
-      KIT_API_URL,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${API_KEY}`,
-        },
-        body: JSON.stringify({
-          email_address: email,
-        }),
-      }
-    );
+    const token = createGhostToken(GHOST_ADMIN_API_KEY);
+    const response = await fetch(`${GHOST_URL}/ghost/api/admin/members/`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Ghost ${token}`,
+      },
+      body: JSON.stringify({ members: [{ email, labels: [{ name: "SM Score" }] }] }),
+    });
 
-    // Kit v4 may return 200, 201 (with body) or 204 (empty)
-    if (response.ok) {
-      return res.status(200).json({ success: true });
-    }
+    // 201 = created, 409 = already a member → both are success
+    if (response.status === 201 || response.status === 409) return res.status(200).json({ success: true });
 
-    // Error — try to parse response for logging
-    let data;
-    try {
-      data = await response.json();
-    } catch {
-      data = { status: response.status, statusText: response.statusText };
-    }
-    console.error("Kit API error:", data);
-    return res.status(response.status).json({ error: "Erreur Kit API" });
-  } catch (error) {
-    console.error("Subscribe error:", error);
+    const err = await response.json().catch(() => ({}));
+    console.error("Ghost API error:", response.status, err);
+    return res.status(response.status).json({ error: "Erreur Ghost API" });
+  } catch (err) {
+    console.error("Subscribe error:", err);
     return res.status(500).json({ error: "Erreur serveur" });
   }
 }
