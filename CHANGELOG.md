@@ -7,7 +7,7 @@ Versionning basé sur [Semantic Versioning](https://semver.org/lang/fr/).
 
 ---
 
-## [1.4.0] — 2026-05-23
+## [1.5.0] — 2026-05-23
 
 ### Ajouté
 - **UnlockModal** — Modal centré qui apparaît après la soumission email pour confirmer l'inscription et inviter l'utilisateur à vérifier son email (spams inclus)
@@ -23,7 +23,7 @@ Versionning basé sur [Semantic Versioning](https://semver.org/lang/fr/).
 
 ---
 
-## [1.3.0] — 2026-05-22
+## [1.4.0] — 2026-05-23
 
 ### Modifié
 - **Inscription email** — Migration de ConvertKit (Kit) vers **Ghost Admin API** avec authentification JWT HS256
@@ -37,6 +37,23 @@ Versionning basé sur [Semantic Versioning](https://semver.org/lang/fr/).
 ### Tests
 - +27 nouveaux tests unitaires pour Ghost API : JWT HS256, validation email, gestion des codes HTTP, erreurs réseau
 - 5 tests E2E Playwright couvrant le flow complet : accès au formulaire, succès API, erreurs, doublon (409)
+
+---
+
+## [1.3.0] — 2026-05-23
+
+### Ajouté
+- **Persistance localStorage** — Quiz progress sauvegardé automatiquement; l'utilisateur qui rafraîchit la page en cours de diagnostic reprend à la même question avec ses réponses
+- **3 fonctions pures exportées** : `saveQuizState`, `loadQuizState`, `clearQuizState` pour persistance transparente (testables sans React)
+
+### Modifié
+- **Lazy init setState** — `screen`, `currentQ` et `answers` restaurés depuis localStorage au mount
+- **Cleanup auto** — localStorage effacé automatiquement si l'état revient au landing vierge
+- **handleRestart** — appelle `clearQuizState()` avant réinitialisation
+
+### Tests
+- +10 nouveaux tests pour storage utilities : round-trip, corruption, recovery, edge cases
+- Tests mockent localStorage en Node.js (zéro dépendance)
 
 ---
 

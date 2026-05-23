@@ -54,6 +54,7 @@ ResultScreen
 ### `SMSurvivalScore` (racine)
 - Gère l'état global : écran courant, index question, tableau de réponses
 - Unique source de vérité pour la navigation
+- **localStorage** : restaure l'état du quiz à chaque reload via lazy init des `useState` ; persiste automatiquement via `useEffect` ; nettoie si retour au landing vierge
 
 ### `LandingScreen`
 - Ecran de présentation statique
@@ -107,6 +108,9 @@ Toutes les fonctions pures sont exportées depuis `sm-survival-score.jsx` pour p
 | `getDiagnosticLevel(score)` | `low` / `mid` / `high` pour un score 0–8 |
 | `buildDimensionResults(dimScores)` | Enrichit chaque dimension avec score + % |
 | `isValidEmail(email)` | Validation légère (présence @ et .) |
+| `saveQuizState(state)` | Persiste le quiz (screen, currentQ, answers) dans localStorage |
+| `loadQuizState()` | Restaure l'état du quiz depuis localStorage ; retourne `null` si invalide |
+| `clearQuizState()` | Efface l'état du quiz depuis localStorage |
 
 ---
 
