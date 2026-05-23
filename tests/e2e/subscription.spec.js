@@ -62,3 +62,38 @@ test("409 (membre existant) est traité comme succès", async ({ page }) => {
   await submitBtn(page).click();
   await expect(page.locator("#unlock-form")).not.toBeVisible({ timeout: 5000 });
 });
+
+test("modal apparaît avec titre après unlock", async ({ page }) => {
+  await page.route("/api/subscribe", (route) =>
+    route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ success: true }) })
+  );
+  await page.goto("/");
+  await completeQuiz(page);
+  await page.locator('input[type="email"]').fill("test@example.com");
+  await submitBtn(page).click();
+  await expect(page.getByText("Diagnostics déverrouillés")).toBeVisible();
+});
+
+test("modal affiche l'email soumis", async ({ page }) => {
+  await page.route("/api/subscribe", (route) =>
+    route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ success: true }) })
+  );
+  await page.goto("/");
+  await completeQuiz(page);
+  await page.locator('input[type="email"]').fill("pierre@example.com");
+  await submitBtn(page).click();
+  await expect(page.getByText("pierre@example.com")).toBeVisible();
+});
+
+test("fermer le modal affiche les diagnostics", async ({ page }) => {
+  await page.route("/api/subscribe", (route) =>
+    route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ success: true }) })
+  );
+  await page.goto("/");
+  await completeQuiz(page);
+  await page.locator('input[type="email"]').fill("test@example.com");
+  await submitBtn(page).click();
+  await expect(page.getByText("Diagnostics déverrouillés")).toBeVisible();
+  await page.getByRole("button", { name: "Voir mes résultats" }).click();
+  await expect(page.getByText("Diagnostics déverrouillés")).not.toBeVisible();
+});

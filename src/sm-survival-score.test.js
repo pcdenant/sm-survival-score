@@ -664,6 +664,15 @@ describe("STORAGE UTILITIES", () => {
 // FORM MIGRATION — Kit → Ghost
 // ============================================================
 
+describe("MODAL UNLOCK — wording integrity", () => {
+  const srcJsx = readFileSync(join(__dirname, "sm-survival-score.jsx"), "utf8");
+  assert(srcJsx.includes("Diagnostics déverrouillés"),       "PRESENT: modal title");
+  assert(srcJsx.includes("Vérifie aussi tes spams"),         "PRESENT: spam warning");
+  assert(srcJsx.includes("Télécharger mon plan d'action"),   "PRESENT: PDF button");
+  assert(srcJsx.includes("Voir mes résultats"),              "PRESENT: close button");
+  assert(!srcJsx.includes("C'est débloqué. Tu recevras"),   "REMOVED: old banner text");
+});
+
 describe("FORM MIGRATION — Kit → Ghost", () => {
   const srcJsx = readFileSync(join(__dirname, "sm-survival-score.jsx"), "utf8");
   assert(!srcJsx.includes("da72eeaa73"),                   "REMOVED: Kit embed UID da72eeaa73");
