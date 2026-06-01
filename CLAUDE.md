@@ -22,8 +22,9 @@
 - Zéro routing — navigation gérée par état `screen` (landing / quiz / result)
 - Logique de scoring exportée comme fonctions pures testables sans React
 - Styles 100% inline via tokens centralisés — pas de fichier CSS
-- Kit (ConvertKit) intégré via script embed côté client + serverless function `/api/subscribe` côté serveur
+- Ghost Admin API intégré via serverless function `/api/subscribe` (JWT HS256, pure Node.js crypto) — zéro dépendance applicative ajoutée
 - Analytics fire-and-forget via `navigator.sendBeacon` vers Google Apps Script
+- Persistance quiz via `localStorage` (saveQuizState/loadQuizState/clearQuizState) — restauration transparente au reload
 
 ---
 
@@ -110,10 +111,12 @@
 |---|---|
 | Charts | recharts (déjà en production) |
 | HTTP client | native fetch |
-| Tests | Node.js vanilla (zéro dépendances — intentionnel) |
+| Tests unitaires | Node.js vanilla (zéro dépendances — intentionnel) |
+| Tests E2E | Playwright (@playwright/test — devDependency) |
 | Fonts | Google Fonts (DM Sans, via CSS @import) |
+| JWT / Crypto | Node.js `crypto` natif (HS256 pour Ghost Admin API) |
 
-**Libs actuellement installées :** react, react-dom, recharts, @vitejs/plugin-react, vite
+**Libs actuellement installées :** react, react-dom, recharts, @vitejs/plugin-react, vite, @playwright/test
 
 **Avant d'ajouter une lib :** Est-ce que ça peut se faire nativement en < 20 lignes ? Repo actif (< 6 mois) ? Licence MIT/Apache 2.0 ? Si oui → propose, attends l'approbation.
 
@@ -144,11 +147,16 @@ docs: update API endpoint documentation
 │   ├── main.jsx                  # Point d'entrée React (monte SMSurvivalScore)
 │   └── sm-survival-score.jsx     # Tout : données, logique, composants, styles
 ├── api/
-│   └── subscribe.js              # Vercel Function : POST email → Kit API
+│   ├── subscribe.js              # Vercel Function : POST email → Ghost Admin API (JWT HS256)
+│   └── subscribe.test.js         # 27 tests unitaires Ghost API + JWT
+├── tests/
+│   └── e2e/
+│       └── subscription.spec.js  # 8 tests Playwright e2e
 ├── index.html                    # Shell HTML (lang="fr", meta SEO)
 ├── vite.config.js
+├── playwright.config.js
 ├── package.json
-├── .env.example                  # Variables requises : KIT_API_KEY, KIT_FORM_ID
+├── .env.example                  # Variables requises : GHOST_ADMIN_API_KEY, GHOST_URL
 ├── README.md
 ├── CHANGELOG.md
 └── ARCHITECTURE.md               # Détail technique (flux, composants, API)
@@ -156,12 +164,12 @@ docs: update API endpoint documentation
 
 **Fichier central :** `src/sm-survival-score.jsx` contient dans l'ordre :
 1. DATA (DIMENSIONS, QUESTIONS, GLOBAL_RESULTS, DIAGNOSTICS)
-2. SCORING UTILITIES (fonctions pures exportées)
+2. SCORING UTILITIES (fonctions pures exportées, incl. saveQuizState/loadQuizState/clearQuizState)
 3. ANALYTICS (trackEvent via sendBeacon)
 4. DESIGN TOKENS (objet T)
-5. GLOBAL STYLES (StyleProvider)
-6. COMPOSANTS (BentoCard, DiagnosticCard, LockedDiagnosticCard, ProgressBar)
+5. GLOBAL STYLES (StyleProvider, incl. @media print .no-print)
+6. COMPOSANTS (BentoCard, DiagnosticCard, LockedDiagnosticCard, ProgressBar, GhostSignupForm, UnlockModal)
 7. SCREENS (LandingScreen, QuestionScreen, ResultScreen)
-8. APP ROOT (SMSurvivalScore — état global, navigation)
+8. APP ROOT (SMSurvivalScore — état global, navigation, persistance localStorage)
 
-*Updated: 2026-05-10*
+*Updated: 2026-05-23*
