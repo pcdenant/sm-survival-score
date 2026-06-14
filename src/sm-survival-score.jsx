@@ -189,6 +189,61 @@ export function clearQuizState() {
 }
 
 // ============================================================
+// SCORING — Algorithme pondéré (Signal de priorité dimension)
+// ============================================================
+
+/**
+ * Poids de survie par dimension.
+ * Visibility = condition nécessaire de tout (invisible = premier coupé).
+ * Strategic = dimension la plus prédictive du risque de licenciement.
+ */
+export const DIMENSION_WEIGHTS = {
+  visibility: 5,
+  strategic: 4,
+  proof: 3,
+  business: 2,
+  autonomy: 1,
+};
+
+// Ordre fixe décroissant par poids — garantit le tie-break
+const DIMENSIONS_BY_WEIGHT_DESC = ['visibility', 'strategic', 'proof', 'business', 'autonomy'];
+
+function computePriorityScore(scorePct, dimId) {
+  return (1 - scorePct / 100) * DIMENSION_WEIGHTS[dimId];
+}
+
+/**
+ * Retourne l'ID de la dimension prioritaire selon l'algorithme pondéré.
+ * priorityScore = (1 − score_normalized) × weight
+ *
+ * @param {{ visibility: number, proof: number, business: number, autonomy: number, strategic: number }} dimensionScoresPct
+ * @returns {string} ID de la dimension prioritaire
+ */
+export function getPriorityDimension(dimensionScoresPct) {
+  let maxPs = -1;
+  let priorityId = null;
+  for (const id of DIMENSIONS_BY_WEIGHT_DESC) {
+    const ps = computePriorityScore(dimensionScoresPct[id], id);
+    if (ps > maxPs) { maxPs = ps; priorityId = id; }
+  }
+  return priorityId;
+}
+
+/**
+ * Retourne les 5 IDs de dimension ordonnés du plus au moins critique.
+ * Utilisé pour l'ordre d'affichage des diagnostics post-gate.
+ *
+ * @param {{ visibility: number, proof: number, business: number, autonomy: number, strategic: number }} dimensionScoresPct
+ * @returns {string[]}
+ */
+export function getOrderedDimensions(dimensionScoresPct) {
+  return [...DIMENSIONS_BY_WEIGHT_DESC]
+    .map(id => ({ id, ps: computePriorityScore(dimensionScoresPct[id], id) }))
+    .sort((a, b) => b.ps !== a.ps ? b.ps - a.ps : DIMENSION_WEIGHTS[b.id] - DIMENSION_WEIGHTS[a.id])
+    .map(({ id }) => id);
+}
+
+// ============================================================
 // ANALYTICS — anonymous webhook to Google Sheet
 // ============================================================
 
@@ -284,6 +339,44 @@ function StyleProvider({ children }) {
     return () => { document.head.removeChild(el); stylesInjected = false; };
   }, []);
   return children;
+}
+
+// ============================================================
+// PRIORITY SIGNAL — textes éditoriaux par dimension
+// ============================================================
+
+const SIGNAL_TEXTS = {
+  visibility: {
+    title: 'Ton angle mort le plus urgent : ce que ton management retient de toi.',
+    body: "Tant que cette dimension reste faible, le reste ne protège pas ton poste. C'est la condition de base.",
+  },
+  strategic: {
+    title: 'Ton angle mort le plus urgent : comment tu es perçu.',
+    body: "C'est la dimension la plus liée aux décisions de licenciement. Pas parce que tu travailles mal. Parce que la perception de ton rôle s'est figée à un niveau trop bas.",
+  },
+  proof: {
+    title: 'Ton angle mort le plus urgent : tes preuves.',
+    body: "Tu peux être visible et quand même n'avoir rien à montrer quand la question arrive. Ce trou-là, il se referme. Mais pas tout seul.",
+  },
+  business: {
+    title: 'Ton angle mort le plus urgent : ton langage.',
+    body: "Ton travail existe. Le problème, c'est qu'il n'est pas traduit dans un format que la direction comprend. C'est la dernière étape, et souvent la plus manquée.",
+  },
+  autonomy: {
+    title: "Ton angle mort le plus urgent : l'autonomie de ton équipe.",
+    body: "Un SM dont l'équipe ne peut pas fonctionner sans lui est perçu comme une dépendance, pas comme une valeur. Ça change la lecture de ton rôle en comité de direction.",
+  },
+};
+
+function PrioritySignal({ priorityDimId }) {
+  const signal = SIGNAL_TEXTS[priorityDimId];
+  if (!signal) return null;
+  return (
+    <div style={{ backgroundColor: '#1a1a2e', borderLeft: '3px solid #FFF200', borderRadius: 4, padding: '14px 18px', margin: '20px 0 24px 0' }}>
+      <p style={{ fontWeight: 600, fontSize: '0.95rem', color: '#FFF200', margin: '0 0 6px 0', fontFamily: T.f }}>{signal.title}</p>
+      <p style={{ fontSize: '0.9rem', color: '#e8e8e8', margin: 0, lineHeight: 1.5, fontFamily: T.f }}>{signal.body}</p>
+    </div>
+  );
 }
 
 // ============================================================
@@ -588,7 +681,11 @@ function ResultScreen({ answers, onRestart }) {
   const category = useMemo(() => getCategory(globalScore), [globalScore]);
   const globalResult = useMemo(() => GLOBAL_RESULTS[category.key], [category.key]);
   const dimensionResults = useMemo(() => buildDimensionResults(dimensionScores), [dimensionScores]);
-  const dimensionsSortedByScore = useMemo(() => [...dimensionResults].sort((a, b) => a.score - b.score), [dimensionResults]);
+  const dimensionScoresPct = useMemo(() => Object.fromEntries(dimensionResults.map(d => [d.id, d.pct])), [dimensionResults]);
+  const priorityDimId = useMemo(() => getPriorityDimension(dimensionScoresPct), [dimensionScoresPct]);
+  const orderedDimIds = useMemo(() => getOrderedDimensions(dimensionScoresPct), [dimensionScoresPct]);
+  const orderedDimResults = useMemo(() => orderedDimIds.map(id => dimensionResults.find(d => d.id === id)), [orderedDimIds, dimensionResults]);
+  const priorityDimResult = useMemo(() => dimensionResults.find(d => d.id === priorityDimId), [priorityDimId, dimensionResults]);
   const radarData = useMemo(() => dimensionResults.map(dim => ({ dimension: dim.shortName, score: dim.score, fullMark: MAX_DIM_SCORE })), [dimensionResults]);
 
   // Track quiz completion (once)
@@ -596,7 +693,7 @@ function ResultScreen({ answers, onRestart }) {
     trackEvent("quiz_completed", {
       score_global: globalScore,
       category: category.label,
-      weakest_dim: dimensionsSortedByScore[0]?.shortName || "",
+      priority_dim: priorityDimResult?.shortName || "",
       visibility: dimensionScores.visibility,
       proof: dimensionScores.proof,
       business: dimensionScores.business,
@@ -672,16 +769,19 @@ function ResultScreen({ answers, onRestart }) {
           </BentoCard>
         </div>
 
+        {/* Signal de priorité — au-dessus des diagnostics */}
+        <PrioritySignal priorityDimId={priorityDimId} />
+
         {/* Diagnostics */}
         <section aria-label="Diagnostics détaillés" style={{ display: "flex", flexDirection: "column", gap: 16, marginBottom: 16 }}>
           <h3 style={{ fontSize: 13, fontWeight: 700, color: T.vert, textTransform: "uppercase", letterSpacing: "0.06em", paddingLeft: 4 }}>Diagnostic par dimension</h3>
-          <DiagnosticCard dimension={dimensionsSortedByScore[0]} index={0} />
+          <DiagnosticCard dimension={priorityDimResult} index={0} />
           {unlocked ? (
-            dimensionsSortedByScore.slice(1).map((dim, i) => <DiagnosticCard key={dim.id} dimension={dim} index={i + 1} />)
+            orderedDimResults.filter(d => d.id !== priorityDimId).map((dim, i) => <DiagnosticCard key={dim.id} dimension={dim} index={i + 1} />)
           ) : (
             <>
               <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                {dimensionsSortedByScore.slice(1).map(dim => <LockedDiagnosticCard key={dim.id} dimension={dim} onUnlockClick={handleScrollToUnlock} />)}
+                {orderedDimResults.filter(d => d.id !== priorityDimId).map(dim => <LockedDiagnosticCard key={dim.id} dimension={dim} onUnlockClick={handleScrollToUnlock} />)}
               </div>
               <BentoCard id="unlock-form" style={{ background: T.vert, border: "none", textAlign: "center", padding: "36px 28px" }}>
                 <p style={{ fontSize: 18, fontWeight: 700, color: T.white, marginBottom: 8 }}>Débloque tes 4 autres diagnostics</p>

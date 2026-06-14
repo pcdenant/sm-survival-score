@@ -7,6 +7,26 @@ Versionning basé sur [Semantic Versioning](https://semver.org/lang/fr/).
 
 ---
 
+## [1.6.0] — 2026-06-14
+
+### Ajouté
+- **Algorithme de priorité pondéré** — Remplace la sélection par score brut le plus bas par `priorityScore = (1 − score_normalized) × weight`. Le diagnostic pré-gate affiche désormais la dimension la plus dangereuse pour la survie du poste, pas la plus basse. Ex : autonomy=0%, visibility=40% → signal Visibilité affiché en priorité.
+- **`DIMENSION_WEIGHTS`** — Constante exportée : `visibility=5, strategic=4, proof=3, business=2, autonomy=1`
+- **`getPriorityDimension(dimensionScoresPct)`** — Retourne l'ID de la dimension prioritaire ; tie-break par poids décroissant
+- **`getOrderedDimensions(dimensionScoresPct)`** — Retourne les 5 IDs ordonnés du plus au moins critique
+- **`PrioritySignal`** — Composant inline affiché entre le radar/barres et les diagnostics : fond sombre `#1a1a2e`, bordure gauche jaune `#FFF200`, texte de signal spécifique à la dimension prioritaire
+- **`SIGNAL_TEXTS`** — 5 textes éditoriaux (un par dimension) : titre "Ton angle mort le plus urgent : …" + corps
+
+### Modifié
+- **`ResultScreen`** — Pré-gate et ordre post-gate utilisent l'algorithme pondéré au lieu de `sort((a, b) => a.score - b.score)`
+- **Analytics** — `quiz_completed` : champ `weakest_dim` → `priority_dim`
+
+### Tests
+- +20 tests unitaires : `getPriorityDimension` (6), `getOrderedDimensions` (4), wording `SIGNAL_TEXTS` (10)
+- Total : 252 tests passing
+
+---
+
 ## [1.5.0] — 2026-05-23
 
 ### Ajouté

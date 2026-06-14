@@ -29,8 +29,9 @@ ResultScreen
     ├── Score global + catégorie
     ├── Radar chart (Recharts)
     ├── Barres par dimension
-    ├── DiagnosticCard #1 (dimension la plus faible) — toujours visible
-    └── DiagnosticCards #2–5 — verrouillées jusqu'à email
+    ├── PrioritySignal (texte de signal — dimension la plus critique selon l'algorithme pondéré)
+    ├── DiagnosticCard #1 (dimension prioritaire — poids de survie, pas score brut) — toujours visible
+    └── DiagnosticCards #2–5 — verrouillées jusqu'à email, ordonnées par criticité
           │ email soumis → GhostSignupForm
           │ POST /api/subscribe → Ghost Admin API
           ├── 201 / 409 (succès)
@@ -67,6 +68,8 @@ ResultScreen
 ### `ResultScreen`
 - Calcule les scores via `useMemo` (pas de re-calcul inutile)
 - Gère 3 états : `unlocked` (booléen), `showModal` (booléen), `subscribedEmail` (string)
+- **Sélection prioritaire** : `priorityDimId` via `getPriorityDimension()` — algorithme pondéré, pas score brut. `orderedDimResults` via `getOrderedDimensions()` pour l'ordre post-gate.
+- `PrioritySignal` : texte de signal contextuel affiché entre radar/barres et diagnostics
 - `GhostSignupForm` : formulaire email soumettant à `/api/subscribe`
 - `UnlockModal` : confirmation post-inscription avec email visible, spam warning, bouton PDF
 - `DiagnosticCard` : diagnostic + action par dimension déverrouillée
@@ -111,6 +114,9 @@ Toutes les fonctions pures sont exportées depuis `sm-survival-score.jsx` pour p
 | `saveQuizState(state)` | Persiste le quiz (screen, currentQ, answers) dans localStorage |
 | `loadQuizState()` | Restaure l'état du quiz depuis localStorage ; retourne `null` si invalide |
 | `clearQuizState()` | Efface l'état du quiz depuis localStorage |
+| `DIMENSION_WEIGHTS` | Constante : poids de survie par dimension (`visibility=5, strategic=4, proof=3, business=2, autonomy=1`) |
+| `getPriorityDimension(dimensionScoresPct)` | Dimension prioritaire selon l'algorithme pondéré ; tie-break par poids décroissant |
+| `getOrderedDimensions(dimensionScoresPct)` | 5 IDs ordonnés du plus au moins critique pour l'affichage post-gate |
 
 ---
 
@@ -168,7 +174,7 @@ Tracking anonyme via `navigator.sendBeacon` vers un Google Apps Script déployé
 
 Événements trackés :
 - `quiz_started`
-- `quiz_completed` (avec score, catégorie, dimension la plus faible, scores par dimension)
+- `quiz_completed` (avec score, catégorie, dimension prioritaire `priority_dim`, scores par dimension)
 - `quiz_abandoned` (avec index de question, dimension, nombre de réponses données)
 - `diagnostics_unlocked`
 

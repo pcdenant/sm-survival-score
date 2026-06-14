@@ -551,6 +551,135 @@ describe("WORDING INTEGRITY v1.3 — old global texts removed", () => {
 });
 
 // ============================================================
+// ALGORITHME PONDÉRÉ — getPriorityDimension
+// ============================================================
+
+// ─── Miroir des fonctions depuis sm-survival-score.jsx ─────────────────────
+
+const DIMENSION_WEIGHTS = {
+  visibility: 5,
+  strategic: 4,
+  proof: 3,
+  business: 2,
+  autonomy: 1,
+};
+
+const DIMENSIONS_BY_WEIGHT_DESC = ['visibility', 'strategic', 'proof', 'business', 'autonomy'];
+
+function computePriorityScore(scorePct, dimId) {
+  return (1 - scorePct / 100) * DIMENSION_WEIGHTS[dimId];
+}
+
+function getPriorityDimension(dimensionScoresPct) {
+  let maxPs = -1;
+  let priorityId = null;
+  for (const id of DIMENSIONS_BY_WEIGHT_DESC) {
+    const ps = computePriorityScore(dimensionScoresPct[id], id);
+    if (ps > maxPs) { maxPs = ps; priorityId = id; }
+  }
+  return priorityId;
+}
+
+function getOrderedDimensions(dimensionScoresPct) {
+  return [...DIMENSIONS_BY_WEIGHT_DESC]
+    .map(id => ({ id, ps: computePriorityScore(dimensionScoresPct[id], id) }))
+    .sort((a, b) => b.ps !== a.ps ? b.ps - a.ps : DIMENSION_WEIGHTS[b.id] - DIMENSION_WEIGHTS[a.id])
+    .map(({ id }) => id);
+}
+
+// ───────────────────────────────────────────────────────────────────────────
+
+describe("getPriorityDimension", () => {
+  // Cas clé de la SPEC : autonomy=0% ne doit pas gagner face à visibility=40%
+  assertEqual(
+    getPriorityDimension({ visibility: 40, proof: 60, business: 70, autonomy: 0, strategic: 60 }),
+    "visibility",
+    "autonomy=0%, visibility=40% → visibility gagne (poids survie > score brut)"
+  );
+
+  assertEqual(
+    getPriorityDimension({ visibility: 0, proof: 0, business: 0, autonomy: 0, strategic: 0 }),
+    "visibility",
+    "tous à 0% → visibility (poids maximal)"
+  );
+
+  assertEqual(
+    getPriorityDimension({ visibility: 100, proof: 75, business: 80, autonomy: 50, strategic: 0 }),
+    "strategic",
+    "visibility=100%, strategic=0% → strategic"
+  );
+
+  // Tie-break : visibility=50% → ps=(0.5)×5=2.5 | strategic=37.5% → ps=(0.625)×4=2.5
+  assertEqual(
+    getPriorityDimension({ visibility: 50, proof: 80, business: 90, autonomy: 80, strategic: 37.5 }),
+    "visibility",
+    "tie-break : ps égal à 2.5 pour visibility et strategic → visibility gagne (poids 5 > 4)"
+  );
+
+  // Profil avancé : visibility=80%: ps=1.0 | strategic=75%: ps=1.0 | proof=20%: ps=2.4
+  assertEqual(
+    getPriorityDimension({ visibility: 80, proof: 20, business: 75, autonomy: 0, strategic: 75 }),
+    "proof",
+    "profil avancé (visibility/strategic forts, proof=20%) → proof prioritaire"
+  );
+
+  assertEqual(
+    getPriorityDimension({ visibility: 100, proof: 100, business: 100, autonomy: 100, strategic: 100 }),
+    "visibility",
+    "tous à 100% → visibility (tous ps=0, visibility en tête par ordre de parcours)"
+  );
+});
+
+// ============================================================
+// ALGORITHME PONDÉRÉ — getOrderedDimensions
+// ============================================================
+
+describe("getOrderedDimensions", () => {
+  assert(
+    getOrderedDimensions({ visibility: 50, proof: 50, business: 50, autonomy: 50, strategic: 50 }).length === 5,
+    "retourne 5 dimensions"
+  );
+
+  const scores1 = { visibility: 40, proof: 60, business: 70, autonomy: 0, strategic: 55 };
+  assert(
+    getOrderedDimensions(scores1)[0] === getPriorityDimension(scores1),
+    "premier élément = getPriorityDimension()"
+  );
+
+  // visibility/strategic/proof/business=100% → ps=0. autonomy=0% → ps=1.
+  // Ordre : autonomy(ps=1), puis tie-break décroissant par poids parmi ps=0
+  const scores2 = { visibility: 100, proof: 100, business: 100, autonomy: 0, strategic: 100 };
+  const ordered2 = getOrderedDimensions(scores2);
+  assertEqual(ordered2[0], "autonomy", "autonomy seule dimension non résolue → première");
+  assertEqual(ordered2[4], "business", "tie-break en bas : poids le plus faible (business=2) → dernier");
+});
+
+// ============================================================
+// WORDING INTEGRITY — PrioritySignal texts
+// ============================================================
+
+describe("WORDING INTEGRITY — PrioritySignal texts applied", () => {
+  const src = readFileSync(join(__dirname, "sm-survival-score.jsx"), "utf8");
+
+  const expected = [
+    "Ton angle mort le plus urgent : ce que ton management retient de toi.",
+    "Tant que cette dimension reste faible, le reste ne protège pas ton poste.",
+    "Ton angle mort le plus urgent : comment tu es perçu.",
+    "la perception de ton rôle s'est figée à un niveau trop bas.",
+    "Ton angle mort le plus urgent : tes preuves.",
+    "Ce trou-là, il se referme. Mais pas tout seul.",
+    "Ton angle mort le plus urgent : ton langage.",
+    "C'est la dernière étape, et souvent la plus manquée.",
+    "Ton angle mort le plus urgent : l'autonomie de ton équipe.",
+    "perçu comme une dépendance, pas comme une valeur.",
+  ];
+
+  expected.forEach(str => {
+    assert(src.includes(str), `PRESENT: "${str.slice(0, 70)}"`);
+  });
+});
+
+// ============================================================
 // STORAGE UTILITIES
 // ============================================================
 
