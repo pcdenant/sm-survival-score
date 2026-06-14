@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { flushSync } from "react-dom";
+import { createRoot } from "react-dom/client";
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer } from "recharts";
 
 // ============================================================
@@ -153,6 +154,54 @@ export function buildDimensionResults(dimensionScores, dimensions = DIMENSIONS) 
 
 export function isValidEmail(email) {
   return typeof email === "string" && email.includes("@") && email.includes(".");
+}
+
+async function generatePDF(pdfProps) {
+  const { globalScore } = pdfProps;
+  const dateStr = new Date().toISOString().slice(0, 10);
+  const filename = `diagnostic-sm-${globalScore}-${dateStr}.pdf`;
+
+  const [{ default: html2canvas }, { jsPDF }] = await Promise.all([
+    import("html2canvas"),
+    import("jspdf"),
+  ]);
+
+  const container = document.createElement("div");
+  container.style.cssText = "position:absolute;left:-9999px;top:0;width:794px;";
+  document.body.appendChild(container);
+
+  const root = createRoot(container);
+  flushSync(() => root.render(<PDFDocument {...pdfProps} />));
+
+  const canvas = await html2canvas(container, {
+    scale: 2,
+    useCORS: true,
+    logging: false,
+    width: 794,
+    windowWidth: 794,
+  });
+
+  const pdf = new jsPDF({ orientation: "portrait", unit: "px", format: [794, 1123] });
+  const pageW = pdf.internal.pageSize.getWidth();
+  const pageH = pdf.internal.pageSize.getHeight();
+  const ratio = pageW / canvas.width;
+  const imgH = canvas.height * ratio;
+  const imgData = canvas.toDataURL("image/jpeg", 0.92);
+
+  let heightLeft = imgH;
+  let yPos = 0;
+  pdf.addImage(imgData, "JPEG", 0, yPos, pageW, imgH);
+  heightLeft -= pageH;
+  while (heightLeft > 0) {
+    yPos -= pageH;
+    pdf.addPage();
+    pdf.addImage(imgData, "JPEG", 0, yPos, pageW, imgH);
+    heightLeft -= pageH;
+  }
+
+  pdf.save(filename);
+  root.unmount();
+  document.body.removeChild(container);
 }
 
 // ============================================================
@@ -467,6 +516,115 @@ function ProgressBar({ currentIndex }) {
   );
 }
 
+function PDFDocument({ globalScore, category, globalResult, dimensionResults, priorityDimId, orderedDimIds, collabUrl, collabEmail }) {
+  const dateStr = new Date().toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
+  const orderedResults = orderedDimIds.map(id => dimensionResults.find(d => d.id === id));
+  const priorityResult = dimensionResults.find(d => d.id === priorityDimId);
+  const signal = SIGNAL_TEXTS[priorityDimId];
+  const priorityLevel = getDiagnosticLevel(priorityResult.score);
+
+  return (
+    <div style={{ width: 794, fontFamily: T.f, background: T.white, color: T.text }}>
+      {/* En-tête */}
+      <div style={{ background: T.vert, padding: "32px 48px 24px", color: T.white }}>
+        <p style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: `${T.white}99`, marginBottom: 8 }}>
+          Collaboration Solved
+        </p>
+        <h1 style={{ fontSize: 28, fontWeight: 900, color: T.white, marginBottom: 4, letterSpacing: "-0.02em" }}>
+          Ton diagnostic Scrum Master
+        </h1>
+        <p style={{ fontSize: 13, color: `${T.white}80` }}>{dateStr}</p>
+      </div>
+
+      {/* Score + texte global */}
+      <div style={{ padding: "28px 48px", borderBottom: `1px solid ${T.border}`, display: "flex", gap: 32, alignItems: "flex-start" }}>
+        <div style={{ textAlign: "center", flexShrink: 0 }}>
+          <div style={{ fontSize: 80, fontWeight: 900, color: category.key === "irreplaceable" ? T.vert : category.color, lineHeight: 1, letterSpacing: "-0.04em" }}>{globalScore}</div>
+          <div style={{ fontSize: 14, color: T.textMuted, marginBottom: 8 }}>/100</div>
+          <div style={{ display: "inline-block", padding: "6px 18px", fontSize: 13, fontWeight: 700, color: category.key === "irreplaceable" ? T.vertDark : T.white, background: category.key === "irreplaceable" ? T.jaune : category.color, borderRadius: 20 }}>{category.label}</div>
+        </div>
+        <div>
+          {globalResult.paragraphs.slice(0, 2).map((p, i) => (
+            <p key={i} style={{ fontSize: 14, lineHeight: 1.75, color: T.textMid, marginBottom: 12 }}>{p}</p>
+          ))}
+        </div>
+      </div>
+
+      {/* Signal prioritaire */}
+      <div style={{ padding: "24px 48px 0" }}>
+        <div style={{ backgroundColor: "#1a1a2e", borderLeft: "3px solid #FFF200", borderRadius: 4, padding: "14px 18px" }}>
+          <p style={{ fontWeight: 600, fontSize: 14, color: "#FFF200", margin: "0 0 6px 0" }}>{signal.title}</p>
+          <p style={{ fontSize: 13, color: "#e8e8e8", margin: 0, lineHeight: 1.5 }}>{signal.body}</p>
+        </div>
+        <div style={{ marginTop: 12, padding: "14px 16px", background: T.creme, borderRadius: T.rSm }}>
+          <p style={{ fontSize: 11, fontWeight: 700, color: T.vert, marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+            Action immédiate — {priorityResult.shortName}
+          </p>
+          <p style={{ fontSize: 13, lineHeight: 1.65, color: T.textMid }}>{priorityResult.diagnostics[priorityLevel].action}</p>
+        </div>
+      </div>
+
+      {/* Vue d'ensemble */}
+      <div style={{ padding: "24px 48px 0" }}>
+        <h2 style={{ fontSize: 12, fontWeight: 700, color: T.vert, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 16 }}>Vue d'ensemble</h2>
+        {orderedResults.map((dim) => {
+          const dimCat = getCategory(dim.pct);
+          const isPriority = dim.id === priorityDimId;
+          return (
+            <div key={dim.id} style={{ marginBottom: 12 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+                <span style={{ fontSize: 13, fontWeight: isPriority ? 700 : 500, color: isPriority ? T.vert : T.text }}>
+                  {dim.shortName}{isPriority ? " ← priorité" : ""}
+                </span>
+                <span style={{ fontSize: 13, fontWeight: 700, color: dimCat.color, fontFamily: "monospace" }}>{dim.score}/8</span>
+              </div>
+              <div style={{ height: 6, background: T.cremeDeep, borderRadius: 3 }}>
+                <div style={{ height: 6, width: `${Math.max(dim.pct, 3)}%`, background: dimCat.color, borderRadius: 3 }} />
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Diagnostics détaillés */}
+      <div style={{ padding: "24px 48px 32px" }}>
+        <h2 style={{ fontSize: 12, fontWeight: 700, color: T.vert, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 16 }}>Diagnostic par dimension</h2>
+        {orderedResults.map((dim) => {
+          const level = getDiagnosticLevel(dim.score);
+          const diag = dim.diagnostics[level];
+          const dimCat = getCategory(dim.pct);
+          const levelLabel = level === "low" ? "Vulnérable" : level === "mid" ? "À renforcer" : "Solide";
+          return (
+            <div key={dim.id} style={{ marginBottom: 20, borderLeft: `3px solid ${dimCat.color}`, paddingLeft: 16 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8, alignItems: "center" }}>
+                <h3 style={{ fontSize: 14, fontWeight: 700, color: T.text, margin: 0 }}>{dim.name}</h3>
+                <span style={{ fontSize: 11, fontWeight: 700, color: dimCat.color, padding: "3px 10px", background: dimCat.bg, borderRadius: 20 }}>{levelLabel} — {dim.score}/8</span>
+              </div>
+              <p style={{ fontSize: 13, lineHeight: 1.7, color: T.textMid, marginBottom: 12 }}>{diag.text}</p>
+              <div style={{ padding: "12px 14px", background: T.creme, borderRadius: T.rSm }}>
+                <p style={{ fontSize: 11, fontWeight: 700, color: T.vert, marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                  {level === "high" ? "Prochain niveau" : "Action immédiate"}
+                </p>
+                <p style={{ fontSize: 12, lineHeight: 1.65, color: T.textMid }}>{diag.action}</p>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* CTA Collaboration Solved */}
+      <div style={{ padding: "20px 48px 32px", borderTop: `1px solid ${T.border}`, textAlign: "center", background: T.creme }}>
+        <p style={{ fontSize: 13, fontWeight: 600, color: T.text, marginBottom: 8 }}>
+          Pour aller plus loin avec un accompagnement personnalisé
+        </p>
+        {collabUrl && <p style={{ fontSize: 13, color: T.vert, fontWeight: 700, marginBottom: 4 }}>{collabUrl}</p>}
+        {collabEmail && <p style={{ fontSize: 13, color: T.textMuted, marginBottom: 12 }}>{collabEmail}</p>}
+        <p style={{ fontSize: 11, color: T.textLight }}>Un outil Collaboration Solved — par Pierre-Cyril Denant</p>
+      </div>
+    </div>
+  );
+}
+
 // ============================================================
 // SCREENS
 // ============================================================
@@ -511,11 +669,14 @@ function GhostSignupForm({ onSuccess }) {
   );
 }
 
-function UnlockModal({ email, onClose }) {
-  const handlePrint = useCallback(() => {
-    flushSync(() => onClose());
-    window.print();
-  }, [onClose]);
+function UnlockModal({ email, onClose, pdfProps }) {
+  const [isGenerating, setIsGenerating] = useState(false);
+
+  const handleDownloadPDF = useCallback(async () => {
+    setIsGenerating(true);
+    await generatePDF(pdfProps);
+    setIsGenerating(false);
+  }, [pdfProps]);
 
   return (
     <div
@@ -535,11 +696,11 @@ function UnlockModal({ email, onClose }) {
           Un email a été envoyé à <strong style={{ color: T.text }}>{email}</strong>.
           Vérifie aussi tes spams — sans confirmation, tu ne recevras pas les conseils de la semaine.
         </p>
-        <button onClick={handlePrint} style={{ display: "block", width: "100%",
-          padding: "14px 24px", background: T.vert, color: T.white, fontWeight: 700,
+        <button onClick={handleDownloadPDF} disabled={isGenerating} style={{ display: "block", width: "100%",
+          padding: "14px 24px", background: isGenerating ? T.textLight : T.vert, color: T.white, fontWeight: 700,
           fontSize: 15, fontFamily: T.f, border: "none", borderRadius: T.r,
-          cursor: "pointer", marginBottom: 12 }}>
-          Télécharger mon plan d'action (PDF)
+          cursor: isGenerating ? "wait" : "pointer", marginBottom: 12 }}>
+          {isGenerating ? "Génération..." : "Télécharger mon rapport (PDF)"}
         </button>
         <button onClick={onClose} style={{ display: "block", width: "100%",
           padding: "12px 24px", background: "transparent", color: T.textMuted,
@@ -687,6 +848,16 @@ function ResultScreen({ answers, onRestart }) {
   const orderedDimResults = useMemo(() => orderedDimIds.map(id => dimensionResults.find(d => d.id === id)), [orderedDimIds, dimensionResults]);
   const priorityDimResult = useMemo(() => dimensionResults.find(d => d.id === priorityDimId), [priorityDimId, dimensionResults]);
   const radarData = useMemo(() => dimensionResults.map(dim => ({ dimension: dim.shortName, score: dim.score, fullMark: MAX_DIM_SCORE })), [dimensionResults]);
+  const pdfProps = useMemo(() => ({
+    globalScore,
+    category,
+    globalResult,
+    dimensionResults,
+    priorityDimId,
+    orderedDimIds,
+    collabUrl: import.meta.env.VITE_COLLAB_SOLVED_URL ?? "",
+    collabEmail: import.meta.env.VITE_COLLAB_SOLVED_EMAIL ?? "",
+  }), [globalScore, category, globalResult, dimensionResults, priorityDimId, orderedDimIds]);
 
   // Track quiz completion (once)
   useEffect(() => {
@@ -807,7 +978,7 @@ function ResultScreen({ answers, onRestart }) {
           <p style={{ fontSize: 12, color: T.textLight }}>Un outil <a href="https://dub.sh/cs-website" target="_blank" rel="noopener noreferrer" style={{ fontWeight: 700, color: T.textMuted, textDecoration: "underline", textUnderlineOffset: 3 }}>Collaboration Solved</a> — par Pierre-Cyril Denant</p>
         </footer>
       </main>
-      {showModal && <UnlockModal email={subscribedEmail} onClose={() => setShowModal(false)} />}
+      {showModal && <UnlockModal email={subscribedEmail} onClose={() => setShowModal(false)} pdfProps={pdfProps} />}
     </div>
   );
 }

@@ -38,8 +38,8 @@ ResultScreen
           │   ├── UnlockModal apparaît
           │   │   ├── Affiche l'email soumis
           │   │   ├── Avertit de vérifier spams
-          │   │   ├── Bouton "Télécharger plan d'action (PDF)"
-          │   │   │   └── window.print() → boîte d'impression (zéro dep)
+          │   │   ├── Bouton "Télécharger mon rapport (PDF)"
+          │   │   │   └── generatePDF(pdfProps) : render off-screen → html2canvas → jsPDF → téléchargement
           │   │   └── Bouton "Voir mes résultats" → ferme modal
           │   │
           │   └── Unlock → 4 cards + modal visibles
@@ -85,10 +85,24 @@ ResultScreen
 - Modal centré affiché après succès d'inscription
 - `role="dialog"` pour l'accessibilité
 - Affiche ✓, titre "Diagnostics déverrouillés", email et avertissement spams
-- Bouton PDF : appelle `flushSync(() => onClose())` puis `window.print()` → print dialog
+- Bouton "Télécharger mon rapport (PDF)" : appelle `generatePDF(pdfProps)` — feedback "Génération..." pendant la génération
 - Bouton "Voir mes résultats" ferme le modal
 - Fermeture via clic sur le fond sombre (background dismiss)
-- CSS `@media print` : modal et UI masquées, seul le contenu imprimable visible
+- Reçoit `pdfProps` depuis `ResultScreen` (score, catégorie, résultats ordonnés, URLs CTA)
+
+### `PDFDocument`
+- Composant layout A4 (794px), styles 100% inline, tokens T
+- Sections : en-tête marque, score + texte global, signal prioritaire + action, barres d'ensemble (CSS), 5 diagnostics ordonnés, CTA Collaboration Solved
+- Jamais rendu dans l'arbre principal — uniquement instancié off-screen dans `generatePDF`
+
+### `generatePDF(pdfProps)`
+- Fonction async (non-composant)
+- Import dynamique de `html2canvas` et `jspdf` (lazy-loaded uniquement au clic)
+- Render `PDFDocument` off-screen via `createRoot` + `flushSync`
+- `html2canvas` capture le nœud DOM en Canvas 2×
+- `jsPDF` encode en JPEG 0.92 et pagine automatiquement (A4 794×1123px)
+- Nom de fichier : `diagnostic-sm-[score]-[date].pdf` (date ISO)
+- Cleanup DOM + unmount React après génération
 
 ### `BentoCard`
 - Wrapper visuel partagé (fond blanc, border-radius, border)
