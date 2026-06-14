@@ -29,6 +29,9 @@ Versionning basé sur [Semantic Versioning](https://semver.org/lang/fr/).
 - Mise à jour assertion wording : `"Télécharger mon plan d'action"` → `"Télécharger mon rapport"`
 - Total : 252 + 27 = 279 tests unitaires passing
 
+### Connu — à corriger (cosmétique, non bloquant)
+- **Pagination PDF** : le contenu est tronqué à la page 2 au niveau de la 2e dimension. La logique de découpage `imgH / pageH` fonctionne mais le contenu généré par html2canvas dépasse la hauteur A4 de façon imprévisible selon le score (volume de texte variable). Fix envisagé : multi-canvas par section, ou ajuster la hauteur de page dynamiquement selon `container.scrollHeight`.
+
 ---
 
 ## [1.6.0] — 2026-06-14
