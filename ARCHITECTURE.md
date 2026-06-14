@@ -20,7 +20,7 @@ Browser
 
 ```
 LandingScreen
-    │ clic "Je fais le test"
+    │ clic "Voir mes angles morts"
     ▼
 QuestionScreen (20 questions, navigation avant/arrière)
     │ réponse à la dernière question
@@ -154,8 +154,8 @@ Client → POST /api/subscribe { email }
 ```
 
 **Authentification JWT HS256 :**
-- `header` : `{ alg: "HS256", typ: "JWT", kid: GHOST_ADMIN_API_KEY }`
-- `payload` : `{ iss: "Admin API", aud: "/admin/", iat: now, exp: now+5min }`
+- `header` : `{ alg: "HS256", typ: "JWT", kid: <id_part_of_key> }`
+- `payload` : `{ aud: "/ghost/api/admin/", iat: now, exp: now+5min }`
 - `signature` : HMAC-SHA256(header.payload, GHOST_ADMIN_API_KEY)
 
 Les clés `GHOST_ADMIN_API_KEY` et `GHOST_URL` ne sont jamais exposées côté client (variables serveur Vercel uniquement).

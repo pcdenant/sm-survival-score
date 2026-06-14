@@ -37,7 +37,7 @@ Ce diagnostic mesure 5 dimensions clés et donne un plan d'action personnalisé.
 │   ├── main.jsx                  # Point d'entrée React
 │   └── sm-survival-score.jsx     # Composant principal + logique métier
 ├── api/
-│   └── subscribe.js              # Serverless function : inscription Kit
+│   └── subscribe.js              # Serverless function : Ghost Admin API
 ├── index.html
 ├── vite.config.js
 ├── package.json

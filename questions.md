@@ -2,6 +2,10 @@
 
 *Exporté le 2026-05-11 — 20 questions / 5 dimensions*
 
+> **Note :** Ce fichier est un export lisible des questions/réponses à usage éditorial.
+> Source de vérité : `src/sm-survival-score.jsx` (section DATA).
+> En cas de divergence de wording, le code prime.
+
 ---
 
 ## D1 — Visibilité de l'impact
