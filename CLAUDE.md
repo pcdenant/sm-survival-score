@@ -164,12 +164,15 @@ docs: update API endpoint documentation
 
 **Fichier central :** `src/sm-survival-score.jsx` contient dans l'ordre :
 1. DATA (DIMENSIONS, QUESTIONS, GLOBAL_RESULTS, DIAGNOSTICS)
-2. SCORING UTILITIES (fonctions pures exportées, incl. saveQuizState/loadQuizState/clearQuizState)
-3. ANALYTICS (trackEvent via sendBeacon)
-4. DESIGN TOKENS (objet T)
-5. GLOBAL STYLES (StyleProvider, incl. @media print .no-print)
-6. COMPOSANTS (BentoCard, DiagnosticCard, LockedDiagnosticCard, ProgressBar, GhostSignupForm, UnlockModal)
-7. SCREENS (LandingScreen, QuestionScreen, ResultScreen)
-8. APP ROOT (SMSurvivalScore — état global, navigation, persistance localStorage)
+2. CONSTANTS (MAX_SCORE, SCORE_THRESHOLDS, SCREEN, …)
+3. SCORING UTILITIES (fonctions pures exportées : computeDimensionScores, computeGlobalScore, getCategory, getDiagnosticLevel, buildDimensionResults, isValidEmail, saveQuizState, loadQuizState, clearQuizState, buildAbandonPayload)
+4. SCORING — Algorithme pondéré (DIMENSION_WEIGHTS, getPriorityDimension, getOrderedDimensions)
+5. ANALYTICS (trackEvent via sendBeacon)
+6. DESIGN TOKENS (objet T)
+7. GLOBAL STYLES (StyleProvider, incl. @media print .no-print)
+8. PRIORITY SIGNAL (SIGNAL_TEXTS, PrioritySignal)
+9. COMPOSANTS (BentoCard, DiagnosticCard, LockedDiagnosticCard, ProgressBar, GhostSignupForm, UnlockModal)
+10. SCREENS (LandingScreen, QuestionScreen, ResultScreen)
+11. APP ROOT (SMSurvivalScore — état global, navigation, persistance localStorage)
 
-*Updated: 2026-05-23*
+*Updated: 2026-06-14*
