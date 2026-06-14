@@ -1,6 +1,6 @@
 # PRD — SM Survival Score
-**Version:** 1.2.0  
-**Date:** 2026-05-17  
+**Version:** 1.5.0  
+**Date:** 2026-06-14  
 **Owner:** Pierre-Cyril Denant — Collaboration Solved  
 **Statut:** Production  
 **URL:** https://dub.sh/sm-survival-score
@@ -52,13 +52,18 @@ Un diagnostic interactif en 20 questions qui mesure la solidité du rôle d'un S
 ```
 LandingScreen
   └─ CTA "Voir mes angles morts"
-       └─ QuestionScreen (Q1 → Q20, linéaire)
+       └─ QuestionScreen (Q1 → Q20, linéaire, navigation avant/arrière)
             └─ ResultScreen
                  ├─ Score + catégorie (visible immédiatement)
                  ├─ Radar + scores par dimension (visible immédiatement)
                  ├─ Diagnostic #1 — dimension la plus faible (visible immédiatement)
                  ├─ Diagnostics #2–5 (verrouillés)
-                 └─ Formulaire email Kit → unlock diagnostics #2–5
+                 └─ GhostSignupForm (email → POST /api/subscribe → Ghost Admin API)
+                      ├─ 201/409 (succès) → UnlockModal
+                      │    ├─ Affiche email soumis + spam warning
+                      │    ├─ Bouton PDF → flushSync(close) + window.print()
+                      │    └─ "Voir mes résultats" → ferme modal
+                      └─ UnlockModal fermé → diagnostics #2–5 déverrouillés
 ```
 
 **Navigation :** Gérée par état `screen` (valeurs : `landing` / `quiz` / `result`). Zéro routing côté client.
@@ -114,7 +119,7 @@ LandingScreen
 - `0` — Probablement pas
 
 **Q4.** "Si ton poste disparaissait demain, quelqu'un dans le management se battrait-il pour garder TOI — pas juste un SM dans l'équipe ?"
-- `2` — Oui, j'ai au moins un allié qui me valorise — pas juste le rôle
+- `2` — Oui, j'ai au moins un allié qui tient à moi — pas juste au rôle
 - `1` — Je ne sais pas
 - `0` — Probablement pas
 
@@ -140,7 +145,7 @@ LandingScreen
 - `0` — Non
 
 **Q6.** "Tu as accès à Jira (ou équivalent). Qu'est-ce que tu en fais ?"
-- `2` — Je l'utilise pour diagnostiquer ce qui nous bloque — et décider quoi faire
+- `2` — Je l'utilise pour diagnostiquer ce qui bloque — et décider quoi faire
 - `1` — Je mets à jour les tickets et tire des rapports quand on me le demande
 - `0` — Je ne l'utilise pas comme outil de diagnostic — je me base sur ce que j'observe en réunion
 
@@ -151,7 +156,7 @@ LandingScreen
 
 **Q8.** "La dernière fois que tu as proposé un changement à ton équipe ou ton manager, qu'est-ce que tu avais en main ?"
 - `2` — Un chiffre ou un fait — j'aurais pu me défendre si on avait insisté
-- `1` — Une bonne raison, mais rien à montrer si quelqu'un insistait
+- `1` — Une bonne raison, mais rien à montrer si on avait insisté
 - `0` — Surtout une intuition que c'était la bonne direction
 
 #### Diagnostics
@@ -172,7 +177,7 @@ LandingScreen
 
 **Q9.** "Quand tu parles à ton manager ou un directeur, quel vocabulaire utilises-tu ?"
 - `2` — Risque, coût, délai, prédictibilité — avec des chiffres pour illustrer
-- `1` — Un mélange : je traduis parfois en termes business, parfois je reste en mode Scrum
+- `1` — Un mix : je traduis parfois en termes business, parfois je reste en mode Scrum
 - `0` — Le vocabulaire de mon rôle (sprint, backlog, retro) — je traduis rarement
 
 **Q10.** "As-tu déjà traduit un problème d'équipe en impact business ? (retard = coût, blocage = risque, turnover = perte de vélocité)"
@@ -208,12 +213,12 @@ LandingScreen
 
 **Q13.** "Si tu es en vacances 2 semaines, que se passe-t-il ?"
 - `2` — L'équipe tourne — et je peux expliquer comment j'ai construit ça
-- `1` — Les choses ralentissent. Certaines tombent entre les mailles
-- `0` — Les événements sautent ou nécessitent un remplaçant
+- `1` — Ça ralentit. Certaines choses tombent
+- `0` — Les événements sautent ou il faut un back-up
 
 **Q14.** "As-tu formé un membre de l'équipe à faciliter un événement Scrum ?"
 - `2` — Oui — et cette personne l'a déjà fait sans moi
-- `1` — J'ai commencé, mais ce n'est pas encore ancré
+- `1` — J'ai commencé, mais c'est pas encore ancré
 - `0` — Non — je facilite tout
 
 **Q15.** "Les membres de l'équipe résolvent-ils des problèmes entre eux sans passer par toi ?"
@@ -243,7 +248,7 @@ LandingScreen
 #### Questions
 
 **Q17.** "Si ton manager devait justifier ton rôle à un directeur qui décide des coupes budgétaires, que dirait-il ?"
-- `2` — Il citerait des résultats concrets ou des risques que tu as prévenus
+- `2` — Il citerait des résultats concrets ou des risques que tu as évités
 - `1` — Il dirait que tu fais du bon travail, sans donner de chiffre ou d'exemple précis
 - `0` — Il décrirait ton rôle — facilitation, cérémonies Scrum — sans le relier à un résultat
 
@@ -258,8 +263,8 @@ LandingScreen
 - `0` — Non, je n'ai pas d'objectif mesurable
 
 **Q20.** "Si ton poste disparaissait demain, quelle serait la réaction dans ton organisation ?"
-- `2` — Les gens mesureraient une perte concrète — des livraisons qui ralentissent, un risque non géré
-- `1` — Les gens ressentiraient un vide, mais personne ne pourrait le quantifier
+- `2` — On mesurerait une perte concrète — une livraison ralentie, un risque non géré
+- `1` — On sentirait un vide, mais personne ne pourrait le chiffrer
 - `0` — Ça passerait probablement inaperçu — quelqu'un absorberait le rôle rapidement
 
 #### Diagnostics
@@ -313,7 +318,7 @@ LandingScreen
 | Charts | Recharts 2.x (RadarChart) |
 | Fonts | DM Sans via Google Fonts |
 | Analytics | Google Apps Script webhook (sendBeacon) |
-| Email | ConvertKit / Kit (embed client + serverless fallback) |
+| Email / CRM | Ghost Admin API (JWT HS256) |
 | Hébergement | Vercel |
 
 ### Structure de fichiers
@@ -321,16 +326,22 @@ LandingScreen
 ```
 /
 ├── src/
-│   ├── main.jsx                  # Point d'entrée React
-│   └── sm-survival-score.jsx     # Tout : données, logique, composants, styles (687 lignes)
+│   ├── main.jsx                        # Point d'entrée React
+│   ├── sm-survival-score.jsx           # Tout : données, logique, composants, styles
+│   └── sm-survival-score.test.js       # Tests unitaires logique de scoring
 ├── api/
-│   └── subscribe.js              # Vercel Function : POST email → Kit API
-├── index.html                    # Shell HTML (lang="fr", meta SEO)
+│   ├── subscribe.js                    # Vercel Function : POST email → Ghost Admin API
+│   └── subscribe.test.js               # 27 tests unitaires Ghost API + JWT
+├── tests/
+│   └── e2e/
+│       └── subscription.spec.js        # 8 tests Playwright E2E
+├── index.html                          # Shell HTML (lang="fr", meta SEO)
 ├── vite.config.js
+├── playwright.config.js
 ├── package.json
-├── .env.example                  # KIT_API_KEY, KIT_FORM_ID
-├── CLAUDE.md                     # Instructions IA
-├── PRD.md                        # Ce document
+├── .env.example                        # Variables requises : GHOST_ADMIN_API_KEY, GHOST_URL
+├── CLAUDE.md                           # Instructions IA
+├── PRD.md                              # Ce document
 ├── README.md
 ├── CHANGELOG.md
 └── ARCHITECTURE.md
@@ -346,17 +357,15 @@ LandingScreen
 
 ### Ordre des sections dans `sm-survival-score.jsx`
 
-1. Imports (React hooks, Recharts)
-2. `DATA` — DIMENSIONS, QUESTIONS, GLOBAL_RESULTS
-3. `CONSTANTS` — MAX_SCORE, SCORE_THRESHOLDS, SCREEN enum
-4. `SCORING UTILITIES` — fonctions pures exportées
-5. `ANALYTICS` — trackEvent, buildAbandonPayload
-6. `DESIGN TOKENS` — objet T
-7. `GLOBAL STYLES` — StyleProvider
-8. `COMPONENTS` — BentoCard, DiagnosticCard, LockedDiagnosticCard, ProgressBar
-9. `HOOKS` — useKitFormUnlock
-10. `SCREENS` — LandingScreen, QuestionScreen, ResultScreen
-11. `APP ROOT` — SMSurvivalScore (export default)
+1. `DATA` — DIMENSIONS, QUESTIONS, GLOBAL_RESULTS, DIAGNOSTICS
+2. `CONSTANTS` — MAX_SCORE, SCORE_THRESHOLDS, SCREEN enum
+3. `SCORING UTILITIES` — fonctions pures exportées
+4. `ANALYTICS` — trackEvent (fire-and-forget via sendBeacon)
+5. `DESIGN TOKENS` — objet T
+6. `GLOBAL STYLES` — StyleProvider
+7. `COMPONENTS` — BentoCard, DiagnosticCard, LockedDiagnosticCard, ProgressBar, GhostSignupForm, UnlockModal
+8. `SCREENS` — LandingScreen, QuestionScreen, ResultScreen
+9. `APP ROOT` — SMSurvivalScore (export default)
 
 ---
 
@@ -418,28 +427,29 @@ Wrapper partagé pour toutes les cartes. Props : `children`, `style`, `...props`
 - Transitions douces
 - ARIA : role="progressbar", valuenow, min/max
 
+### `GhostSignupForm`
+- Props : `onSuccess(email)` — callback après inscription réussie
+- État interne : `email` (string), `status` ("idle" | "submitting" | "error")
+- Comportement : `POST /api/subscribe { email }` ; fire `diagnostics_unlocked` sur succès ; appelle `onSuccess(email)` pour passer l'email au modal
+- Validation email côté client avant envoi (regex : présence @ et .)
+- Affiche message d'erreur en cas de réponse non-OK
+
+### `UnlockModal`
+- Props : `email` (string — affiché dans le modal), `onClose` (callback)
+- `role="dialog"` pour l'accessibilité ; fermeture via fond sombre ou bouton
+- Bouton PDF : `flushSync(() => onClose())` puis `window.print()` → dialog impression natif (zéro dépendance)
+- Bouton "Voir mes résultats" → `onClose()`
+
 ### `StyleProvider`
 - Injecte CSS global via `<style>` au mount
 - Guard contre injection multiple (`stylesInjected`)
-- Contient : import DM Sans, reset CSS, keyframes fadeUp/fadeIn/scaleIn, prefers-reduced-motion
+- Contient : import DM Sans, reset CSS, keyframes fadeUp/fadeIn/scaleIn, prefers-reduced-motion, `@media print` (masque UI, affiche résultats)
 
 ---
 
 ## 10. HOOKS
 
-### `useKitFormUnlock`
-
-```
-État : unlocked (bool), containerRef (DOM ref)
-```
-
-**Comportement :**
-1. Injecte le script Kit embed dans `containerRef` au mount
-2. `MutationObserver` surveille les mutations DOM dans le container
-3. Détection succès : keywords (`success`, `merci`, `thank`, `confirm`, `check your email`, `vérifi`) OU sélecteurs CSS (`.formkit-alert-success`, `[data-state='success']`, `.formkit-success`)
-4. Sur succès : fire `diagnostics_unlocked` → `setUnlocked(true)` → disconnect observer
-
-**Kit embed URL :** `https://collaboration-solved.kit.com/da72eeaa73/index.js`
+Aucun hook custom. `useKitFormUnlock` supprimé en v1.4.0 (migration ConvertKit → Ghost Admin API).
 
 ---
 
@@ -455,36 +465,48 @@ Google Apps Script webhook (fire-and-forget via `navigator.sendBeacon`, fallback
 | `quiz_started` | Clic CTA landing | `{ timestamp, event }` |
 | `quiz_completed` | Mount ResultScreen (1 fois) | `{ timestamp, event, score_global, category, weakest_dim, visibility, proof, business, autonomy, strategic }` |
 | `quiz_abandoned` | `visibilitychange` ou `pagehide` pendant quiz | `{ timestamp, event, questionIndex, questionNumber, dimension, answersGiven }` |
-| `diagnostics_unlocked` | Succès formulaire Kit | `{ timestamp, event }` |
+| `diagnostics_unlocked` | Succès formulaire email (GhostSignupForm) | `{ timestamp, event }` |
 
 ### Règle de non-blocage
 Analytics toujours dans `try/catch` silent. Une erreur analytics ne peut pas casser l'app.
 
 ---
 
-## 12. INTÉGRATION EMAIL (Kit / ConvertKit)
+## 12. INTÉGRATION EMAIL (Ghost Admin API)
 
-### Architecture double couche
+### Architecture
 
-**Couche 1 — Embed client (chemin principal)**
-- Script Kit chargé dynamiquement dans `ResultScreen`
-- Form ID : `da72eeaa73`
-- Détection succès via `MutationObserver`
-- Résultat : unlock des diagnostics 2–5 sans rechargement
+Couche unique — serverless function côté serveur uniquement (pas d'embed client).
 
-**Couche 2 — Serverless (fallback disponible)**
-- `POST /api/subscribe` (Vercel Function)
-- Body : `{ email: string }`
-- Kit API v4 : `POST https://api.kit.com/v4/forms/{FORM_ID}/subscribers`
-- Variables d'environnement : `KIT_API_KEY`, `KIT_FORM_ID`
-- Non utilisé dans le flux principal actuel
+**Flux :**
+```
+GhostSignupForm (client)
+  └─ POST /api/subscribe { email }
+       └─ Validation email (regex)
+            └─ createGhostToken(GHOST_ADMIN_API_KEY)  ← JWT HS256, expiry 5min
+                 └─ Ghost Admin API POST /members/
+                      ├─ 201 (créé) ou 409 (doublon) → 200 { success: true }
+                      └─ 422 / 5xx → proxy du code d'erreur { error: "..." }
+```
+
+**Authentification JWT HS256 :**
+- Clé splitée : `GHOST_ADMIN_API_KEY = "id:hex_secret"`
+- Header : `{ alg: "HS256", typ: "JWT", kid: <id> }`
+- Payload : `{ aud: "/ghost/api/admin/", iat: now, exp: now+300s }`
+- Signature : HMAC-SHA256, Node.js `crypto` natif (zéro dépendance)
+
+**Label membre :** Chaque inscription reçoit le label "SM Score" dans Ghost.
+
+**409 traité comme succès :** Un email déjà membre Ghost retourne quand même `{ success: true }` — pas d'erreur affichée à l'utilisateur.
 
 ### Variables d'environnement requises
 
-| Variable | Couche | Usage |
-|---|---|---|
-| `KIT_API_KEY` | Serveur uniquement | Auth Kit API |
-| `KIT_FORM_ID` | Serveur uniquement | ID formulaire Kit |
+| Variable | Usage |
+|---|---|
+| `GHOST_ADMIN_API_KEY` | Auth Ghost (format `id:hex_secret`, via Ghost admin → Integrations) |
+| `GHOST_URL` | URL du site Ghost (ex: `https://your-ghost.ghost.io`) |
+
+Ces variables sont **serveur uniquement** (Vercel Functions). Non exposées au client.
 
 ---
 
@@ -569,8 +591,12 @@ getCategory(percentage)                                   // → { key, label, c
 getDiagnosticLevel(score)                                 // → "low" | "mid" | "high"
 buildDimensionResults(dimensionScores, dimensions)        // → enriched array
 isValidEmail(email)                                       // → boolean
-buildAbandonPayload(screen, currentQ, answers)            // → object
+saveQuizState(state)                                      // → void (localStorage)
+loadQuizState()                                           // → object | null
+clearQuizState()                                          // → void
 ```
+
+> `buildAbandonPayload` est une fonction interne (non exportée) utilisée par la logique analytics. Elle est mirrorée dans les tests mais ne fait pas partie de l'API publique du module.
 
 ---
 
@@ -592,34 +618,57 @@ buildAbandonPayload(screen, currentQ, answers)            // → object
 ## 16. TESTS
 
 ### Fichiers
-- `src/sm-survival-score.test.js`
-- `api/subscribe.test.js`
+- `src/sm-survival-score.test.js` — logique de scoring, données, wording, storage, migration
+- `api/subscribe.test.js` — Ghost API, JWT, validation (27 assertions)
+- `tests/e2e/subscription.spec.js` — flows utilisateur complets (8 scénarios Playwright)
 
-### Couverture
-
-**Scoring :**
-- Cas limites (0, 40, réponses partielles)
-- Seuils de catégorie (44/45, 74/75)
-- Niveaux de diagnostic (low/mid/high)
-- Validation email
-
-**Personas (scénarios utilisateur simulés) :**
-- Persona vulnérable (scores bas toutes dimensions)
-- Persona stable (scores mixtes)
-- Persona irremplaçable (scores hauts)
+### Couverture `sm-survival-score.test.js`
 
 **Intégrité des données :**
-- 20 questions présentes et mappées aux dimensions
-- Toutes les dimensions ont des diagnostics aux 3 niveaux
-- Pas de doublon dans les IDs
-- Cohérence du scoring (2, 1, 0)
+- 5 dimensions, 20 questions, 4 questions/dimension, 3 réponses/question (scores 2/1/0)
 
-**Wording (v1.2) :**
-- Vérification des 14 questions reformulées
-- Confirmation que l'ancien wording est supprimé
+**Scoring :**
+- Cas max, min, middle, mixte, partiels (null), index invalides
+- Seuils de catégorie exacts (44/45, 74/75)
+- Niveaux de diagnostic (low/mid/high, frontières 3/4 et 5/6)
+- Arrondi mathématique du score global
+- buildDimensionResults (métadonnées préservées, pct calculés)
+
+**Personas :** Vulnérable (all-worst), Stable (all-middle), Irremplaçable mixte (fort partout sauf une dimension)
+
+**buildAbandonPayload :** Retourne null hors quiz, payload complet sur quiz, dimension et answersGiven corrects
+
+**Wording v1.2 :** 25 strings nouvelles présentes, 24 anciennes absentes
+
+**Wording v1.3 :** 9 textes globaux (catégories Vulnérable/Stable/Irremplaçable) mis à jour
+
+**Storage utilities :** 10 tests (round-trip, corruption, reset, validation stricte des valeurs)
+
+**Modal + migration Kit→Ghost :** Textes du modal présents, ancienne bannière absente, embed Kit supprimé, GhostSignupForm présent
+
+### Couverture `api/subscribe.test.js` (27 assertions)
+
+- Méthodes non-POST → 405
+- Email invalide (absent, vide, sans @) → 400
+- Vars env manquantes → 500
+- Ghost 201 et 409 → 200 `{ success: true }`
+- Ghost 422 → proxy 422 ; fetch throw → 500
+- createGhostToken : structure JWT, alg HS256, kid, aud `/ghost/api/admin/`, iat/exp
+
+### Couverture `subscription.spec.js` (8 scénarios E2E Playwright)
+
+- Formulaire visible sur écran résultat
+- Unlock des diagnostics après succès API (200)
+- Erreur client sur email invalide
+- Erreur affichée sur réponse API 500
+- 409 (membre existant) traité comme succès
+- Modal apparaît avec titre "Diagnostics déverrouillés"
+- Modal affiche l'email soumis
+- Fermeture modal révèle les diagnostics
 
 ### Runner
-Node.js vanilla — zéro dépendance de test externe. Intentionnel.
+Node.js vanilla pour tests unitaires — zéro dépendance de test externe. Intentionnel.  
+Playwright (`@playwright/test`) pour les tests E2E — lance le serveur de dev Vite.
 
 ---
 
@@ -636,8 +685,8 @@ Node.js vanilla — zéro dépendance de test externe. Intentionnel.
 
 ### Variables d'environnement (`.env.example`)
 ```
-KIT_API_KEY=
-KIT_FORM_ID=
+GHOST_ADMIN_API_KEY=your_ghost_id:your_ghost_hex_secret
+GHOST_URL=https://your-site.ghost.io
 ```
 
 ---
@@ -657,9 +706,12 @@ KIT_FORM_ID=
 
 | Version | Date | Changements |
 |---|---|---|
+| v1.5.0 | 2026-05-23 | UnlockModal post-inscription, PDF via `window.print()`, 3 nouveaux tests E2E Playwright |
+| v1.4.0 | 2026-05-23 | Migration email ConvertKit → Ghost Admin API (JWT HS256), 27 tests unitaires Ghost |
+| v1.3.0 | 2026-05-23 | Persistance localStorage (saveQuizState/loadQuizState/clearQuizState), 10 tests storage |
 | v1.2.0 | 2026-05-11 | Ajustement seuils de catégorie (vulnérable <45%, stable 45–74%, irremplaçable ≥75%) |
-| v1.1.0 | — | Reformulation de 14 questions pour clarté et impact |
-| v1.0.0 | — | Lancement MVP production |
+| v1.1.0 | 2026-05-11 | Reformulation de 14 questions pour clarté et impact (wording v1.2) |
+| v1.0.0 | 2025-05-10 | Lancement MVP production |
 
 ---
 
