@@ -115,8 +115,9 @@
 | Tests E2E | Playwright (@playwright/test — devDependency) |
 | Fonts | Google Fonts (DM Sans, via CSS @import) |
 | JWT / Crypto | Node.js `crypto` natif (HS256 pour Ghost Admin API) |
+| PDF client-side | jspdf + html2canvas (import dynamique — lazy-loaded au clic) |
 
-**Libs actuellement installées :** react, react-dom, recharts, @vitejs/plugin-react, vite, @playwright/test
+**Libs actuellement installées :** react, react-dom, recharts, jspdf, html2canvas, @vitejs/plugin-react, vite, @playwright/test
 
 **Avant d'ajouter une lib :** Est-ce que ça peut se faire nativement en < 20 lignes ? Repo actif (< 6 mois) ? Licence MIT/Apache 2.0 ? Si oui → propose, attends l'approbation.
 

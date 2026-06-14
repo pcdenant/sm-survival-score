@@ -7,6 +7,30 @@ Versionning basé sur [Semantic Versioning](https://semver.org/lang/fr/).
 
 ---
 
+## [1.7.0] — 2026-06-14
+
+### Ajouté
+- **PDF personnalisé post-unlock** — Téléchargement client-side déclenché depuis `UnlockModal` via `jsPDF` + `html2canvas`
+  - Nom de fichier : `diagnostic-sm-[score]-[date].pdf`
+  - Contenu : score global, badge catégorie, texte global, signal prioritaire, vue d'ensemble (barres CSS), 5 diagnostics ordonnés par criticité (texte + action), CTA Collaboration Solved
+- **`PDFDocument`** — Composant layout A4 (794px) styles 100% inline, palettes et tokens existants
+- **`generatePDF(pdfProps)`** — Fonction async : render off-screen, html2canvas, jsPDF, pagination automatique, cleanup
+- **Variables d'env** : `VITE_COLLAB_SOLVED_URL` + `VITE_COLLAB_SOLVED_EMAIL` (optionnelles, affichées dans le PDF)
+
+### Modifié
+- **`UnlockModal`** — Bouton "Télécharger mon rapport (PDF)" → appelle `generatePDF()` (remplace `window.print()`), feedback "Génération..." pendant la génération
+- **`ResultScreen`** — Construit `pdfProps` via `useMemo` et le transmet à `UnlockModal`
+
+### Dépendances
+- `jspdf@^4.2.1` + `html2canvas@^1.4.1` ajoutées (import dynamique — lazy-loaded uniquement au clic)
+
+### Tests
+- +1 test E2E Playwright : vérifie le nom de fichier du téléchargement PDF
+- Mise à jour assertion wording : `"Télécharger mon plan d'action"` → `"Télécharger mon rapport"`
+- Total : 252 + 27 = 279 tests unitaires passing
+
+---
+
 ## [1.6.0] — 2026-06-14
 
 ### Ajouté

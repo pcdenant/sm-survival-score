@@ -97,3 +97,20 @@ test("fermer le modal affiche les diagnostics", async ({ page }) => {
   await page.getByRole("button", { name: "Voir mes résultats" }).click();
   await expect(page.getByText("Diagnostics déverrouillés")).not.toBeVisible();
 });
+
+test("le bouton PDF déclenche un téléchargement avec le bon nom de fichier", async ({ page }) => {
+  await page.route("/api/subscribe", (route) =>
+    route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ success: true }) })
+  );
+  await page.goto("/");
+  await completeQuiz(page);
+  await page.locator('input[type="email"]').fill("test@example.com");
+  await submitBtn(page).click();
+  await expect(page.getByText("Diagnostics déverrouillés")).toBeVisible();
+
+  const downloadPromise = page.waitForEvent("download");
+  await page.getByRole("button", { name: /Télécharger mon rapport/ }).click();
+  const download = await downloadPromise;
+
+  expect(download.suggestedFilename()).toMatch(/^diagnostic-sm-\d+-\d{4}-\d{2}-\d{2}\.pdf$/);
+}, 30000);
