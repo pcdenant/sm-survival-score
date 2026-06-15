@@ -717,35 +717,35 @@ function LandingScreen({ onStart }) {
   return (
     <div style={{ minHeight: "100vh", background: T.vert, display: "flex", alignItems: "center", justifyContent: "center", padding: "40px 20px", fontFamily: T.f }}>
       <main style={{ maxWidth: 520, textAlign: "center", animation: "fadeUp 0.5s ease-out" }}>
-        <div style={{ display: "inline-block", padding: "6px 18px", fontSize: 12, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", color: T.jaune, border: `1px solid ${T.jaune}50`, borderRadius: 20, marginBottom: 36 }}>
-          Diagnostic gratuit
-        </div>
+        <p style={{ fontSize: 11, fontWeight: 600, color: `${T.white}40`, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 28 }}>
+          Collaboration Solved
+        </p>
         <h1 style={{ fontSize: "clamp(30px, 7vw, 44px)", fontWeight: 900, lineHeight: 1.15, color: T.white, marginBottom: 20, letterSpacing: "-0.03em" }}>
           <span style={{ display: "block" }}>Ton rôle est en danger.</span>
           <span style={{ display: "block", fontWeight: 700 }}>Tu ne sais pas encore où.</span>
         </h1>
-        <p style={{ fontSize: 17, fontWeight: 500, color: `${T.white}cc`, marginBottom: 0 }}>
-          20 questions · 5 min · Score sur 5 dimensions
+        <p style={{ fontSize: 14, fontWeight: 500, color: `${T.white}bb`, marginBottom: 28 }}>
+          Diagnostic gratuit · 5 min · Sans inscription
         </p>
-        <hr style={{ border: "none", borderTop: `1px solid ${T.white}20`, width: 60, margin: "32px auto" }} />
-        <div style={{ fontSize: 15, color: `${T.white}99`, lineHeight: 1.75, marginBottom: 48, maxWidth: 440, marginLeft: "auto", marginRight: "auto", textAlign: "left" }}>
-          <p style={{ marginBottom: 20 }}>
-            En janvier 2023, Capital One a dissous sa famille de rôles agile. 1 100 postes. Dans leur communiqué, ces personnes étaient qualifiées de « critiques ». Elles ont été éliminées quand même.
-          </p>
-          <p style={{ marginBottom: 20 }}>
-            Selon ScrumAlliance, 18% des Scrum Masters ont été touchés par des licenciements depuis 2022. Des outils vendent aujourd'hui 85% des responsabilités visibles du SM en abonnement mensuel, pour un fragment de ton salaire. La direction peut faire le calcul.
-          </p>
-          <p style={{ marginBottom: 20, color: `${T.white}cc`, fontStyle: "italic", fontWeight: 600 }}>
-            Le risque n'est pas toujours là où tu crois.<br />C'est ça, l'angle mort métier.
-          </p>
-          <p style={{ marginBottom: 0 }}>
-            Ce diagnostic mesure ta situation sur 5 dimensions. Tu repars avec un score et un plan d'action par zone de vulnérabilité.
-          </p>
+        <div style={{ maxWidth: 380, width: "100%", margin: "0 auto 32px" }}>
+          <button onClick={onStart} style={{ display: "block", width: "100%", padding: "18px 0", fontSize: 16, fontWeight: 700, fontFamily: T.f, background: T.jaune, color: T.vertDark, border: "none", borderRadius: T.r, cursor: "pointer", boxShadow: "0 4px 24px rgba(0,0,0,0.15)", minHeight: 56, marginBottom: 8 }}>
+            Voir mes angles morts
+          </button>
+          <p style={{ fontSize: 11, color: `${T.white}40`, textAlign: "center" }}>Résultat immédiat · Aucune carte requise</p>
         </div>
-        <button onClick={onStart} style={{ padding: "18px 56px", fontSize: 16, fontWeight: 700, fontFamily: T.f, background: T.jaune, color: T.vertDark, border: "none", borderRadius: T.r, cursor: "pointer", boxShadow: "0 4px 24px rgba(0,0,0,0.15)", minHeight: 56 }}>
-          Voir mes angles morts
-        </button>
-        <p style={{ fontSize: 12, color: `${T.white}60`, marginTop: 24 }}>Gratuit · Sans inscription · Résultat immédiat</p>
+        <hr style={{ border: "none", borderTop: `1px solid ${T.white}20`, width: 60, margin: "0 auto 24px" }} />
+        <div style={{ maxWidth: 400, margin: "0 auto", textAlign: "left" }}>
+          {[
+            { num: "1 100", text: "postes agile supprimés chez Capital One en 2023 — qualifiés de « critiques » jusqu'au bout" },
+            { num: "18%",   text: "des Scrum Masters licenciés depuis 2022 selon ScrumAlliance" },
+            { num: "5",     text: "dimensions analysées : visibilité, preuves, langage, autonomie, stratégie" },
+          ].map(({ num, text }, i, arr) => (
+            <div key={num} style={{ display: "flex", gap: 14, alignItems: "flex-start", marginBottom: i < arr.length - 1 ? 16 : 0 }}>
+              <span style={{ fontSize: 22, fontWeight: 900, color: T.jaune, letterSpacing: "-0.03em", lineHeight: 1, flexShrink: 0, width: 52, textAlign: "right" }}>{num}</span>
+              <span style={{ fontSize: 13, color: `${T.white}55`, lineHeight: 1.55, paddingTop: 3 }}>{text}</span>
+            </div>
+          ))}
+        </div>
       </main>
     </div>
   );

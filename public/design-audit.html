@@ -1,0 +1,748 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Design Audit — SM Survival Score</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;0,9..40,900;1,9..40,400&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'DM Sans', -apple-system, sans-serif; background: #f5f0eb; color: #1a1a1a; -webkit-font-smoothing: antialiased; }
+
+    /* ─── TOKENS ─── */
+    :root {
+      --vert: #006946;
+      --vert-dark: #004d34;
+      --jaune: #FFF200;
+      --creme: #FBF3EB;
+      --white: #ffffff;
+      --text: #1a1a1a;
+      --text-mid: #4a4a4a;
+      --text-muted: #7a7a7a;
+      --border: #e8ddd1;
+      --red: #dc2626;
+      --amber: #f59e0b;
+    }
+
+    /* ─── LAYOUT ─── */
+    .audit-page { max-width: 1280px; margin: 0 auto; padding: 48px 24px 96px; }
+    .audit-header { text-align: center; margin-bottom: 72px; }
+    .audit-header h1 { font-size: clamp(28px, 5vw, 44px); font-weight: 900; letter-spacing: -0.03em; color: var(--vert); margin-bottom: 12px; }
+    .audit-header p { font-size: 17px; color: var(--text-muted); max-width: 600px; margin: 0 auto 16px; line-height: 1.6; }
+    .pill { display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; }
+    .pill-red { background: #fef2f2; color: #dc2626; }
+    .pill-green { background: #ecfdf5; color: #006946; }
+    .pill-amber { background: #fffbeb; color: #92400e; }
+    .pill-gray { background: #f3f4f6; color: #6b7280; }
+
+    /* ─── IMPECCABLE FINDINGS ─── */
+    .findings-section { background: #1a1a1a; border-radius: 16px; padding: 32px; margin-bottom: 64px; }
+    .findings-section h2 { font-size: 13px; font-weight: 700; color: var(--jaune); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 20px; }
+    .findings-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; }
+    .finding-item { background: rgba(255,255,255,0.06); border-radius: 10px; padding: 18px; border-left: 3px solid var(--jaune); }
+    .finding-item .rule { font-size: 11px; font-family: monospace; color: var(--jaune); margin-bottom: 6px; font-weight: 700; }
+    .finding-item .desc { font-size: 13px; color: rgba(255,255,255,0.75); line-height: 1.55; }
+    .finding-item .count { font-size: 11px; color: rgba(255,255,255,0.4); margin-top: 8px; }
+
+    /* ─── SECTION HEADERS ─── */
+    .rec-section { margin-bottom: 80px; }
+    .rec-section-header { margin-bottom: 40px; }
+    .rec-section-header .rec-number { font-size: 12px; font-weight: 700; color: var(--vert); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 8px; }
+    .rec-section-header h2 { font-size: clamp(22px, 4vw, 32px); font-weight: 900; letter-spacing: -0.02em; color: var(--text); margin-bottom: 8px; line-height: 1.2; }
+    .rec-section-header p { font-size: 16px; color: var(--text-mid); line-height: 1.65; max-width: 680px; }
+
+    /* ─── BEFORE / AFTER CONTAINER ─── */
+    .ba-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+    @media (max-width: 860px) { .ba-grid { grid-template-columns: 1fr; } }
+    .ba-col { display: flex; flex-direction: column; }
+    .ba-label { font-size: 11px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+    .ba-label.before { color: #dc2626; }
+    .ba-label.after { color: var(--vert); }
+    .ba-frame { border-radius: 16px; overflow: hidden; border: 1px solid var(--border); box-shadow: 0 4px 32px rgba(0,0,0,0.08); flex: 1; }
+
+    /* ─── ANNOTATION ─── */
+    .annotation { margin-top: 16px; background: #fff; border-radius: 10px; border: 1px solid var(--border); padding: 16px; }
+    .annotation ul { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+    .annotation li { font-size: 13px; color: var(--text-mid); line-height: 1.5; padding-left: 20px; position: relative; }
+    .annotation li::before { content: '×'; position: absolute; left: 0; font-weight: 700; color: #dc2626; }
+    .annotation-after li::before { content: '✓'; color: var(--vert); }
+
+    /* ─── DIAGNOSIS BOX ─── */
+    .diagnosis { background: var(--white); border-radius: 12px; padding: 20px; border: 1px solid var(--border); }
+
+    /* ════════════════════════════════════════════
+       SCREEN MOCKUPS
+    ════════════════════════════════════════════ */
+
+    /* ── LANDING: BEFORE ── */
+    .landing-before { background: #006946; padding: 40px 28px; font-family: 'DM Sans', sans-serif; min-height: 500px; display: flex; align-items: center; justify-content: center; }
+    .landing-before-inner { max-width: 400px; text-align: center; }
+    .landing-before .badge { display: inline-block; padding: 5px 14px; font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: rgba(255,242,0,0.6); border: 1px solid rgba(255,242,0,0.3); border-radius: 20px; margin-bottom: 28px; }
+    .landing-before h1 { font-size: 32px; font-weight: 900; line-height: 1.15; color: #fff; margin-bottom: 16px; letter-spacing: -0.03em; }
+    .landing-before .sub { font-size: 14px; font-weight: 500; color: rgba(255,255,255,0.7); margin-bottom: 0; }
+    .landing-before hr { border: none; border-top: 1px solid rgba(255,255,255,0.12); width: 50px; margin: 24px auto; }
+    .landing-before .body-text { font-size: 13px; color: rgba(255,255,255,0.55); line-height: 1.75; text-align: left; margin-bottom: 36px; }
+    .landing-before .body-text p { margin-bottom: 14px; }
+    .landing-before .body-text p:last-child { margin-bottom: 0; }
+    .landing-before .cta { padding: 16px 48px; font-size: 15px; font-weight: 700; font-family: 'DM Sans', sans-serif; background: #FFF200; color: #004d34; border: none; border-radius: 14px; cursor: pointer; box-shadow: 0 4px 20px rgba(0,0,0,0.18); display: inline-block; }
+    .landing-before .footer-note { font-size: 11px; color: rgba(255,255,255,0.35); margin-top: 18px; }
+
+    /* ── LANDING: AFTER ── */
+    .landing-after { background: #006946; font-family: 'DM Sans', sans-serif; min-height: 500px; }
+    .landing-after-top { padding: 28px 28px 0; }
+    .landing-after .brand-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 40px; }
+    .landing-after .brand-name { font-size: 13px; font-weight: 700; color: rgba(255,255,255,0.5); letter-spacing: 0.04em; text-transform: uppercase; }
+    .landing-after .nav-badge { padding: 5px 12px; border-radius: 20px; border: 1px solid rgba(255,242,0,0.5); font-size: 11px; font-weight: 700; color: #FFF200; letter-spacing: 0.06em; text-transform: uppercase; }
+    .landing-after h1 { font-size: 30px; font-weight: 900; line-height: 1.1; color: #fff; margin-bottom: 20px; letter-spacing: -0.03em; }
+    .landing-after .sub { font-size: 15px; color: rgba(255,255,255,0.65); margin-bottom: 28px; line-height: 1.5; }
+    /* Stats callout */
+    .stats-row { display: flex; gap: 2px; margin-bottom: 32px; }
+    .stat-box { flex: 1; background: rgba(255,255,255,0.08); border-radius: 12px; padding: 16px 12px; text-align: center; }
+    .stat-box .num { font-size: 28px; font-weight: 900; color: #FFF200; letter-spacing: -0.04em; line-height: 1; margin-bottom: 4px; }
+    .stat-box .label { font-size: 10px; color: rgba(255,255,255,0.55); line-height: 1.4; text-transform: uppercase; letter-spacing: 0.04em; font-weight: 600; }
+    .landing-after .body-short { font-size: 13px; color: rgba(255,255,255,0.6); line-height: 1.7; margin-bottom: 28px; }
+    .landing-after .cta-row { display: flex; flex-direction: column; gap: 10px; align-items: center; }
+    .landing-after .cta-primary { padding: 16px 48px; font-size: 15px; font-weight: 700; font-family: 'DM Sans', sans-serif; background: #FFF200; color: #004d34; border: none; border-radius: 14px; cursor: pointer; box-shadow: 0 4px 20px rgba(0,0,0,0.18); display: inline-block; width: 100%; text-align: center; }
+    .landing-after .cta-meta { font-size: 11px; color: rgba(255,255,255,0.35); }
+    .landing-after-bottom { background: rgba(0,0,0,0.15); padding: 20px 28px; margin-top: 28px; }
+    .landing-after-bottom .proof-line { font-size: 11px; color: rgba(255,255,255,0.4); display: flex; align-items: center; justify-content: center; gap: 16px; }
+    .proof-sep { opacity: 0.3; }
+
+    /* ── QUIZ: BEFORE ── */
+    .quiz-before { background: #FBF3EB; font-family: 'DM Sans', sans-serif; min-height: 480px; display: flex; flex-direction: column; }
+    .quiz-before-header { background: #006946; padding: 14px 20px; }
+    .quiz-before-header .row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+    .quiz-before-header .dim-name { font-size: 11px; font-weight: 600; color: #FFF200; letter-spacing: 0.04em; text-transform: uppercase; }
+    .quiz-before-header .counter { font-size: 11px; color: rgba(255,255,255,0.55); font-family: monospace; }
+    .quiz-before-progress { display: flex; gap: 3px; }
+    .qb-seg-group { display: flex; gap: 2px; flex: 1; }
+    .qb-seg { flex: 1; height: 3px; border-radius: 2px; background: rgba(251,243,235,0.25); }
+    .qb-seg.done { background: #006946; }
+    .qb-seg.current { background: #FFF200; }
+    .quiz-before-body { flex: 1; padding: 32px 20px 20px; }
+    .quiz-before-body h2 { font-size: 17px; font-weight: 700; line-height: 1.5; color: #1a1a1a; margin-bottom: 24px; }
+    .quiz-before-answers { display: flex; flex-direction: column; gap: 8px; }
+    .qb-answer { padding: 15px 18px; font-size: 13px; line-height: 1.5; font-family: 'DM Sans', sans-serif; text-align: left; background: #fff; color: #1a1a1a; border: 2px solid #e8ddd1; border-radius: 14px; cursor: pointer; font-weight: 400; }
+    .qb-answer.selected { background: #006946; color: #fff; border-color: #006946; font-weight: 600; }
+    .quiz-before-nav { border-top: 1px solid #e8ddd1; padding: 14px 20px; background: #FBF3EB; display: flex; justify-content: space-between; }
+    .nav-btn-ghost { padding: 10px 22px; font-size: 13px; font-family: 'DM Sans', sans-serif; font-weight: 600; background: transparent; color: #7a7a7a; border: 1px solid #e8ddd1; border-radius: 8px; cursor: pointer; }
+    .nav-btn-primary { padding: 10px 26px; font-size: 13px; font-family: 'DM Sans', sans-serif; font-weight: 700; background: #006946; color: #fff; border: none; border-radius: 8px; cursor: pointer; }
+
+    /* ── QUIZ: AFTER ── */
+    .quiz-after { background: #FBF3EB; font-family: 'DM Sans', sans-serif; min-height: 480px; display: flex; flex-direction: column; }
+    .quiz-after-header { background: #006946; padding: 16px 20px 12px; }
+    .quiz-after-header .top-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+    .quiz-after-header .dim-badge { display: flex; align-items: center; gap: 6px; }
+    .quiz-after-header .dim-dot { width: 6px; height: 6px; border-radius: 50%; background: #FFF200; }
+    .quiz-after-header .dim-name { font-size: 11px; font-weight: 700; color: #FFF200; letter-spacing: 0.06em; text-transform: uppercase; }
+    .quiz-after-header .counter { font-size: 11px; color: rgba(255,255,255,0.5); }
+    .qa-progress { display: flex; flex-direction: column; gap: 4px; }
+    .qa-progress-bar { display: flex; gap: 3px; }
+    .qa-seg-group { display: flex; gap: 2px; flex: 1; }
+    .qa-seg { flex: 1; height: 5px; border-radius: 3px; background: rgba(255,255,255,0.15); }
+    .qa-seg.done { background: #FFF200; opacity: 0.7; }
+    .qa-seg.current { background: #FFF200; }
+    .qa-dim-labels { display: flex; }
+    .qa-dim-label { flex: 1; font-size: 8px; color: rgba(255,255,255,0.35); text-transform: uppercase; letter-spacing: 0.04em; font-weight: 600; }
+
+    .quiz-after-body { flex: 1; padding: 28px 20px 16px; }
+    .quiz-after-body h2 { font-size: 17px; font-weight: 700; line-height: 1.5; color: #1a1a1a; margin-bottom: 20px; }
+    .qa-answers { display: flex; flex-direction: column; gap: 8px; }
+    .qa-answer { padding: 13px 16px; font-size: 13px; line-height: 1.5; font-family: 'DM Sans', sans-serif; text-align: left; background: #fff; color: #1a1a1a; border: 1.5px solid #e8ddd1; border-radius: 12px; cursor: pointer; display: flex; align-items: flex-start; gap: 12px; font-weight: 400; }
+    .qa-answer-key { width: 22px; height: 22px; border-radius: 6px; background: #f0e8de; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 800; color: #7a7a7a; flex-shrink: 0; margin-top: 1px; }
+    .qa-answer-text { flex: 1; }
+    .qa-answer-check { width: 20px; height: 20px; border-radius: 50%; border: 1.5px solid #e8ddd1; flex-shrink: 0; margin-top: 1px; }
+    .qa-answer.selected { background: rgba(0,105,70,0.06); border-color: #006946; color: #004d34; font-weight: 600; }
+    .qa-answer.selected .qa-answer-key { background: #006946; color: #fff; }
+    .qa-answer.selected .qa-answer-check { background: #006946; border-color: #006946; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 10px; }
+    .qa-answer.selected .qa-answer-check::after { content: '✓'; font-weight: 900; }
+
+    .quiz-after-nav { border-top: 1px solid #e8ddd1; padding: 14px 20px; background: #FBF3EB; display: flex; justify-content: space-between; gap: 10px; }
+
+    /* ── RESULT: BEFORE ── */
+    .result-before { background: #FBF3EB; font-family: 'DM Sans', sans-serif; }
+    .result-before-hero { background: #006946; padding: 32px 24px 40px; text-align: center; }
+    .result-before-hero .label { font-size: 11px; color: rgba(255,255,255,0.55); margin-bottom: 8px; letter-spacing: 0.06em; text-transform: uppercase; font-weight: 600; }
+    .result-before-hero .score { font-size: 80px; font-weight: 900; color: #f59e0b; line-height: 1; letter-spacing: -0.04em; }
+    .result-before-hero .score-sub { font-size: 14px; color: rgba(255,255,255,0.55); margin-bottom: 14px; }
+    .result-before-hero .cat-badge { display: inline-block; padding: 8px 24px; font-size: 14px; font-weight: 700; color: #004d34; background: #FFF200; border-radius: 24px; }
+    .result-before-body { padding: 24px 20px; }
+    /* Priority signal - BEFORE */
+    .priority-signal-before { background: #1a1a2e; border-left: 3px solid #FFF200; border-radius: 4px; padding: 14px 16px; margin-bottom: 16px; }
+    .priority-signal-before .title { font-weight: 600; font-size: 13px; color: #FFF200; margin-bottom: 5px; }
+    .priority-signal-before .body { font-size: 12px; color: rgba(232,232,232,0.8); line-height: 1.5; }
+    /* Diagnostic card - BEFORE */
+    .diag-card-before { background: #fff; border-radius: 16px; padding: 18px; border: 1px solid #f0e8de; border-left: 4px solid #f59e0b; margin-bottom: 10px; }
+    .diag-card-before .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+    .diag-card-before .header h4 { font-size: 14px; font-weight: 700; color: #1a1a1a; }
+    .diag-card-before .header .score-badge { font-size: 10px; font-weight: 700; color: #f59e0b; padding: 3px 10px; background: #fffbeb; border-radius: 20px; white-space: nowrap; }
+    .diag-card-before p { font-size: 12px; line-height: 1.65; color: #4a4a4a; margin-bottom: 12px; }
+    .diag-card-before .action { padding: 12px 14px; background: #FBF3EB; border-radius: 8px; }
+    .diag-card-before .action .action-label { font-size: 10px; font-weight: 700; color: #006946; margin-bottom: 3px; text-transform: uppercase; letter-spacing: 0.05em; }
+    .diag-card-before .action p { font-size: 11px; margin-bottom: 0; }
+
+    /* ── RESULT: AFTER ── */
+    .result-after { background: #FBF3EB; font-family: 'DM Sans', sans-serif; }
+    .result-after-hero { background: #006946; padding: 32px 24px 40px; text-align: center; position: relative; }
+    .result-after-hero .score-context { font-size: 11px; color: rgba(255,255,255,0.5); letter-spacing: 0.08em; text-transform: uppercase; font-weight: 600; margin-bottom: 8px; }
+    .result-after-hero .score { font-size: 80px; font-weight: 900; color: #FFF200; line-height: 1; letter-spacing: -0.04em; }
+    .result-after-hero .score-sub { font-size: 13px; color: rgba(255,255,255,0.5); margin-bottom: 14px; }
+    .result-after-hero .cat-badge { display: inline-flex; align-items: center; gap: 6px; padding: 8px 24px; font-size: 14px; font-weight: 700; color: #004d34; background: #FFF200; border-radius: 24px; }
+    .result-after-body { padding: 20px 18px; }
+
+    /* Priority signal - AFTER */
+    .priority-signal-after { background: var(--vert); border-radius: 12px; padding: 18px 20px; margin-bottom: 14px; display: flex; gap: 14px; align-items: flex-start; }
+    .priority-signal-after .icon { width: 32px; height: 32px; background: rgba(255,242,0,0.15); border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 16px; }
+    .priority-signal-after .content {}
+    .priority-signal-after .label { font-size: 9px; font-weight: 800; color: rgba(255,242,0,0.7); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 4px; }
+    .priority-signal-after .title { font-size: 13px; font-weight: 700; color: #fff; margin-bottom: 4px; line-height: 1.4; }
+    .priority-signal-after .body { font-size: 11px; color: rgba(255,255,255,0.65); line-height: 1.5; }
+
+    /* Diagnostic card - AFTER */
+    .diag-card-after { background: #fff; border-radius: 14px; overflow: hidden; margin-bottom: 10px; border: 1px solid #f0e8de; }
+    .diag-card-after .card-header { padding: 14px 16px; background: rgba(245, 158, 11, 0.06); display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(245,158,11,0.12); }
+    .diag-card-after .card-header h4 { font-size: 14px; font-weight: 700; color: #1a1a1a; }
+    .diag-card-after .score-chip { display: flex; align-items: center; gap: 4px; }
+    .diag-card-after .score-dot { width: 8px; height: 8px; border-radius: 50%; background: #f59e0b; }
+    .diag-card-after .score-num { font-size: 12px; font-weight: 800; color: #f59e0b; font-variant-numeric: tabular-nums; }
+    .diag-card-after .card-body { padding: 14px 16px; }
+    .diag-card-after p { font-size: 12px; line-height: 1.65; color: #4a4a4a; margin-bottom: 12px; }
+    .diag-card-after .action { padding: 12px 14px; background: #FBF3EB; border-radius: 8px; border: 1px solid #e8ddd1; }
+    .diag-card-after .action .action-label { font-size: 9px; font-weight: 800; color: #006946; margin-bottom: 3px; text-transform: uppercase; letter-spacing: 0.07em; }
+    .diag-card-after .action p { font-size: 11px; margin-bottom: 0; color: #4a4a4a; }
+
+    /* ─── MOBILE HINT ─── */
+    .mobile-hint { background: rgba(0,105,70,0.07); border-radius: 10px; padding: 14px 18px; margin-bottom: 48px; display: flex; gap: 12px; align-items: flex-start; }
+    .mobile-hint .icon { font-size: 20px; flex-shrink: 0; margin-top: 2px; }
+    .mobile-hint p { font-size: 13px; color: var(--text-mid); line-height: 1.55; }
+    .mobile-hint strong { color: var(--vert); }
+
+    /* ─── RECOMMENDATIONS SUMMARY ─── */
+    .rec-summary { background: #006946; border-radius: 16px; padding: 32px; margin-top: 64px; }
+    .rec-summary h2 { font-size: 13px; font-weight: 700; color: var(--jaune); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 24px; }
+    .rec-list { display: flex; flex-direction: column; gap: 16px; }
+    .rec-item { background: rgba(255,255,255,0.08); border-radius: 12px; padding: 20px; display: flex; gap: 16px; align-items: flex-start; }
+    .rec-item .num { width: 32px; height: 32px; background: var(--jaune); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 900; color: #004d34; flex-shrink: 0; }
+    .rec-item .content h3 { font-size: 15px; font-weight: 700; color: #fff; margin-bottom: 6px; }
+    .rec-item .content p { font-size: 13px; color: rgba(255,255,255,0.65); line-height: 1.6; }
+    .rec-item .tags { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
+    .rec-tag { padding: 3px 10px; border-radius: 20px; font-size: 10px; font-weight: 700; letter-spacing: 0.05em; }
+    .rec-tag-screen { background: rgba(255,242,0,0.15); color: var(--jaune); }
+    .rec-tag-impact { background: rgba(255,255,255,0.1); color: rgba(255,255,255,0.6); }
+
+    /* ─── DIVIDER ─── */
+    .section-divider { height: 1px; background: var(--border); margin: 64px 0; }
+
+    /* ─── IMPACT LABEL ─── */
+    .impact-row { display: flex; align-items: center; gap: 16px; margin-top: 24px; flex-wrap: wrap; }
+    .impact-item { display: flex; align-items: center; gap: 6px; }
+    .impact-dot { width: 8px; height: 8px; border-radius: 50%; }
+    .impact-dot-high { background: #dc2626; }
+    .impact-dot-med { background: #f59e0b; }
+    .impact-label { font-size: 12px; color: var(--text-muted); }
+  </style>
+</head>
+<body>
+<div class="audit-page">
+
+  <!-- ────────────────────────────────────────
+       HEADER
+  ──────────────────────────────────────── -->
+  <div class="audit-header">
+    <h1>Audit Design — SM Survival Score</h1>
+    <p>Résultats de l'analyse <strong>Impeccable</strong> + audit visuel manuel sur les 3 écrans. 3 recommandations visuelles avec mockups avant/après.</p>
+    <div style="display:flex; gap:8px; justify-content:center; flex-wrap:wrap; margin-top:16px;">
+      <span class="pill pill-red">6 anti-patterns détectés</span>
+      <span class="pill pill-amber">3 screens audités</span>
+      <span class="pill pill-green">Mobile-first vérifié</span>
+    </div>
+  </div>
+
+  <!-- ────────────────────────────────────────
+       IMPECCABLE FINDINGS
+  ──────────────────────────────────────── -->
+  <div class="findings-section">
+    <h2>Résultats Impeccable detect — 6 anti-patterns trouvés</h2>
+    <div class="findings-grid">
+      <div class="finding-item">
+        <div class="rule">[side-tab] × 5 occurrences</div>
+        <div class="desc">Thick colored border on one side of a card — the most recognizable tell of AI-generated UIs. Lignes 424, 461, 486, 555, 598.</div>
+        <div class="count">PrioritySignal · DiagnosticCard (x2) · LockedDiagnosticCard · PDF</div>
+      </div>
+      <div class="finding-item">
+        <div class="rule">[layout-transition] × 1 occurrence</div>
+        <div class="desc">Animating width causes layout thrash and janky performance. Use transform or clip-path instead. Ligne 935.</div>
+        <div class="count">Barre de score dans la BentoCard "Par dimension"</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ────────────────────────────────────────
+       AUDIT MANUEL : RÉSUMÉ
+  ──────────────────────────────────────── -->
+  <div class="mobile-hint">
+    <div class="icon">📱</div>
+    <p><strong>Mobile-first :</strong> Le layout est globalement solide — max-width + padding mobile, sticky header/footer sur le quiz. Points faibles : la Landing n'utilise pas l'espace desktop (max 520px centré, vide sur les côtés). La grille bento result (<code>repeat(auto-fit, minmax(260px, 1fr))</code>) collapse correctement. Les touch targets sont à 48px minimum — conforme. Les fontes clamp() sont bien calibrées. Aucun overflow horizontal détecté.</p>
+  </div>
+
+  <!-- ════════════════════════════════════════
+       REC 1 — DIAGNOSTIC CARDS (Result Screen)
+  ════════════════════════════════════════ -->
+  <div class="rec-section">
+    <div class="rec-section-header">
+      <div class="rec-number">Recommandation 1 · Écran Résultat</div>
+      <h2>Supprimer les side-tabs.<br>Redesign complet des cartes diagnostic.</h2>
+      <p>La <code>border-left</code> colorée sur les cards est l'anti-pattern n°1 détecté par Impeccable — présent 5 fois dans le code. Remplacer par un header de carte avec fond teinté + chip de score dot. Le PrioritySignal navy/jaune est également redessiné : sortir du "dark box with left border" vers un traitement éditorial intégré dans la palette verte.</p>
+      <div class="impact-row">
+        <div class="impact-item"><div class="impact-dot impact-dot-high"></div><span class="impact-label">Supprime le tell AI le plus visible</span></div>
+        <div class="impact-item"><div class="impact-dot impact-dot-high"></div><span class="impact-label">+5 occurrences corrigées</span></div>
+        <div class="impact-item"><div class="impact-dot impact-dot-med"></div><span class="impact-label">Lecture du score plus immédiate</span></div>
+      </div>
+    </div>
+
+    <div class="ba-grid">
+      <!-- BEFORE -->
+      <div class="ba-col">
+        <div class="ba-label before">
+          <span style="font-size:16px;">✕</span> Avant
+        </div>
+        <div class="ba-frame">
+          <div class="result-before">
+            <div class="result-before-hero">
+              <div class="label">Ton score</div>
+              <div class="score">34</div>
+              <div class="score-sub">/100</div>
+              <div class="cat-badge">Stable</div>
+            </div>
+            <div class="result-before-body">
+              <div class="priority-signal-before">
+                <div class="title">Ton angle mort le plus urgent : ce que ton management retient de toi.</div>
+                <div class="body">Tant que cette dimension reste faible, le reste ne protège pas ton poste. C'est la condition de base.</div>
+              </div>
+              <div class="diag-card-before">
+                <div class="header">
+                  <h4>Visibilité de ton impact</h4>
+                  <span class="score-badge">À renforcer — 4/8</span>
+                </div>
+                <p>Ton manager sait vaguement que tu fais du bon travail. Sauf que « vaguement » ne pèse rien quand quelqu'un demande « on coupe quoi ? ».</p>
+                <div class="action">
+                  <div class="action-label">Action immédiate</div>
+                  <p>Prends ta contribution la plus significative et reformule-la en une phrase que ton VP comprendrait.</p>
+                </div>
+              </div>
+              <div class="diag-card-before" style="border-left-color:#dc2626;">
+                <div class="header">
+                  <h4>Positionnement stratégique</h4>
+                  <span class="score-badge" style="color:#dc2626; background:#fef2f2;">Vulnérable — 2/8</span>
+                </div>
+                <p>Tu n'es pas consulté avant les décisions, et tu n'as pas d'objectif lié à un résultat business.</p>
+                <div class="action">
+                  <div class="action-label">Action immédiate</div>
+                  <p>Demande à ton manager un objectif mesurable pour le prochain trimestre.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="annotation">
+          <ul>
+            <li>border-left colorée = anti-pattern "side-tab" (×5 dans le code)</li>
+            <li>PrioritySignal navy (#1a1a2e) décontextualisé de la palette</li>
+            <li>Badge "À renforcer — 4/8" noyé dans le coin, trop discret</li>
+            <li>Score text orange (<code>#f59e0b</code>) sur fond vert foncé = contraste borderline</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- AFTER -->
+      <div class="ba-col">
+        <div class="ba-label after">
+          <span style="font-size:16px;">✓</span> Après
+        </div>
+        <div class="ba-frame">
+          <div class="result-after">
+            <div class="result-after-hero">
+              <div class="score-context">Ton score</div>
+              <div class="score">34</div>
+              <div class="score-sub">/100</div>
+              <div class="cat-badge">
+                <span>📊</span> Stable
+              </div>
+            </div>
+            <div class="result-after-body">
+              <!-- Priority signal redesigné -->
+              <div class="priority-signal-after">
+                <div class="icon">⚡</div>
+                <div class="content">
+                  <div class="label">Priorité immédiate</div>
+                  <div class="title">Ton angle mort : ce que ton management retient de toi.</div>
+                  <div class="body">Tant que cette dimension reste faible, le reste ne protège pas ton poste.</div>
+                </div>
+              </div>
+              <!-- Diagnostic cards redesignées -->
+              <div class="diag-card-after">
+                <div class="card-header">
+                  <h4>Visibilité de ton impact</h4>
+                  <div class="score-chip">
+                    <div class="score-dot"></div>
+                    <span class="score-num">4/8</span>
+                  </div>
+                </div>
+                <div class="card-body">
+                  <p>Ton manager sait vaguement que tu fais du bon travail. Sauf que « vaguement » ne pèse rien quand quelqu'un demande « on coupe quoi ? ».</p>
+                  <div class="action">
+                    <div class="action-label">Action immédiate</div>
+                    <p>Prends ta contribution la plus significative et reformule-la en une phrase que ton VP comprendrait.</p>
+                  </div>
+                </div>
+              </div>
+              <div class="diag-card-after">
+                <div class="card-header" style="background:rgba(220,38,38,0.05); border-bottom-color:rgba(220,38,38,0.12);">
+                  <h4>Positionnement stratégique</h4>
+                  <div class="score-chip">
+                    <div class="score-dot" style="background:#dc2626;"></div>
+                    <span class="score-num" style="color:#dc2626;">2/8</span>
+                  </div>
+                </div>
+                <div class="card-body">
+                  <p>Tu n'es pas consulté avant les décisions, et tu n'as pas d'objectif lié à un résultat business.</p>
+                  <div class="action">
+                    <div class="action-label">Action immédiate</div>
+                    <p>Demande à ton manager un objectif mesurable pour le prochain trimestre.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="annotation annotation-after">
+          <ul>
+            <li>Card header avec fond teinté (6% opacity couleur) + top-border implicite</li>
+            <li>Score chip avec dot coloré — immédiat, sans surcharge</li>
+            <li>PrioritySignal intégré dans la palette verte du produit</li>
+            <li>Icône emoji contextuelle dans le signal — humanise sans kitch</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-divider"></div>
+
+  <!-- ════════════════════════════════════════
+       REC 2 — LANDING SCREEN
+  ════════════════════════════════════════ -->
+  <div class="rec-section">
+    <div class="rec-section-header">
+      <div class="rec-number">Recommandation 2 · Écran Landing</div>
+      <h2>Sortir le texte du mur.<br>Les stats chocs en callout visuel.</h2>
+      <p>Les deux statistiques clés (1 100 postes, 18% de SM licenciés) sont noyées dans 3 paragraphes de prose. Elles sont ton meilleur argument de conversion — elles doivent sauter aux yeux. On remplace le mur de texte par un bloc stats visuel + un paragraphe court, et on ajoute un ancrage de marque minimal en header.</p>
+      <div class="impact-row">
+        <div class="impact-item"><div class="impact-dot impact-dot-high"></div><span class="impact-label">Conversion CTA principale</span></div>
+        <div class="impact-item"><div class="impact-dot impact-dot-high"></div><span class="impact-label">Lecture en 8 secondes au lieu de 45</span></div>
+        <div class="impact-item"><div class="impact-dot impact-dot-med"></div><span class="impact-label">Crédibilité immédiate (données chiffrées)</span></div>
+      </div>
+    </div>
+
+    <div class="ba-grid">
+      <!-- BEFORE -->
+      <div class="ba-col">
+        <div class="ba-label before">
+          <span style="font-size:16px;">✕</span> Avant
+        </div>
+        <div class="ba-frame">
+          <div class="landing-before">
+            <div class="landing-before-inner">
+              <div class="badge">Diagnostic gratuit</div>
+              <h1>Ton rôle est en danger.<br><span style="font-weight:700;">Tu ne sais pas encore où.</span></h1>
+              <p class="sub">20 questions · 5 min · Score sur 5 dimensions</p>
+              <hr />
+              <div class="body-text">
+                <p>En janvier 2023, Capital One a dissous sa famille de rôles agile. 1 100 postes. Dans leur communiqué, ces personnes étaient qualifiées de « critiques ». Elles ont été éliminées quand même.</p>
+                <p>Selon ScrumAlliance, 18% des Scrum Masters ont été touchés par des licenciements depuis 2022. Des outils vendent aujourd'hui 85% des responsabilités visibles du SM en abonnement mensuel.</p>
+                <p style="color:rgba(255,255,255,0.75); font-style:italic; font-weight:600;">Le risque n'est pas toujours là où tu crois. C'est ça, l'angle mort métier.</p>
+                <p>Ce diagnostic mesure ta situation sur 5 dimensions. Tu repars avec un score et un plan d'action par zone de vulnérabilité.</p>
+              </div>
+              <div class="cta">Voir mes angles morts</div>
+              <p class="footer-note">Gratuit · Sans inscription · Résultat immédiat</p>
+            </div>
+          </div>
+        </div>
+        <div class="annotation">
+          <ul>
+            <li>Badge "Diagnostic gratuit" à 50% d'opacité — quasi invisible sur fond vert</li>
+            <li>4 paragraphes de prose : stats clés noyées dans le flux de texte</li>
+            <li>Desktop : layout 520px centré, 40% de l'écran vide de chaque côté</li>
+            <li>Aucun ancrage de marque (logo, identité "Collaboration Solved")</li>
+            <li>La ligne "20 questions · 5 min" est de-emphasizée — c'est un trust signal fort</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- AFTER -->
+      <div class="ba-col">
+        <div class="ba-label after">
+          <span style="font-size:16px;">✓</span> Après
+        </div>
+        <div class="ba-frame">
+          <div class="landing-after">
+            <div class="landing-after-top">
+              <div class="brand-row">
+                <span class="brand-name">Collaboration Solved</span>
+                <span class="nav-badge">Diagnostic gratuit</span>
+              </div>
+              <h1>Ton rôle est en danger.<br>Tu ne sais pas encore où.</h1>
+              <p class="sub">Mesure ta solidité sur 5 dimensions. Repars avec un plan d'action ciblé.</p>
+              <!-- Stats callout -->
+              <div class="stats-row">
+                <div class="stat-box">
+                  <div class="num">1 100</div>
+                  <div class="label">postes agile supprimés<br>Capital One, 2023</div>
+                </div>
+                <div class="stat-box">
+                  <div class="num">18%</div>
+                  <div class="label">des SM licenciés<br>depuis 2022</div>
+                </div>
+                <div class="stat-box">
+                  <div class="num">5 min</div>
+                  <div class="label">pour connaître<br>tes angles morts</div>
+                </div>
+              </div>
+              <p class="body-short">Le risque n'est pas là où tu crois. Ce diagnostic mesure ta situation réelle et te donne un plan d'action par zone de vulnérabilité.</p>
+              <div class="cta-row">
+                <div class="cta-primary">Voir mes angles morts</div>
+                <span class="cta-meta">Gratuit · Sans inscription · Résultat immédiat</span>
+              </div>
+            </div>
+            <div class="landing-after-bottom">
+              <div class="proof-line">
+                <span>20 questions</span>
+                <span class="proof-sep">·</span>
+                <span>5 dimensions</span>
+                <span class="proof-sep">·</span>
+                <span>Score personnalisé</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="annotation annotation-after">
+          <ul>
+            <li>Badge "Diagnostic gratuit" repositionné en nav — visible et professionnel</li>
+            <li>Stats chocs en callout visuel 3 colonnes — lisibles en 3 secondes</li>
+            <li>Un seul paragraphe de prose — densité réduite, impact augmenté</li>
+            <li>Ancrage marque "Collaboration Solved" en header — autorité</li>
+            <li>Proof bar en bas — réassurance discrète avant le scroll</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-divider"></div>
+
+  <!-- ════════════════════════════════════════
+       REC 3 — QUIZ SCREEN
+  ════════════════════════════════════════ -->
+  <div class="rec-section">
+    <div class="rec-section-header">
+      <div class="rec-number">Recommandation 3 · Écran Quiz</div>
+      <h2>Réponses avec identité.<br>Progress bar qui raconte le parcours.</h2>
+      <p>Les boutons réponse sont des rectangles blancs génériques — aucune personnalité. Ajouter une lettre-clé (A/B/C) et un indicateur de sélection checkmark transforme le quiz en outil professionnel. La progress bar à 3px est trop discrète pour être motivante — passer à 5px avec les labels de dimensions visibles donne un sentiment d'avancement.</p>
+      <div class="impact-row">
+        <div class="impact-item"><div class="impact-dot impact-dot-high"></div><span class="impact-label">Taux de complétion quiz</span></div>
+        <div class="impact-item"><div class="impact-dot impact-dot-med"></div><span class="impact-label">Perception "outil pro" vs "formulaire"</span></div>
+        <div class="impact-item"><div class="impact-dot impact-dot-med"></div><span class="impact-label">Clarté de la sélection en cours</span></div>
+      </div>
+    </div>
+
+    <div class="ba-grid">
+      <!-- BEFORE -->
+      <div class="ba-col">
+        <div class="ba-label before">
+          <span style="font-size:16px;">✕</span> Avant
+        </div>
+        <div class="ba-frame">
+          <div class="quiz-before">
+            <header class="quiz-before-header">
+              <div class="row">
+                <span class="dim-name">Visibilité de ton impact</span>
+                <span class="counter">3/20</span>
+              </div>
+              <div class="quiz-before-progress">
+                <div class="qb-seg-group">
+                  <div class="qb-seg done"></div><div class="qb-seg done"></div><div class="qb-seg current"></div><div class="qb-seg"></div>
+                </div>
+                <div class="qb-seg-group">
+                  <div class="qb-seg"></div><div class="qb-seg"></div><div class="qb-seg"></div><div class="qb-seg"></div>
+                </div>
+                <div class="qb-seg-group">
+                  <div class="qb-seg"></div><div class="qb-seg"></div><div class="qb-seg"></div><div class="qb-seg"></div>
+                </div>
+                <div class="qb-seg-group">
+                  <div class="qb-seg"></div><div class="qb-seg"></div><div class="qb-seg"></div><div class="qb-seg"></div>
+                </div>
+                <div class="qb-seg-group">
+                  <div class="qb-seg"></div><div class="qb-seg"></div><div class="qb-seg"></div><div class="qb-seg"></div>
+                </div>
+              </div>
+            </header>
+            <main class="quiz-before-body">
+              <h2>En dehors des réunions, ton manager pourrait citer de mémoire une contribution concrète de ta part ce trimestre ?</h2>
+              <div class="quiz-before-answers">
+                <button class="qb-answer selected">Oui, sans hésiter</button>
+                <button class="qb-answer">Peut-être, mais j'en doute</button>
+                <button class="qb-answer">Probablement pas</button>
+              </div>
+            </main>
+            <nav class="quiz-before-nav">
+              <button class="nav-btn-ghost">Précédent</button>
+              <button class="nav-btn-primary">Suivant</button>
+            </nav>
+          </div>
+        </div>
+        <div class="annotation">
+          <ul>
+            <li>Progress bar 3px — quasi invisible, pas de sens de l'avancement</li>
+            <li>Réponses sélectionnée = fond vert plein — brutal, pas de douceur</li>
+            <li>Pas de checkmark ou d'indicateur visuel de sélection</li>
+            <li>Boutons sans lettre-clé (A/B/C) — look de formulaire basique</li>
+            <li>Pas d'information sur les dimensions à venir</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- AFTER -->
+      <div class="ba-col">
+        <div class="ba-label after">
+          <span style="font-size:16px;">✓</span> Après
+        </div>
+        <div class="ba-frame">
+          <div class="quiz-after">
+            <header class="quiz-after-header">
+              <div class="top-row">
+                <div class="dim-badge">
+                  <div class="dim-dot"></div>
+                  <span class="dim-name">Visibilité de ton impact</span>
+                </div>
+                <span class="counter">3/20</span>
+              </div>
+              <div class="qa-progress">
+                <div class="qa-progress-bar">
+                  <div class="qa-seg-group">
+                    <div class="qa-seg done"></div><div class="qa-seg done"></div><div class="qa-seg current"></div><div class="qa-seg"></div>
+                  </div>
+                  <div class="qa-seg-group">
+                    <div class="qa-seg"></div><div class="qa-seg"></div><div class="qa-seg"></div><div class="qa-seg"></div>
+                  </div>
+                  <div class="qa-seg-group">
+                    <div class="qa-seg"></div><div class="qa-seg"></div><div class="qa-seg"></div><div class="qa-seg"></div>
+                  </div>
+                  <div class="qa-seg-group">
+                    <div class="qa-seg"></div><div class="qa-seg"></div><div class="qa-seg"></div><div class="qa-seg"></div>
+                  </div>
+                  <div class="qa-seg-group">
+                    <div class="qa-seg"></div><div class="qa-seg"></div><div class="qa-seg"></div><div class="qa-seg"></div>
+                  </div>
+                </div>
+                <div class="qa-dim-labels">
+                  <span class="qa-dim-label" style="color:rgba(255,242,0,0.7);">Visibilité</span>
+                  <span class="qa-dim-label">Preuves</span>
+                  <span class="qa-dim-label">Business</span>
+                  <span class="qa-dim-label">Autonomie</span>
+                  <span class="qa-dim-label">Stratégique</span>
+                </div>
+              </div>
+            </header>
+            <main class="quiz-after-body">
+              <h2>En dehors des réunions, ton manager pourrait citer de mémoire une contribution concrète de ta part ce trimestre ?</h2>
+              <div class="qa-answers">
+                <button class="qa-answer selected">
+                  <div class="qa-answer-key">A</div>
+                  <div class="qa-answer-text">Oui, sans hésiter</div>
+                  <div class="qa-answer-check"></div>
+                </button>
+                <button class="qa-answer">
+                  <div class="qa-answer-key">B</div>
+                  <div class="qa-answer-text">Peut-être, mais j'en doute</div>
+                  <div class="qa-answer-check"></div>
+                </button>
+                <button class="qa-answer">
+                  <div class="qa-answer-key">C</div>
+                  <div class="qa-answer-text">Probablement pas</div>
+                  <div class="qa-answer-check"></div>
+                </button>
+              </div>
+            </main>
+            <nav class="quiz-after-nav">
+              <button class="nav-btn-ghost">Précédent</button>
+              <button class="nav-btn-primary">Suivant</button>
+            </nav>
+          </div>
+        </div>
+        <div class="annotation annotation-after">
+          <ul>
+            <li>Progress bar 5px + labels de dimensions — sens de position dans le parcours</li>
+            <li>Lettre A/B/C dans un key chip — affordance claire, look d'outil pro</li>
+            <li>Checkmark circle à droite — confirmation visuelle de la sélection</li>
+            <li>Sélection = tinte verte douce (6% opacity) sur la card — moins brutal</li>
+            <li>Dot jaune sur le nom de dimension active — cohérence avec le badge couleur</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ────────────────────────────────────────
+       SUMMARY BOX
+  ──────────────────────────────────────── -->
+  <div class="rec-summary">
+    <h2>Récapitulatif — 3 recommandations</h2>
+    <div class="rec-list">
+      <div class="rec-item">
+        <div class="num">1</div>
+        <div class="content">
+          <h3>Supprimer les side-tab borders sur les cartes diagnostic</h3>
+          <p>Remplacer les <code style="color:#FFF200;">border-left: 4px solid</code> par un header de carte avec fond teinté (6% color opacity) + chip dot coloré. Redesign du PrioritySignal dans la palette verte. Corrige les 5 instances <code style="color:#FFF200;">[side-tab]</code> d'Impeccable en un passage.</p>
+          <div class="tags">
+            <span class="rec-tag rec-tag-screen">Écran Résultat</span>
+            <span class="rec-tag rec-tag-impact">Impact autorité : Élevé</span>
+            <span class="rec-tag rec-tag-impact">Complexité : Faible</span>
+          </div>
+        </div>
+      </div>
+      <div class="rec-item">
+        <div class="num">2</div>
+        <div class="content">
+          <h3>Landing : stats chocs en callout visuel, prose réduite</h3>
+          <p>Remplacer le mur de texte par 3 stat-boxes (1 100 postes / 18% / 5 min) + 1 paragraphe court. Ajouter l'ancrage marque "Collaboration Solved" en header. Badge "Diagnostic gratuit" repositionné en nav-chip visible.</p>
+          <div class="tags">
+            <span class="rec-tag rec-tag-screen">Écran Landing</span>
+            <span class="rec-tag rec-tag-impact">Impact conversion : Élevé</span>
+            <span class="rec-tag rec-tag-impact">Complexité : Faible</span>
+          </div>
+        </div>
+      </div>
+      <div class="rec-item">
+        <div class="num">3</div>
+        <div class="content">
+          <h3>Quiz : key chips A/B/C + checkmark + progress bar enrichie</h3>
+          <p>Ajouter une lettre-clé (A/B/C) dans un chip sur chaque réponse + cercle checkmark à droite pour la sélection active. Progress bar passée de 3px à 5px avec les noms de dimensions sous les segments. Sélection par fond teinté doux au lieu du vert plein.</p>
+          <div class="tags">
+            <span class="rec-tag rec-tag-screen">Écran Quiz</span>
+            <span class="rec-tag rec-tag-impact">Impact UX : Moyen</span>
+            <span class="rec-tag rec-tag-impact">Complexité : Faible</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <p style="text-align:center; font-size:12px; color:#a3a3a3; margin-top:40px;">
+    Audit produit avec <strong>Impeccable</strong> v2.3.2 · 6 anti-patterns automatiques · Audit visuel manuel sur 3 écrans<br>
+    SM Survival Score — Collaboration Solved — Pierre-Cyril Denant
+  </p>
+
+</div>
+</body>
+</html>
