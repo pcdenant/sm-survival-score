@@ -369,6 +369,8 @@ const GLOBAL_CSS = `
   @keyframes fadeUp { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:translateY(0); } }
   @keyframes fadeIn { from { opacity:0; } to { opacity:1; } }
   @keyframes scaleIn { from { opacity:0; transform:scale(0.88); } to { opacity:1; transform:scale(1); } }
+  @keyframes answerPulse { 0% { transform:scale(1); } 50% { transform:scale(1.015); } 100% { transform:scale(1); } }
+  @keyframes countdown { from { width:100%; } to { width:0%; } }
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
   }
@@ -502,16 +504,77 @@ function LockedDiagnosticCard({ dimension, onUnlockClick }) {
 }
 
 function ProgressBar({ currentIndex }) {
+  const activeDimIndex = Math.floor(currentIndex / QUESTIONS_PER_DIM);
   return (
-    <div role="progressbar" aria-valuenow={currentIndex + 1} aria-valuemin={1} aria-valuemax={QUESTIONS.length} aria-label={`Question ${currentIndex + 1} sur ${QUESTIONS.length}`} style={{ display: "flex", gap: 3 }}>
-      {DIMENSIONS.map((dim, i) => (
-        <div key={dim.id} style={{ flex: 1, display: "flex", gap: 2 }}>
-          {Array.from({ length: QUESTIONS_PER_DIM }, (_, q) => {
-            const idx = i * QUESTIONS_PER_DIM + q;
-            return <div key={q} style={{ flex: 1, height: 3, borderRadius: 2, background: idx === currentIndex ? T.jaune : idx < currentIndex + 1 ? T.vert : T.cremeDeep, transition: "background 0.2s ease" }} />;
-          })}
-        </div>
-      ))}
+    <div role="progressbar" aria-valuenow={currentIndex + 1} aria-valuemin={1} aria-valuemax={QUESTIONS.length}
+      aria-label={`Question ${currentIndex + 1} sur ${QUESTIONS.length}`}
+      style={{ display: "flex", gap: 6 }}>
+      {DIMENSIONS.map((dim, di) => {
+        const isActive = di === activeDimIndex;
+        const isDone = di < activeDimIndex;
+        return (
+          <div key={dim.id} style={{ flex: 1, display: "flex", flexDirection: "column", gap: 4 }}>
+            <div style={{ display: "flex", gap: 2 }}>
+              {Array.from({ length: QUESTIONS_PER_DIM }, (_, q) => {
+                const idx = di * QUESTIONS_PER_DIM + q;
+                const pipCurrent = idx === currentIndex;
+                const pipDone = idx < currentIndex;
+                return <div key={q} style={{
+                  flex: 1, height: 4, borderRadius: 2,
+                  background: pipCurrent ? T.jaune : pipDone ? "rgba(255,255,255,0.6)" : "rgba(255,255,255,0.12)",
+                  transition: "background 0.2s ease",
+                }} />;
+              })}
+            </div>
+            <div style={{
+              fontSize: 9, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em",
+              color: isActive ? T.jaune : isDone ? "rgba(255,255,255,0.5)" : "rgba(255,255,255,0.2)",
+              textAlign: "center", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
+              fontFamily: T.f, lineHeight: 1,
+            }}>
+              {isDone ? `${dim.shortName} ✓` : dim.shortName}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function ChapterRevealScreen({ completedDimIndex, nextDimIndex, onContinue }) {
+  useEffect(() => {
+    const t = setTimeout(onContinue, 2000);
+    return () => clearTimeout(t);
+  }, [onContinue]);
+
+  const completed = DIMENSIONS[completedDimIndex];
+  const next = DIMENSIONS[nextDimIndex];
+
+  return (
+    <div
+      onClick={onContinue}
+      data-testid="chapter-reveal"
+      style={{
+        minHeight: "100vh", background: T.vert, display: "flex", alignItems: "center",
+        justifyContent: "center", flexDirection: "column", textAlign: "center",
+        padding: "40px 24px", fontFamily: T.f, cursor: "pointer",
+        animation: "fadeIn 0.3s ease-out",
+      }}
+    >
+      <div style={{
+        width: 52, height: 52, borderRadius: "50%", background: "rgba(255,255,255,0.12)",
+        display: "flex", alignItems: "center", justifyContent: "center",
+        fontSize: 24, marginBottom: 16,
+      }}>✓</div>
+      <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: ".1em", textTransform: "uppercase", color: "rgba(255,255,255,0.4)", marginBottom: 8, fontFamily: T.f }}>
+        Dimension complète
+      </p>
+      <h2 style={{ fontSize: 22, fontWeight: 800, color: T.white, marginBottom: 28, fontFamily: T.f }}>{completed.name}</h2>
+      <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", color: "rgba(255,255,255,0.35)", marginBottom: 8, fontFamily: T.f }}>
+        Prochaine dimension
+      </p>
+      <p style={{ fontSize: 18, fontWeight: 700, color: T.jaune, marginBottom: 40, fontFamily: T.f }}>{next.name} →</p>
+      <p style={{ fontSize: 12, color: "rgba(255,255,255,0.2)", fontFamily: T.f }}>Clique pour continuer</p>
     </div>
   );
 }
@@ -751,24 +814,73 @@ function LandingScreen({ onStart }) {
   );
 }
 
+const ANSWER_LETTERS = ["A", "B", "C"];
+
 function QuestionScreen({ questionIndex, question, selectedAnswer, onSelect, onNext, onPrev, total }) {
   const dimInfo = DIMENSIONS.find(d => d.id === question.dimension);
   const answerRefs = useRef([]);
+  const autoAdvanceTimer = useRef(null);
+  const [isAdvancing, setIsAdvancing] = useState(false);
+  // Tracks if the user actively selected on the current question (vs. pre-existing answer from navigation)
+  const userJustSelectedRef = useRef(false);
+
+  // Wrap onSelect to mark user-initiated selections
+  const handleSelect = useCallback((i) => {
+    userJustSelectedRef.current = true;
+    onSelect(i);
+  }, [onSelect]);
+
+  // Reset selection tracking when question changes
+  useEffect(() => {
+    userJustSelectedRef.current = false;
+    setIsAdvancing(false);
+    if (autoAdvanceTimer.current) {
+      clearTimeout(autoAdvanceTimer.current);
+      autoAdvanceTimer.current = null;
+    }
+  }, [questionIndex]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Auto-advance after 600ms, only on user-initiated selection
+  useEffect(() => {
+    if (selectedAnswer === null || !userJustSelectedRef.current) {
+      setIsAdvancing(false);
+      if (autoAdvanceTimer.current) clearTimeout(autoAdvanceTimer.current);
+      return;
+    }
+    if (autoAdvanceTimer.current) clearTimeout(autoAdvanceTimer.current);
+    setIsAdvancing(true);
+    autoAdvanceTimer.current = setTimeout(() => {
+      setIsAdvancing(false);
+      onNext();
+    }, 600);
+    return () => { if (autoAdvanceTimer.current) clearTimeout(autoAdvanceTimer.current); };
+  }, [selectedAnswer]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Keyboard shortcuts A/B/C
+  useEffect(() => {
+    const handler = (e) => {
+      if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA") return;
+      const i = ANSWER_LETTERS.indexOf(e.key.toUpperCase());
+      if (i !== -1 && i < question.answers.length) handleSelect(i);
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [question.answers.length, handleSelect]);
 
   const handleAnswerKey = useCallback((e, i) => {
     const n = question.answers.length;
     if (e.key === "ArrowDown" || e.key === "ArrowRight") {
       e.preventDefault();
       const next = (i + 1) % n;
-      onSelect(next);
+      handleSelect(next);
       answerRefs.current[next]?.focus();
     } else if (e.key === "ArrowUp" || e.key === "ArrowLeft") {
       e.preventDefault();
       const prev = (i - 1 + n) % n;
-      onSelect(prev);
+      handleSelect(prev);
       answerRefs.current[prev]?.focus();
     }
-  }, [question.answers.length, onSelect]);
+  }, [question.answers.length, handleSelect]);
 
   return (
     <div style={{ minHeight: "100vh", background: T.creme, fontFamily: T.f, display: "flex", flexDirection: "column" }}>
@@ -785,9 +897,18 @@ function QuestionScreen({ questionIndex, question, selectedAnswer, onSelect, onN
 
       {/* Question */}
       <main key={questionIndex} style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", maxWidth: 560, margin: "0 auto", padding: "40px 24px", width: "100%", animation: "fadeIn 0.2s ease-out" }}>
-        <h2 style={{ fontSize: "clamp(18px, 4.5vw, 22px)", fontWeight: 700, lineHeight: 1.5, color: T.text, marginBottom: 32 }}>
+        <h2 style={{ fontSize: "clamp(18px, 4.5vw, 22px)", fontWeight: 700, lineHeight: 1.5, color: T.text, marginBottom: 28 }}>
           {question.text}
         </h2>
+        <p style={{ fontSize: 11, color: T.textLight, marginBottom: 14, fontFamily: T.f }}>
+          {ANSWER_LETTERS.map((l, i) => (
+            <span key={l}>
+              <kbd style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", background: T.white, border: `1px solid ${T.border}`, borderBottom: `2px solid ${T.border}`, borderRadius: 4, width: 18, height: 18, fontSize: 10, fontWeight: 700, color: T.textMuted, fontFamily: "monospace", marginRight: 2 }}>{l}</kbd>
+              {i < ANSWER_LETTERS.length - 1 ? " " : ""}
+            </span>
+          ))}
+          {" "}Raccourcis clavier
+        </p>
         <div role="radiogroup" aria-label="Choisis ta réponse" style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           {question.answers.map((a, i) => {
             const sel = selectedAnswer === i;
@@ -797,35 +918,56 @@ function QuestionScreen({ questionIndex, question, selectedAnswer, onSelect, onN
                 ref={el => { answerRefs.current[i] = el; }}
                 role="radio"
                 aria-checked={sel}
-                onClick={() => onSelect(i)}
+                onClick={() => handleSelect(i)}
                 onKeyDown={(e) => handleAnswerKey(e, i)}
                 tabIndex={sel || (selectedAnswer === null && i === 0) ? 0 : -1}
                 style={{
-                  padding: "18px 20px", fontSize: 15, lineHeight: 1.5, fontFamily: T.f, textAlign: "left",
+                  padding: "16px 18px 16px 14px", fontSize: 15, lineHeight: 1.5, fontFamily: T.f, textAlign: "left",
                   background: sel ? T.vert : T.white, color: sel ? T.white : T.text,
                   border: `2px solid ${sel ? T.vert : T.border}`, borderRadius: T.r,
                   cursor: "pointer", transition: "all 0.15s ease", fontWeight: sel ? 600 : 400,
-                  minHeight: 56,
+                  minHeight: 56, display: "flex", alignItems: "flex-start", gap: 12,
+                  animation: sel && isAdvancing ? "answerPulse 0.2s ease-out" : "none",
                 }}
-              >{a.text}</button>
+              >
+                <span style={{
+                  flexShrink: 0, width: 24, height: 24, borderRadius: 6,
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  fontSize: 11, fontWeight: 800, fontFamily: "monospace",
+                  background: sel ? "rgba(255,255,255,0.18)" : "#e8f3ee",
+                  color: sel ? T.white : T.vert,
+                  border: `1px solid ${sel ? "rgba(255,255,255,0.25)" : "rgba(0,105,70,0.25)"}`,
+                  flexShrink: 0,
+                }}>{ANSWER_LETTERS[i]}</span>
+                <span>{a.text}</span>
+              </button>
             );
           })}
         </div>
+
+        {/* Countdown bar — visible only while auto-advancing */}
+        {isAdvancing && (
+          <div key={selectedAnswer} style={{ marginTop: 20 }}>
+            <div style={{ height: 2, background: T.border, borderRadius: 1, overflow: "hidden" }}>
+              <div style={{ height: "100%", background: T.vert, borderRadius: 1, animation: "countdown 0.6s linear forwards" }} />
+            </div>
+            {questionIndex === 0 && (
+              <p style={{ fontSize: 11, color: T.textLight, textAlign: "center", marginTop: 6, fontFamily: T.f }}>
+                Se déplace automatiquement
+              </p>
+            )}
+          </div>
+        )}
       </main>
 
-      {/* Bottom nav */}
+      {/* Bottom nav — only Précédent; auto-advance handles forward */}
       <nav style={{ borderTop: `1px solid ${T.border}`, padding: "16px 24px", background: T.creme, position: "sticky", bottom: 0 }}>
-        <div style={{ maxWidth: 560, margin: "0 auto", display: "flex", justifyContent: "space-between" }}>
+        <div style={{ maxWidth: 560, margin: "0 auto" }}>
           <button onClick={onPrev} disabled={questionIndex === 0} aria-label="Question précédente" style={{
             padding: "12px 28px", fontSize: 14, fontFamily: T.f, fontWeight: 600, background: "transparent",
             color: questionIndex === 0 ? T.textLight : T.textMuted, border: `1px solid ${T.border}`,
             borderRadius: T.rSm, cursor: questionIndex === 0 ? "default" : "pointer", minHeight: 48,
           }}>Précédent</button>
-          <button onClick={onNext} disabled={selectedAnswer === null} aria-label={questionIndex === total - 1 ? "Voir le résultat" : "Question suivante"} style={{
-            padding: "12px 32px", fontSize: 14, fontFamily: T.f, fontWeight: 700,
-            background: selectedAnswer === null ? T.textLight : T.vert, color: T.white,
-            border: "none", borderRadius: T.rSm, cursor: selectedAnswer === null ? "default" : "pointer", minHeight: 48,
-          }}>{questionIndex === total - 1 ? "Voir mon résultat" : "Suivant"}</button>
         </div>
       </nav>
     </div>
@@ -991,6 +1133,8 @@ export default function SMSurvivalScore() {
   const [screen, setScreen] = useState(() => loadQuizState()?.screen ?? SCREEN.LANDING);
   const [currentQ, setCurrentQ] = useState(() => loadQuizState()?.currentQ ?? 0);
   const [answers, setAnswers] = useState(() => loadQuizState()?.answers ?? Array(QUESTIONS.length).fill(null));
+  // Ephemeral — not persisted. Stores which dim index just completed so we can show the reveal screen.
+  const [chapterReveal, setChapterReveal] = useState(null);
 
   useEffect(() => { window.scrollTo(0, 0); }, [screen]);
 
@@ -1024,14 +1168,32 @@ export default function SMSurvivalScore() {
 
   const handleStart = useCallback(() => { trackEvent("quiz_started"); setScreen(SCREEN.QUIZ); setCurrentQ(0); }, []);
   const handleSelect = useCallback((i) => { setAnswers(prev => { const a = [...prev]; a[currentQ] = i; return a; }); }, [currentQ]);
-  const handleNext = useCallback(() => { if (currentQ === QUESTIONS.length - 1) setScreen(SCREEN.RESULT); else setCurrentQ(p => p + 1); }, [currentQ]);
-  const handlePrev = useCallback(() => { if (currentQ > 0) setCurrentQ(p => p - 1); }, [currentQ]);
-  const handleRestart = useCallback(() => { clearQuizState(); setAnswers(Array(QUESTIONS.length).fill(null)); setCurrentQ(0); setScreen(SCREEN.LANDING); }, []);
+  const handleNext = useCallback(() => {
+    const isLast = currentQ === QUESTIONS.length - 1;
+    const isChapterEnd = (currentQ + 1) % QUESTIONS_PER_DIM === 0 && !isLast;
+    if (isLast) {
+      setScreen(SCREEN.RESULT);
+    } else if (isChapterEnd) {
+      setChapterReveal({ completedDimIndex: Math.floor(currentQ / QUESTIONS_PER_DIM) });
+      setCurrentQ(p => p + 1);
+    } else {
+      setCurrentQ(p => p + 1);
+    }
+  }, [currentQ]);
+  const handleChapterRevealDone = useCallback(() => setChapterReveal(null), []);
+  const handlePrev = useCallback(() => { if (currentQ > 0) { setChapterReveal(null); setCurrentQ(p => p - 1); } }, [currentQ]);
+  const handleRestart = useCallback(() => { clearQuizState(); setAnswers(Array(QUESTIONS.length).fill(null)); setCurrentQ(0); setChapterReveal(null); setScreen(SCREEN.LANDING); }, []);
 
   return (
     <StyleProvider>
       {screen === SCREEN.LANDING && <LandingScreen onStart={handleStart} />}
-      {screen === SCREEN.QUIZ && (
+      {screen === SCREEN.QUIZ && chapterReveal ? (
+        <ChapterRevealScreen
+          completedDimIndex={chapterReveal.completedDimIndex}
+          nextDimIndex={chapterReveal.completedDimIndex + 1}
+          onContinue={handleChapterRevealDone}
+        />
+      ) : screen === SCREEN.QUIZ ? (
         <QuestionScreen
           questionIndex={currentQ}
           question={QUESTIONS[currentQ]}
@@ -1041,7 +1203,7 @@ export default function SMSurvivalScore() {
           onPrev={handlePrev}
           total={QUESTIONS.length}
         />
-      )}
+      ) : null}
       {screen === SCREEN.RESULT && <ResultScreen answers={answers} onRestart={handleRestart} />}
     </StyleProvider>
   );

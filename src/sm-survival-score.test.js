@@ -812,6 +812,91 @@ describe("FORM MIGRATION — Kit → Ghost", () => {
 });
 
 // ============================================================
+// CHAPTER NAVIGATION — logique isChapterEnd / handleNext
+// ============================================================
+
+describe("CHAPTER NAVIGATION — isChapterEnd logic", () => {
+  const QS_PER_DIM = 4;
+  const TOTAL = 20;
+
+  function isChapterEnd(currentQ) {
+    const isLast = currentQ === TOTAL - 1;
+    return (currentQ + 1) % QS_PER_DIM === 0 && !isLast;
+  }
+
+  function completedDimIndexFn(currentQ) {
+    return Math.floor(currentQ / QS_PER_DIM);
+  }
+
+  // Les 4 indices qui terminent une dimension (sans être le dernier Q)
+  assert(isChapterEnd(3),  "Q4  (idx 3)  → fin dim Visibilité  → chapter reveal");
+  assert(isChapterEnd(7),  "Q8  (idx 7)  → fin dim Preuves     → chapter reveal");
+  assert(isChapterEnd(11), "Q12 (idx 11) → fin dim Business    → chapter reveal");
+  assert(isChapterEnd(15), "Q16 (idx 15) → fin dim Autonomie   → chapter reveal");
+
+  // Q20 est la fin d'une dimension ET la dernière question → pas de reveal
+  assert(!isChapterEnd(19), "Q20 (idx 19) → dernier Q → pas de chapter reveal, direct résultats");
+
+  // Questions intermédiaires → pas de reveal
+  assert(!isChapterEnd(0),  "Q1  (idx 0)  → milieu de dim → pas de reveal");
+  assert(!isChapterEnd(4),  "Q5  (idx 4)  → début dim 2  → pas de reveal");
+  assert(!isChapterEnd(9),  "Q10 (idx 9)  → milieu de dim → pas de reveal");
+  assert(!isChapterEnd(16), "Q17 (idx 16) → début dim 5  → pas de reveal");
+
+  // completedDimIndex identifie correctement la dim terminée
+  assertEqual(completedDimIndexFn(3),  0, "Q4  → complète dim 0 (Visibilité)");
+  assertEqual(completedDimIndexFn(7),  1, "Q8  → complète dim 1 (Preuves)");
+  assertEqual(completedDimIndexFn(11), 2, "Q12 → complète dim 2 (Business)");
+  assertEqual(completedDimIndexFn(15), 3, "Q16 → complète dim 3 (Autonomie)");
+
+  // nextDimIndex est toujours completedDimIndex + 1 (pas de out-of-bounds sur Q4/Q8/Q12/Q16)
+  [3, 7, 11, 15].forEach(q => {
+    const completed = completedDimIndexFn(q);
+    assert(completed + 1 < 5, `Q${q + 1} → nextDimIndex ${completed + 1} est dans les bounds (< 5 dims)`);
+  });
+});
+
+describe("CHAPTER NAVIGATION — lettres réponses A/B/C", () => {
+  const ANSWER_LETTERS_TEST = ["A", "B", "C"];
+  assertEqual(ANSWER_LETTERS_TEST[0], "A", "index 0 → lettre A");
+  assertEqual(ANSWER_LETTERS_TEST[1], "B", "index 1 → lettre B");
+  assertEqual(ANSWER_LETTERS_TEST[2], "C", "index 2 → lettre C");
+  assertEqual(ANSWER_LETTERS_TEST.length, 3, "exactement 3 lettres pour 3 réponses");
+
+  // Raccourcis clavier : mapping touche → index
+  const keyToIndex = (key) => ANSWER_LETTERS_TEST.indexOf(key.toUpperCase());
+  assertEqual(keyToIndex("a"), 0, "touche 'a' → index 0");
+  assertEqual(keyToIndex("B"), 1, "touche 'B' → index 1");
+  assertEqual(keyToIndex("c"), 2, "touche 'c' → index 2");
+  assertEqual(keyToIndex("D"), -1, "touche 'D' → -1 (non mappé)");
+  assertEqual(keyToIndex(" "), -1, "espace → -1 (non mappé)");
+  assertEqual(keyToIndex("Enter"), -1, "Enter → -1 (non mappé)");
+});
+
+describe("SOURCE INTEGRITY — nouveaux composants UX", () => {
+  const src = readFileSync(join(__dirname, "sm-survival-score.jsx"), "utf8");
+
+  assert(src.includes("ChapterRevealScreen"),   "PRESENT: composant ChapterRevealScreen");
+  assert(src.includes("Dimension complète"),    "PRESENT: texte chapter reveal 'Dimension complète'");
+  assert(src.includes("Clique pour continuer"), "PRESENT: texte hint 'Clique pour continuer'");
+  assert(src.includes("answerPulse"),           "PRESENT: @keyframes answerPulse");
+  assert(src.includes("countdown"),             "PRESENT: @keyframes countdown");
+  assert(src.includes("ANSWER_LETTERS"),        "PRESENT: constante ANSWER_LETTERS (badges A/B/C)");
+  assert(src.includes("chapterReveal"),         "PRESENT: état chapterReveal dans SMSurvivalScore");
+  assert(src.includes("handleChapterRevealDone"), "PRESENT: handler handleChapterRevealDone");
+  assert(src.includes("isChapterEnd"),          "PRESENT: logique isChapterEnd dans handleNext");
+  assert(src.includes("userJustSelectedRef"),   "PRESENT: ref userJustSelectedRef (anti-faux-avance)");
+  assert(src.includes("Se déplace automatiquement"), "PRESENT: hint auto-advance Q1");
+  assert(src.includes("Raccourcis clavier"),    "PRESENT: texte hint raccourcis clavier");
+  assert(src.includes("data-testid=\"chapter-reveal\""), "PRESENT: data-testid sur ChapterRevealScreen");
+
+  // Vérifier que les anciens boutons "Suivant" / "Voir mon résultat" ne sont plus dans QuestionScreen
+  // (ils peuvent exister ailleurs, on vérifie leur absence dans la zone QuestionScreen)
+  assert(!src.includes("Question suivante"),  "REMOVED: aria-label 'Question suivante' (remplacé par auto-advance)");
+  assert(!src.includes("Voir mon résultat"), "REMOVED: texte 'Voir mon résultat' (remplacé par auto-advance)");
+});
+
+// ============================================================
 // RESULTS
 // ============================================================
 
