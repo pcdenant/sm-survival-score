@@ -33,10 +33,15 @@ export default async function handler(req, res) {
       body: JSON.stringify({ members: [{ email, labels: [{ name: "SM Score" }] }] }),
     });
 
-    // 201 = created, 409 = already a member → both are success
+    // 201 = created, 409 = already a member (older Ghost versions) → success
     if (response.status === 201 || response.status === 409) return res.status(200).json({ success: true });
 
     const err = await response.json().catch(() => ({}));
+
+    // Ghost returns 422 with this message when the email is already a member — not a real error.
+    const isDuplicateMember = err?.errors?.some((e) => /already exists/i.test(e?.message ?? ""));
+    if (response.status === 422 && isDuplicateMember) return res.status(200).json({ success: true });
+
     console.error("Ghost API error:", response.status, err);
     return res.status(response.status).json({ error: "Erreur Ghost API" });
   } catch (err) {
