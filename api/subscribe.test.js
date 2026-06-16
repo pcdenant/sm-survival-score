@@ -51,10 +51,10 @@ const mockRes = () => {
   return r;
 };
 
-const mockFetch = (status) => async () => ({
+const mockFetch = (status, body = { message: "mock" }) => async () => ({
   ok: status >= 200 && status < 300,
   status,
-  json: async () => ({ message: "mock" }),
+  json: async () => body,
 });
 
 const mockFetchThrow = () => async () => { throw new Error("network error"); };
@@ -146,15 +146,33 @@ await describe("GHOST API — CAS NOMINAUX", async () => {
     assertEqual(res._status, 200, "Ghost 409 (membre existant) → réponse 200");
     assertEqual(res._json, { success: true }, "Ghost 409 → success: true");
   });
+
+  // 422 avec message "already exists" = membre existant (comportement réel de Ghost) → succès
+  await withEnv(VALID_ENV, async () => {
+    global.fetch = mockFetch(422, {
+      errors: [
+        {
+          message: "Member already exists. Attempting to add member with existing email address.",
+          type: "ValidationError",
+        },
+      ],
+    });
+    const res = mockRes();
+    await handler(mockReq("POST", { email: "existing@example.com" }), res);
+    assertEqual(res._status, 200, "Ghost 422 (membre existant) → réponse 200");
+    assertEqual(res._json, { success: true }, "Ghost 422 membre existant → success: true");
+  });
 });
 
 await describe("GHOST API — ERREURS", async () => {
   await withEnv(VALID_ENV, async () => {
-    global.fetch = mockFetch(422);
+    global.fetch = mockFetch(422, {
+      errors: [{ message: "Invalid email address", type: "ValidationError" }],
+    });
     const res = mockRes();
     await handler(mockReq("POST", { email: "user@example.com" }), res);
-    assertEqual(res._status, 422, "Ghost 422 → proxy 422");
-    assertEqual(res._json, { error: "Erreur Ghost API" }, "Ghost 422 → message");
+    assertEqual(res._status, 422, "Ghost 422 (erreur générique) → proxy 422");
+    assertEqual(res._json, { error: "Erreur Ghost API" }, "Ghost 422 générique → message");
   });
 
   await withEnv(VALID_ENV, async () => {
