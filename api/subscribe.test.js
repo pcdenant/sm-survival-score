@@ -147,12 +147,13 @@ await describe("GHOST API — CAS NOMINAUX", async () => {
     assertEqual(res._json, { success: true }, "Ghost 409 → success: true");
   });
 
-  // 422 avec message "already exists" = membre existant (comportement réel de Ghost) → succès
+  // 422 avec "already exists" dans context (comportement réel de Ghost — le message reste générique) → succès
   await withEnv(VALID_ENV, async () => {
     global.fetch = mockFetch(422, {
       errors: [
         {
-          message: "Member already exists. Attempting to add member with existing email address.",
+          message: "Validation error, cannot save member.",
+          context: "Member already exists. Attempting to add member with existing email address",
           type: "ValidationError",
         },
       ],

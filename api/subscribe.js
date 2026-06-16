@@ -38,8 +38,8 @@ export default async function handler(req, res) {
 
     const err = await response.json().catch(() => ({}));
 
-    // Ghost returns 422 with this message when the email is already a member — not a real error.
-    const isDuplicateMember = err?.errors?.some((e) => /already exists/i.test(e?.message ?? ""));
+    // Ghost returns 422 with "already exists" in the error's context (not message) when the email is already a member — not a real error.
+    const isDuplicateMember = err?.errors?.some((e) => /already exists/i.test(`${e?.message ?? ""} ${e?.context ?? ""}`));
     if (response.status === 422 && isDuplicateMember) return res.status(200).json({ success: true });
 
     console.error("Ghost API error:", response.status, err);
