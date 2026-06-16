@@ -924,6 +924,10 @@ describe("UI CHANGES v2.0 — source integrity", () => {
 
   // Changement 7 — Responsive bars shortName
   assert(src.includes("dim.shortName"), "PRESENT: dim.shortName dans bars card");
+
+  // Changement 8 — Radar labels desktop
+  assert(!src.includes('outerRadius="65%"'), "REMOVED: outerRadius 65% (radar clips on desktop)");
+  assert(src.includes('outerRadius="55%"'), "PRESENT: outerRadius 55% (radar labels readable on desktop)");
 });
 
 // ============================================================

@@ -1100,9 +1100,9 @@ function ResultScreen({ answers, onRestart }) {
             <h3 style={{ fontSize: 13, fontWeight: 700, color: T.vert, marginBottom: 12, textTransform: "uppercase", letterSpacing: "0.06em" }}>Ton profil</h3>
             <div style={{ width: "100%", height: 260 }} role="img" aria-label={`Radar chart de ton profil : ${radarData.map(d => `${d.dimension} ${d.score}/8`).join(", ")}`}>
               <ResponsiveContainer>
-                <RadarChart data={radarData} cx="50%" cy="50%" outerRadius="65%">
+                <RadarChart data={radarData} cx="50%" cy="50%" outerRadius="55%">
                   <PolarGrid stroke={T.border} />
-                  <PolarAngleAxis dataKey="dimension" tick={{ fontSize: 11, fill: T.textMuted, fontFamily: T.f }} />
+                  <PolarAngleAxis dataKey="dimension" tick={{ fontSize: 10, fill: T.textMuted, fontFamily: T.f }} />
                   <PolarRadiusAxis angle={90} domain={[0, 8]} tick={{ fontSize: 9, fill: T.textLight }} tickCount={5} />
                   <Radar dataKey="score" stroke={T.vert} fill={T.vert} fillOpacity={0.12} strokeWidth={2.5} dot={{ r: 4, fill: T.vert }} />
                 </RadarChart>
