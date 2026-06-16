@@ -812,6 +812,16 @@ describe("FORM MIGRATION — Kit → Ghost", () => {
 });
 
 // ============================================================
+// RADAR FIX — desktop label clipping
+// ============================================================
+
+describe("RADAR FIX — desktop label clipping", () => {
+  const src = readFileSync(join(__dirname, "sm-survival-score.jsx"), "utf8");
+  assert(!src.includes('outerRadius="65%"'), "REMOVED: outerRadius 65% (radar clips on desktop)");
+  assert(src.includes('outerRadius="55%"'), "PRESENT: outerRadius 55% (radar labels readable on desktop)");
+});
+
+// ============================================================
 // RESULTS
 // ============================================================
 
