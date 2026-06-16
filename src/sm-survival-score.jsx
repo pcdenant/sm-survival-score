@@ -423,9 +423,10 @@ function PrioritySignal({ priorityDimId }) {
   const signal = SIGNAL_TEXTS[priorityDimId];
   if (!signal) return null;
   return (
-    <div style={{ backgroundColor: '#1a1a2e', borderLeft: '3px solid #FFF200', borderRadius: 4, padding: '14px 18px', margin: '20px 0 24px 0' }}>
-      <p style={{ fontWeight: 600, fontSize: '0.95rem', color: '#FFF200', margin: '0 0 6px 0', fontFamily: T.f }}>{signal.title}</p>
-      <p style={{ fontSize: '0.9rem', color: '#e8e8e8', margin: 0, lineHeight: 1.5, fontFamily: T.f }}>{signal.body}</p>
+    <div style={{ backgroundColor: T.vertDark, borderLeft: `3px solid ${T.jaune}`, borderRadius: T.r, padding: '14px 18px', margin: '20px 0 24px 0' }}>
+      <p style={{ fontSize: 9, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.1em', color: 'rgba(255,255,255,.4)', margin: '0 0 6px 0', fontFamily: T.f }}>⚡ Signal prioritaire</p>
+      <p style={{ fontWeight: 600, fontSize: '0.95rem', color: T.jaune, margin: '0 0 6px 0', fontFamily: T.f }}>{signal.title}</p>
+      <p style={{ fontSize: '0.9rem', color: 'rgba(255,255,255,.75)', margin: 0, lineHeight: 1.5, fontFamily: T.f }}>{signal.body}</p>
     </div>
   );
 }
@@ -453,27 +454,53 @@ function BentoCard({ children, style = {}, className, ...props }) {
 // ============================================================
 
 function DiagnosticCard({ dimension, index }) {
+  const [expanded, setExpanded] = useState(false);
   const level = getDiagnosticLevel(dimension.score);
   const diag = dimension.diagnostics[level];
   const cat = getCategory(dimension.pct);
   const levelLabel = level === "low" ? "Vulnérable" : level === "mid" ? "À renforcer" : "Solide";
 
+  const firstDot = diag.text.indexOf(". ");
+  const secondDot = firstDot !== -1 ? diag.text.indexOf(". ", firstDot + 1) : -1;
+  const headline = secondDot !== -1 ? diag.text.slice(0, secondDot + 1) : diag.text;
+  const rest = secondDot !== -1 ? diag.text.slice(secondDot + 2) : "";
+
   return (
     <BentoCard
-      style={{ borderLeft: `4px solid ${cat.color}`, animation: `fadeUp 0.3s ease-out ${index * 0.06}s both` }}
+      style={{ borderLeft: `4px solid ${cat.color}`, animation: `fadeUp 0.3s ease-out ${index * 0.06}s both`, padding: 0, overflow: "hidden" }}
       role="article"
       aria-label={`Diagnostic : ${dimension.name}`}
     >
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12, flexWrap: "wrap", gap: 8 }}>
-        <h4 style={{ fontSize: 15, fontWeight: 700, color: T.text, margin: 0, fontFamily: T.f }}>{dimension.name}</h4>
-        <span style={{ fontSize: 11, fontWeight: 700, color: cat.color, padding: "4px 12px", background: cat.bg, borderRadius: 20, whiteSpace: "nowrap" }}>{levelLabel} — {dimension.score}/8</span>
+      <div style={{ padding: "18px 18px 14px" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12, flexWrap: "wrap", gap: 8 }}>
+          <h4 style={{ fontSize: 15, fontWeight: 700, color: T.text, margin: 0, fontFamily: T.f }}>{dimension.name}</h4>
+          <span style={{ fontSize: 11, fontWeight: 700, color: cat.color, padding: "4px 12px", background: cat.bg, borderRadius: 20, whiteSpace: "nowrap" }}>{levelLabel} — {dimension.score}/8</span>
+        </div>
+        <p style={{ fontSize: 15, fontWeight: 600, lineHeight: 1.55, color: T.text, fontFamily: T.f, marginBottom: 12 }}>{headline}</p>
+        {rest && (
+          <button
+            onClick={() => setExpanded(e => !e)}
+            style={{ display: "flex", alignItems: "center", gap: 4, background: "none", border: "none", cursor: "pointer", padding: 0, marginBottom: expanded ? 12 : 0, fontFamily: T.f }}
+          >
+            <span style={{ fontSize: 12, color: T.vert, fontWeight: 600 }}>{expanded ? "▲ Réduire" : "▼ Lire l'analyse complète"}</span>
+            {!expanded && <span style={{ fontSize: 12, color: T.textLight }}>(30 sec)</span>}
+          </button>
+        )}
+        {expanded && rest && (
+          <p style={{ fontSize: 13, lineHeight: 1.75, color: T.textMid, fontFamily: T.f, marginBottom: 0 }}>{rest}</p>
+        )}
       </div>
-      <p style={{ fontSize: 14, lineHeight: 1.75, color: T.textMid, fontFamily: T.f, marginBottom: 16 }}>{diag.text}</p>
-      <div style={{ padding: "14px 16px", background: T.creme, borderRadius: T.rSm }}>
-        <p style={{ fontSize: 12, fontWeight: 700, color: T.vert, marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.05em", fontFamily: T.f }}>
-          {level === "high" ? "Prochain niveau" : "Action immédiate"}
-        </p>
-        <p style={{ fontSize: 13, lineHeight: 1.65, color: T.textMid, fontFamily: T.f }}>{diag.action}</p>
+      <div style={{ background: T.vert, padding: "16px 18px" }}>
+        <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
+          <div style={{ width: 22, height: 22, borderRadius: "50%", background: T.jaune, color: T.vertDark, fontSize: 11, fontWeight: 900, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 1 }}>1</div>
+          <div>
+            <p style={{ fontSize: 9, fontWeight: 800, textTransform: "uppercase", letterSpacing: ".08em", color: "rgba(255,255,255,.5)", marginBottom: 3, fontFamily: T.f }}>
+              {level === "high" ? "Prochain niveau" : "Action cette semaine"}
+            </p>
+            <p style={{ fontSize: 13, lineHeight: 1.55, color: T.white, fontFamily: T.f }}>{diag.action}</p>
+            <p style={{ fontSize: 10, color: "rgba(255,255,255,.4)", marginTop: 5, fontFamily: T.f }}>⏱ 5 minutes</p>
+          </div>
+        </div>
       </div>
     </BentoCard>
   );
@@ -481,22 +508,37 @@ function DiagnosticCard({ dimension, index }) {
 
 function LockedDiagnosticCard({ dimension, onUnlockClick }) {
   const cat = getCategory(dimension.pct);
+  const level = getDiagnosticLevel(dimension.score);
+  const levelLabel = level === "low" ? "Vulnérable" : level === "mid" ? "À renforcer" : "Solide";
+  const firstDot = dimension.diagnostics[level].text.indexOf(". ");
+  const hookText = firstDot !== -1 ? dimension.diagnostics[level].text.slice(0, firstDot + 1) : dimension.diagnostics[level].text;
+
   return (
     <div
       aria-label={`Diagnostic verrouillé : ${dimension.name}`}
       role="region"
-      style={{ marginBottom: 0, background: T.white, border: `1px solid ${T.borderLight}`, borderLeft: `4px solid ${cat.color}`, borderRadius: T.rLg, overflow: "hidden", position: "relative", minHeight: 120 }}
+      style={{ background: T.white, border: `1px solid ${T.borderLight}`, borderLeft: `4px solid ${cat.color}`, borderRadius: T.rLg, overflow: "hidden" }}
     >
-      <div aria-hidden="true" style={{ filter: "blur(6px)", userSelect: "none", pointerEvents: "none", padding: 24 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 12 }}>
-          <h4 style={{ fontSize: 15, fontWeight: 700, color: T.text }}>{dimension.name}</h4>
-          <span style={{ fontSize: 11, color: T.textMuted }}>{dimension.score}/8</span>
+      <div style={{ padding: "14px 18px 8px", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <h4 style={{ fontSize: 14, fontWeight: 700, color: T.text, margin: 0, fontFamily: T.f }}>{dimension.name}</h4>
+          <span style={{ fontSize: 12 }}>🔒</span>
         </div>
-        <p style={{ fontSize: 14, lineHeight: 1.7, color: T.textMid }}>Lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt.</p>
+        <span style={{ fontSize: 11, fontWeight: 700, color: cat.color, padding: "3px 10px", background: cat.bg, borderRadius: 20, whiteSpace: "nowrap" }}>
+          {levelLabel} — {dimension.score}/8
+        </span>
       </div>
-      <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(251,243,235,0.4)" }}>
-        <button onClick={onUnlockClick} aria-label="Déverrouiller les diagnostics complets" style={{ background: T.vert, color: T.white, padding: "8px 20px", borderRadius: 20, fontSize: 13, fontWeight: 600, fontFamily: T.f, border: "none", cursor: "pointer" }}>
-          Déverrouiller
+      <div style={{ padding: "0 18px", fontSize: 13, lineHeight: 1.6, color: T.textMid, fontFamily: T.f, WebkitMaskImage: "linear-gradient(to bottom, #000 20%, transparent 100%)", maskImage: "linear-gradient(to bottom, #000 20%, transparent 100%)", height: 50, overflow: "hidden" }}>
+        {hookText}
+      </div>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 18px", background: T.creme, borderTop: `1px solid ${T.border}`, marginTop: 8, gap: 8 }}>
+        <span style={{ fontSize: 11, color: T.textLight }}>🔓 Analyse + action concrète</span>
+        <button
+          onClick={onUnlockClick}
+          aria-label={`Déverrouiller le diagnostic ${dimension.name}`}
+          style={{ background: T.vert, color: T.white, padding: "10px 16px", borderRadius: T.rSm, fontSize: 12, fontWeight: 700, fontFamily: T.f, border: "none", cursor: "pointer", whiteSpace: "nowrap", minHeight: 44 }}
+        >
+          Voir le diagnostic →
         </button>
       </div>
     </div>
@@ -1015,6 +1057,10 @@ function ResultScreen({ answers, onRestart }) {
     });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+  const firstLockedDim = orderedDimResults[1];
+  const firstLockedLevel = getDiagnosticLevel(firstLockedDim.score);
+  const firstLockedLevelLabel = firstLockedLevel === "low" ? "Vulnérable" : firstLockedLevel === "mid" ? "À renforcer" : "Solide";
+
   const handleScrollToUnlock = useCallback(() => {
     document.getElementById("unlock-form")?.scrollIntoView({ behavior: "smooth", block: "center" });
   }, []);
@@ -1034,7 +1080,7 @@ function ResultScreen({ answers, onRestart }) {
           <p style={{ fontSize: 12, color: `${T.white}99`, marginBottom: 12, letterSpacing: "0.06em", textTransform: "uppercase", fontWeight: 600 }}>Ton score</p>
           <div aria-label={`Score : ${globalScore} sur 100`} style={{ fontSize: "clamp(64px, 18vw, 96px)", fontWeight: 900, color: category.key === "irreplaceable" ? T.jaune : category.color, lineHeight: 1, letterSpacing: "-0.04em", animation: "scaleIn 0.4s ease-out 0.15s both", willChange: "transform, opacity" }}>{globalScore}</div>
           <p style={{ fontSize: 16, color: `${T.white}80`, marginBottom: 20 }}>/100</p>
-          <div style={{ display: "inline-block", padding: "10px 28px", fontSize: 15, fontWeight: 700, color: T.vertDark, background: T.jaune, borderRadius: 24 }}>{category.label}</div>
+          <div style={{ display: "inline-block", padding: "10px 28px", fontSize: 15, fontWeight: 700, color: category.key === "irreplaceable" ? T.vertDark : T.white, background: category.key === "irreplaceable" ? T.jaune : category.color, borderRadius: 24 }}>{category.label}</div>
         </div>
       </header>
 
@@ -1042,7 +1088,9 @@ function ResultScreen({ answers, onRestart }) {
       <main style={{ maxWidth: 600, margin: "0 auto", padding: "32px 16px 60px" }}>
         {/* Global text card */}
         <BentoCard style={{ marginBottom: 16, animation: "fadeUp 0.4s ease-out 0.2s both" }}>
-          {globalResult.paragraphs.map((p, i) => <p key={i} style={{ fontSize: 15, lineHeight: 1.75, color: T.textMid, marginBottom: 12 }}>{p}</p>)}
+          {globalResult.paragraphs.map((p, i) => (
+            <p key={i} style={{ fontSize: i === 0 ? 16 : 14, fontWeight: i === 0 ? 700 : 400, lineHeight: 1.75, color: i === 0 ? T.text : T.textMid, fontFamily: T.f, marginBottom: i < globalResult.paragraphs.length - 1 ? 12 : 0 }}>{p}</p>
+          ))}
         </BentoCard>
 
         {/* Bento grid: radar + bars side by side on desktop, stacked on mobile */}
@@ -1070,7 +1118,7 @@ function ResultScreen({ answers, onRestart }) {
               return (
                 <div key={dim.id} style={{ marginBottom: i < dimensionResults.length - 1 ? 16 : 0 }}>
                   <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
-                    <span style={{ fontSize: 13, color: T.text, fontWeight: 500 }}>{dim.name}</span>
+                    <span style={{ fontSize: 13, color: T.text, fontWeight: 500 }}>{dim.shortName}</span>
                     <span style={{ fontSize: 13, fontWeight: 700, color: dimCategory.color, fontFamily: "monospace" }}>{dim.score}/{MAX_DIM_SCORE}</span>
                   </div>
                   <div role="meter" aria-valuenow={dim.score} aria-valuemin={0} aria-valuemax={MAX_DIM_SCORE} aria-label={dim.name} style={{ height: 6, background: T.cremeDeep, borderRadius: 3 }}>
@@ -1097,8 +1145,12 @@ function ResultScreen({ answers, onRestart }) {
                 {orderedDimResults.filter(d => d.id !== priorityDimId).map(dim => <LockedDiagnosticCard key={dim.id} dimension={dim} onUnlockClick={handleScrollToUnlock} />)}
               </div>
               <BentoCard id="unlock-form" style={{ background: T.vert, border: "none", textAlign: "center", padding: "36px 28px" }}>
-                <p style={{ fontSize: 18, fontWeight: 700, color: T.white, marginBottom: 8 }}>Débloque tes 4 autres diagnostics</p>
-                <p style={{ fontSize: 13, color: `${T.white}bb`, marginBottom: 24, lineHeight: 1.6 }}>Entre ton email pour voir tes résultats complets. Tu recevras aussi une tactique par semaine pour défendre ton rôle.</p>
+                <p style={{ fontSize: 11, fontWeight: 700, color: `${T.white}50`, letterSpacing: ".08em", textTransform: "uppercase", marginBottom: 6, fontFamily: T.f }}>4 diagnostics verrouillés</p>
+                <p style={{ fontSize: 18, fontWeight: 800, color: T.white, marginBottom: 8, letterSpacing: "-0.01em", fontFamily: T.f }}>
+                  Ton niveau en {firstLockedDim.shortName} :{" "}
+                  <span style={{ color: T.jaune }}>{firstLockedLevelLabel}</span>
+                </p>
+                <p style={{ fontSize: 13, color: `${T.white}bb`, marginBottom: 24, lineHeight: 1.6, fontFamily: T.f }}>Entre ton email pour débloquer l'analyse et l'action concrète sur tes 4 dimensions restantes.</p>
                 <GhostSignupForm onSuccess={(email) => { setUnlocked(true); setShowModal(true); setSubscribedEmail(email); trackEvent("diagnostics_unlocked"); }} />
               </BentoCard>
             </>

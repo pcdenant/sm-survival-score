@@ -213,6 +213,40 @@ test("Précédent : navigue en arrière et efface le chapter reveal en cours", a
   await expect(page.getByRole("progressbar")).toHaveAttribute("aria-valuenow", "1");
 });
 
+test("locked card shows score badge with /8", async ({ page }) => {
+  await page.goto("/");
+  await completeQuiz(page);
+  const lockedCard = page.locator('[aria-label*="Diagnostic verrouillé"]').first();
+  await expect(lockedCard).toBeVisible();
+  await expect(lockedCard.getByText(/\/8/)).toBeVisible();
+});
+
+test("locked card has 'Voir le diagnostic' CTA button", async ({ page }) => {
+  await page.goto("/");
+  await completeQuiz(page);
+  await expect(page.getByRole("button", { name: /Voir le diagnostic/ }).first()).toBeVisible();
+});
+
+test("unlock form shows personalized dimension name", async ({ page }) => {
+  await page.goto("/");
+  await completeQuiz(page);
+  const form = page.locator("#unlock-form");
+  await expect(form).toBeVisible();
+  await expect(form.getByText(/Visibilité|Preuves|Business|Autonomie|Stratégique/)).toBeVisible();
+});
+
+test("priority diagnostic card has expander", async ({ page }) => {
+  await page.goto("/");
+  await completeQuiz(page);
+  await expect(page.getByText(/Lire l'analyse complète/)).toBeVisible();
+});
+
+test("priority diagnostic card action block visible without expanding", async ({ page }) => {
+  await page.goto("/");
+  await completeQuiz(page);
+  await expect(page.getByText(/Action cette semaine|Prochain niveau/).first()).toBeVisible();
+});
+
 test("le bouton PDF déclenche un téléchargement avec le bon nom de fichier", async ({ page }) => {
   await page.route("/api/subscribe", (route) =>
     route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ success: true }) })
