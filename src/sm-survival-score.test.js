@@ -927,6 +927,100 @@ describe("UI CHANGES v2.0 — source integrity", () => {
 });
 
 // ============================================================
+// ANALYTICS — nouvelles fonctionnalités
+// ============================================================
+
+function generateUUIDTest() {
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    return (c === "x" ? r : (r & 0x3) | 0x8).toString(16);
+  });
+}
+
+describe("ANALYTICS — generateUUID (fallback)", () => {
+  const id1 = generateUUIDTest();
+  const id2 = generateUUIDTest();
+  assert(typeof id1 === "string" && id1.length === 36, "UUID est une string de 36 caractères");
+  assert(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(id1), "UUID respecte le format RFC4122 v4");
+  assert(id1 !== id2, "generateUUID retourne des valeurs uniques");
+});
+
+describe("ANALYTICS — getOrCreateDeviceId", () => {
+  const DEVICE_ID_KEY_TEST = "sm-device-id";
+
+  function getOrCreateDeviceIdTest(storage) {
+    try {
+      let id = storage.getItem(DEVICE_ID_KEY_TEST);
+      if (!id) { id = generateUUIDTest(); storage.setItem(DEVICE_ID_KEY_TEST, id); }
+      return id;
+    } catch (_) { return "unknown"; }
+  }
+
+  const storage = makeMockLocalStorage();
+  const id1 = getOrCreateDeviceIdTest(storage);
+  assert(typeof id1 === "string" && id1.length > 0, "crée un deviceId non-vide");
+
+  const id2 = getOrCreateDeviceIdTest(storage);
+  assert(id1 === id2, "retourne le même deviceId sur les appels suivants (persistance)");
+
+  const badStorage = { getItem: () => { throw new Error("denied"); }, setItem: () => {}, removeItem: () => {} };
+  assert(getOrCreateDeviceIdTest(badStorage) === "unknown", "retourne 'unknown' si localStorage inaccessible");
+});
+
+describe("ANALYTICS — sessionId persistence + clearQuizState étendu", () => {
+  const COMPLETED_TRACKED_KEY_TEST = "sm-quiz-completed-tracked";
+
+  function clearQuizStateExtendedTest(storage) {
+    try {
+      storage.removeItem(STORAGE_KEY_TEST);
+      storage.removeItem(COMPLETED_TRACKED_KEY_TEST);
+    } catch (_) {}
+  }
+
+  // Round-trip avec sessionId
+  global.localStorage = makeMockLocalStorage();
+  const stateWithSession = { answers: partialAnswers(), currentQ: 3, screen: "quiz", sessionId: "test-uuid-abc" };
+  saveQuizStateTest(stateWithSession);
+  const loadedWithSession = loadQuizStateTest();
+  assertEqual(loadedWithSession.sessionId, "test-uuid-abc", "loadQuizState préserve le champ sessionId");
+
+  // Backward compat — ancien state sans sessionId charge correctement
+  global.localStorage = makeMockLocalStorage();
+  const oldState = { answers: partialAnswers(), currentQ: 3, screen: "quiz" };
+  saveQuizStateTest(oldState);
+  const loadedOld = loadQuizStateTest();
+  assert(loadedOld !== null, "ancien state sans sessionId charge toujours (backward compat)");
+  assert(loadedOld.sessionId === undefined, "sessionId absent dans ancien state = undefined");
+
+  // clearQuizState étendu efface COMPLETED_TRACKED_KEY
+  global.localStorage = makeMockLocalStorage();
+  saveQuizStateTest({ answers: freshAnswers(), currentQ: 0, screen: "landing" });
+  global.localStorage.setItem(COMPLETED_TRACKED_KEY_TEST, "1");
+  clearQuizStateExtendedTest(global.localStorage);
+  assert(global.localStorage.getItem(COMPLETED_TRACKED_KEY_TEST) === null,
+    "clearQuizState efface COMPLETED_TRACKED_KEY");
+  assert(loadQuizStateTest() === null, "clearQuizState efface toujours le quiz state");
+});
+
+describe("ANALYTICS — source integrity", () => {
+  const src = readFileSync(join(__dirname, "sm-survival-score.jsx"), "utf8");
+
+  assert(src.includes("DEVICE_ID_KEY"), "PRESENT: constante DEVICE_ID_KEY");
+  assert(src.includes("COMPLETED_TRACKED_KEY"), "PRESENT: constante COMPLETED_TRACKED_KEY");
+  assert(src.includes("generateUUID"), "PRESENT: fonction generateUUID");
+  assert(src.includes("getOrCreateDeviceId"), "PRESENT: fonction getOrCreateDeviceId");
+  assert(src.includes("const DEVICE_ID = getOrCreateDeviceId()"), "PRESENT: DEVICE_ID module-level");
+  assert(src.includes("deviceId: DEVICE_ID"), "PRESENT: deviceId injecté dans trackEvent");
+  assert(src.includes("abandonSentRef"), "PRESENT: abandonSentRef dedup guard");
+  assert(src.includes("pageshow"), "PRESENT: listener pageshow pour reset bfcache");
+  assert(src.includes("quiz_resumed"), "PRESENT: event quiz_resumed pour refresh detection");
+  assert(src.includes("loadQuizState()?.sessionId"), "PRESENT: sessionId restauré depuis localStorage");
+  assert(src.includes("{ ...payload, sessionId }"), "PRESENT: sessionId spread dans quiz_abandoned");
+  assert(src.includes("localStorage.removeItem(COMPLETED_TRACKED_KEY)"),
+    "PRESENT: clearQuizState efface COMPLETED_TRACKED_KEY");
+});
+
+// ============================================================
 // RESULTS
 // ============================================================
 

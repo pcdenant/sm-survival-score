@@ -209,6 +209,8 @@ async function generatePDF(pdfProps) {
 // ============================================================
 
 const STORAGE_KEY = "sm-survival-score-state";
+const DEVICE_ID_KEY = "sm-device-id";
+const COMPLETED_TRACKED_KEY = "sm-quiz-completed-tracked";
 
 function isValidQuizState(state) {
   if (!state || typeof state !== "object") return false;
@@ -234,8 +236,29 @@ export function loadQuizState() {
 }
 
 export function clearQuizState() {
-  try { localStorage.removeItem(STORAGE_KEY); } catch (_) {}
+  try {
+    localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem(COMPLETED_TRACKED_KEY);
+  } catch (_) {}
 }
+
+function generateUUID() {
+  if (typeof crypto !== "undefined" && crypto.randomUUID) return crypto.randomUUID();
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    return (c === "x" ? r : (r & 0x3) | 0x8).toString(16);
+  });
+}
+
+function getOrCreateDeviceId() {
+  try {
+    let id = localStorage.getItem(DEVICE_ID_KEY);
+    if (!id) { id = generateUUID(); localStorage.setItem(DEVICE_ID_KEY, id); }
+    return id;
+  } catch (_) { return "unknown"; }
+}
+
+const DEVICE_ID = getOrCreateDeviceId();
 
 // ============================================================
 // SCORING — Algorithme pondéré (Signal de priorité dimension)
@@ -302,7 +325,7 @@ const ANALYTICS_URL = "https://script.google.com/macros/s/AKfycbxSSFKyZsQvhbwwSA
 function trackEvent(event, data = {}) {
   if (!ANALYTICS_URL) return;
   try {
-    const payload = { timestamp: new Date().toISOString(), event, ...data };
+    const payload = { timestamp: new Date().toISOString(), event, deviceId: DEVICE_ID, ...data };
     // Fire and forget — navigator.sendBeacon for reliability on page unload
     if (navigator.sendBeacon) {
       navigator.sendBeacon(ANALYTICS_URL, JSON.stringify(payload));
@@ -1016,7 +1039,7 @@ function QuestionScreen({ questionIndex, question, selectedAnswer, onSelect, onN
   );
 }
 
-function ResultScreen({ answers, onRestart }) {
+function ResultScreen({ answers, onRestart, sessionId }) {
   const [unlocked, setUnlocked] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [subscribedEmail, setSubscribedEmail] = useState("");
@@ -1043,9 +1066,14 @@ function ResultScreen({ answers, onRestart }) {
     collabEmail: import.meta.env.VITE_COLLAB_SOLVED_EMAIL ?? "",
   }), [globalScore, category, globalResult, dimensionResults, priorityDimId, orderedDimIds]);
 
-  // Track quiz completion (once)
+  // Track quiz completion (once — guard prevents duplicate on result page refresh)
   useEffect(() => {
+    try {
+      if (localStorage.getItem(COMPLETED_TRACKED_KEY) === "1") return;
+      localStorage.setItem(COMPLETED_TRACKED_KEY, "1");
+    } catch (_) {}
     trackEvent("quiz_completed", {
+      sessionId,
       score_global: globalScore,
       category: category.label,
       priority_dim: priorityDimResult?.shortName || "",
@@ -1151,7 +1179,7 @@ function ResultScreen({ answers, onRestart }) {
                   <span style={{ color: T.jaune }}>{firstLockedLevelLabel}</span>
                 </p>
                 <p style={{ fontSize: 13, color: `${T.white}bb`, marginBottom: 24, lineHeight: 1.6, fontFamily: T.f }}>Entre ton email pour débloquer l'analyse et l'action concrète sur tes 4 dimensions restantes.</p>
-                <GhostSignupForm onSuccess={(email) => { setUnlocked(true); setShowModal(true); setSubscribedEmail(email); trackEvent("diagnostics_unlocked"); }} />
+                <GhostSignupForm onSuccess={(email) => { setUnlocked(true); setShowModal(true); setSubscribedEmail(email); trackEvent("diagnostics_unlocked", { sessionId }); }} />
               </BentoCard>
             </>
           )}
@@ -1185,8 +1213,11 @@ export default function SMSurvivalScore() {
   const [screen, setScreen] = useState(() => loadQuizState()?.screen ?? SCREEN.LANDING);
   const [currentQ, setCurrentQ] = useState(() => loadQuizState()?.currentQ ?? 0);
   const [answers, setAnswers] = useState(() => loadQuizState()?.answers ?? Array(QUESTIONS.length).fill(null));
+  const [sessionId, setSessionId] = useState(() => loadQuizState()?.sessionId ?? null);
   // Ephemeral — not persisted. Stores which dim index just completed so we can show the reveal screen.
   const [chapterReveal, setChapterReveal] = useState(null);
+
+  const abandonSentRef = useRef(false);
 
   useEffect(() => { window.scrollTo(0, 0); }, [screen]);
 
@@ -1194,31 +1225,57 @@ export default function SMSurvivalScore() {
     if (screen === SCREEN.LANDING && answers.every(a => a === null)) {
       clearQuizState();
     } else {
-      saveQuizState({ answers, currentQ, screen });
+      saveQuizState({ answers, currentQ, screen, sessionId });
     }
-  }, [answers, currentQ, screen]);
+  }, [answers, currentQ, screen, sessionId]);
+
+  // Detect page reload: fire quiz_resumed so GAS can pair it with the preceding quiz_abandoned
+  useEffect(() => {
+    const navType = performance.getEntriesByType?.("navigation")?.[0]?.type
+      ?? (performance.navigation?.type === 1 ? "reload" : null);
+    if (navType === "reload" && sessionId && screen === SCREEN.QUIZ) {
+      trackEvent("quiz_resumed", { sessionId, questionIndex: currentQ });
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
+    abandonSentRef.current = false;
+
     const handleAbandon = () => {
+      if (abandonSentRef.current) return;
       const payload = buildAbandonPayload(screen, currentQ, answers);
       if (!payload) return;
-      trackEvent('quiz_abandoned', payload);
+      abandonSentRef.current = true;
+      trackEvent('quiz_abandoned', { ...payload, sessionId });
     };
 
     const onVisibilityChange = () => {
       if (document.visibilityState === 'hidden') handleAbandon();
     };
 
+    // Reset dedup flag after bfcache restoration so a real close is still tracked
+    const onPageShow = (e) => {
+      if (e.persisted) abandonSentRef.current = false;
+    };
+
     document.addEventListener('visibilitychange', onVisibilityChange);
     window.addEventListener('pagehide', handleAbandon);
+    window.addEventListener('pageshow', onPageShow);
 
     return () => {
       document.removeEventListener('visibilitychange', onVisibilityChange);
       window.removeEventListener('pagehide', handleAbandon);
+      window.removeEventListener('pageshow', onPageShow);
     };
-  }, [screen, currentQ, answers]);
+  }, [screen, currentQ, answers, sessionId]);
 
-  const handleStart = useCallback(() => { trackEvent("quiz_started"); setScreen(SCREEN.QUIZ); setCurrentQ(0); }, []);
+  const handleStart = useCallback(() => {
+    const newSessionId = generateUUID();
+    setSessionId(newSessionId);
+    trackEvent("quiz_started", { sessionId: newSessionId });
+    setScreen(SCREEN.QUIZ);
+    setCurrentQ(0);
+  }, []);
   const handleSelect = useCallback((i) => { setAnswers(prev => { const a = [...prev]; a[currentQ] = i; return a; }); }, [currentQ]);
   const handleNext = useCallback(() => {
     const isLast = currentQ === QUESTIONS.length - 1;
@@ -1234,7 +1291,14 @@ export default function SMSurvivalScore() {
   }, [currentQ]);
   const handleChapterRevealDone = useCallback(() => setChapterReveal(null), []);
   const handlePrev = useCallback(() => { if (currentQ > 0) { setChapterReveal(null); setCurrentQ(p => p - 1); } }, [currentQ]);
-  const handleRestart = useCallback(() => { clearQuizState(); setAnswers(Array(QUESTIONS.length).fill(null)); setCurrentQ(0); setChapterReveal(null); setScreen(SCREEN.LANDING); }, []);
+  const handleRestart = useCallback(() => {
+    clearQuizState();
+    setAnswers(Array(QUESTIONS.length).fill(null));
+    setCurrentQ(0);
+    setChapterReveal(null);
+    setSessionId(null);
+    setScreen(SCREEN.LANDING);
+  }, []);
 
   return (
     <StyleProvider>
@@ -1256,7 +1320,7 @@ export default function SMSurvivalScore() {
           total={QUESTIONS.length}
         />
       ) : null}
-      {screen === SCREEN.RESULT && <ResultScreen answers={answers} onRestart={handleRestart} />}
+      {screen === SCREEN.RESULT && <ResultScreen answers={answers} onRestart={handleRestart} sessionId={sessionId} />}
     </StyleProvider>
   );
 }
