@@ -1,6 +1,6 @@
 {
   "name": "sm-survival-score",
-  "version": "1.0.0",
+  "version": "1.11.0",
   "description": "SM Survival Score — Diagnostic interactif pour Scrum Masters",
   "private": true,
   "type": "module",
