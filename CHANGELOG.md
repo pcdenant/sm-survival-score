@@ -7,6 +7,72 @@ Versionning basé sur [Semantic Versioning](https://semver.org/lang/fr/).
 
 ---
 
+## [1.11.0] — 2026-06-16
+
+### Ajouté
+- **Tracking session & device** — Chaque quiz génère un `sessionId` UUID unique (stocké dans localStorage avec l'état du quiz) ; un `deviceId` UUID est persisté séparément dans `localStorage["sm-device-id"]` pour relier les sessions d'un même appareil
+- **`quiz_resumed` event** — Détecte les rechargements de page via `performance.getEntriesByType("navigation")` et émet l'événement si l'utilisateur était en cours de quiz, permettant au GAS d'apparier abandon + reprise
+- **Abandon tracking robuste** — `quiz_abandoned` déclenché sur `visibilitychange` (onglet caché) et `pagehide` (fermeture/navigation). Dédup via `abandonSentRef` + reset sur restauration bfcache (`pageshow.persisted`)
+- **`buildAbandonPayload(screen, currentQ, answers)`** — Fonction pure exportée : retourne `{ questionIndex, questionNumber, dimension, answersGiven }` ou `null` si hors quiz
+- **`sessionId` dans tous les événements** — `quiz_started`, `quiz_completed`, `quiz_abandoned`, `quiz_resumed` transportent le `sessionId` pour chaîner les événements d'une même session
+
+### Modifié
+- **`SMSurvivalScore`** — État `sessionId` ajouté, initialisé depuis localStorage ; généré (`generateUUID()`) uniquement au démarrage du quiz (`handleStart`)
+- **`saveQuizState`** — Persiste désormais aussi le `sessionId` (en plus de `screen`, `currentQ`, `answers`)
+- **`clearQuizState`** — Efface également `COMPLETED_TRACKED_KEY` (en plus du state principal)
+- **`trackEvent`** — Inclut `deviceId` dans chaque payload (ajout du champ permanent)
+
+---
+
+## [1.10.1] — 2026-06-16
+
+### Corrigé
+- **Ghost 422 duplicate-member** — Ghost renvoie 422 (et non 409) avec `"already exists"` dans le champ `context` (pas `message`) pour les membres existants sur les versions récentes de l'API. Le handler inspecte maintenant les deux champs et traite ce cas comme un succès (`200 { success: true }`)
+- **Détection robuste des doublons** — La regex `/already exists/i` est appliquée sur `"${e.message} ${e.context}"` pour couvrir tous les variants de réponse Ghost
+
+---
+
+## [1.10.0] — 2026-06-15
+
+### Modifié
+- **`ResultScreen`** — 7 améliorations UI pour la conversion et la lisibilité :
+  - Hero score : grand score animé (`scaleIn`) centré sur fond vert, badge catégorie intégré dans le header
+  - Premier paragraphe du texte global mis en gras (font-weight 700, font-size 16) pour la hiérarchie de lecture
+  - `handleScrollToUnlock` : scroll doux vers le formulaire email depuis les cartes verrouillées
+  - Aperçu de la 2ème carte verrouillée (dimension + niveau) pour renforcer la valeur perçue avant l'unlock
+  - `handleShare` : texte de partage mis à jour avec l'URL courte `dub.sh/sm-survival-score`
+  - Animations `fadeUp` décalées (`0.2s`, `0.4s`, `0.6s`) pour un défilement progressif des bento-cards
+  - Footer texte allégé avec lien "Collaboration Solved" cliquable
+
+---
+
+## [1.9.0] — 2026-06-14
+
+### Ajouté
+- **`ChapterRevealScreen`** — Écran interstitiel vert affiché entre chaque dimension (après Q4, Q8, Q12, Q16). Affiche la dimension complétée (✓) et la prochaine dimension (→). Auto-avance après 2000ms ou au clic. `data-testid="chapter-reveal"` pour les tests E2E
+- **Auto-advance** — Après sélection d'une réponse, avance automatiquement à la question suivante après 600ms. Uniquement sur sélection active de l'utilisateur (pas sur navigation arrière). Animation `countdown` CSS sur la barre de progression
+- **Raccourcis clavier** — Touches `A`/`B`/`C` pour sélectionner les réponses directement depuis le clavier
+- **Navigation flèches** — `ArrowDown`/`ArrowRight` → réponse suivante ; `ArrowUp`/`ArrowLeft` → réponse précédente, avec focus management via `answerRefs`
+- **Badges lettres** — Chaque option de réponse affiche son raccourci (`A`, `B`, `C`) sous forme de badge `<kbd>` stylisé
+
+### Modifié
+- **`QuestionScreen`** — Refactoring interne : `handleSelect` wrappé pour distinguer sélections utilisateur vs navigation (via `userJustSelectedRef`). Reset du timer auto-advance au changement de question
+- **`SMSurvivalScore`** — État `chapterReveal` ajouté (éphémère, non persisté). `handleNext` détecte la fin de dimension via `(currentQ + 1) % QUESTIONS_PER_DIM === 0`
+
+---
+
+## [1.8.0] — 2026-06-14
+
+### Modifié
+- **`LandingScreen`** — Redesign complet pour passer le CTA au-dessus du fold (Option B) :
+  - Hiérarchie : headline → CTA bouton jaune → sous-titre confiance → stats sociales
+  - Headline revu : "Ton rôle est en danger. / Tu ne sais pas encore où."
+  - Sous-titre CTA : "Diagnostic gratuit · 5 min · Sans inscription"
+  - Label de confiance : "Résultat immédiat · Aucune carte requise"
+  - Stats repositionnées sous le CTA (1 100 postes, 18%, 5 dimensions) pour réduire la friction au premier clic
+
+---
+
 ## [1.7.0] — 2026-06-14
 
 ### Ajouté

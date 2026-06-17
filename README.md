@@ -84,12 +84,14 @@ La suite de tests vérifie la logique de scoring, les frontières de catégories
 
 Copier `.env.example` en `.env` et remplir :
 
-| Variable | Description |
-|---|---|
-| `GHOST_ADMIN_API_KEY` | Clé API Admin de Ghost |
-| `GHOST_URL` | URL du site Ghost (ex: `https://your-ghost.ghost.io`) |
+| Variable | Portée | Description |
+|---|---|---|
+| `GHOST_ADMIN_API_KEY` | Serveur | Clé API Admin de Ghost (format `id:secret`) |
+| `GHOST_URL` | Serveur | URL du site Ghost (ex: `https://your-ghost.ghost.io`) |
+| `VITE_COLLAB_SOLVED_URL` | Client | URL Collaboration Solved affichée dans le PDF (optionnel) |
+| `VITE_COLLAB_SOLVED_EMAIL` | Client | Email de contact affiché dans le PDF (optionnel) |
 
-Ces variables sont utilisées **uniquement côté serveur** (Vercel Functions). Elles ne sont jamais exposées au client.
+Les variables `GHOST_*` sont utilisées **uniquement côté serveur** (Vercel Functions) — jamais exposées au client. Les variables `VITE_*` sont embarquées dans le bundle client au build.
 
 ---
 

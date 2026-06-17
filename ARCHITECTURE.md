@@ -20,10 +20,14 @@ Browser
 
 ```
 LandingScreen
-    │ clic "Voir mes angles morts"
+    │ clic "Voir mes angles morts" → génère sessionId UUID
     ▼
 QuestionScreen (20 questions, navigation avant/arrière)
-    │ réponse à la dernière question
+    │ après Q4, Q8, Q12, Q16 (fin de dimension)
+    ├── ChapterRevealScreen (2s auto-avance ou clic)
+    │       └──→ QuestionScreen (dimension suivante)
+    │
+    │ réponse à la dernière question (Q20)
     ▼
 ResultScreen
     ├── Score global + catégorie
@@ -53,9 +57,11 @@ ResultScreen
 ## Composants
 
 ### `SMSurvivalScore` (racine)
-- Gère l'état global : écran courant, index question, tableau de réponses
+- Gère l'état global : `screen`, `currentQ`, `answers`, `sessionId` (UUID par session, persisté), `chapterReveal` (éphémère — index de la dimension qui vient de se terminer)
 - Unique source de vérité pour la navigation
-- **localStorage** : restaure l'état du quiz à chaque reload via lazy init des `useState` ; persiste automatiquement via `useEffect` ; nettoie si retour au landing vierge
+- **localStorage** : restaure l'état du quiz à chaque reload via lazy init des `useState` ; persiste automatiquement via `useEffect` (y compris `sessionId`) ; nettoie si retour au landing vierge
+- **Abandon tracking** : écoute `visibilitychange` + `pagehide` pour émettre `quiz_abandoned` ; dédup via `abandonSentRef` + reset bfcache
+- **Reload detection** : émet `quiz_resumed` si `performance.getEntriesByType("navigation")[0].type === "reload"` et qu'un quiz était en cours
 
 ### `LandingScreen`
 - Ecran de présentation statique
@@ -64,6 +70,15 @@ ResultScreen
 ### `QuestionScreen`
 - Reçoit la question courante par props, sélection locale remontée via callback
 - `ProgressBar` : 20 segments visuels groupés par dimension
+- **Raccourcis clavier** : `A`/`B`/`C` sélectionnent directement la réponse correspondante
+- **Navigation flèches** : `ArrowDown`/`ArrowRight` → réponse suivante ; `ArrowUp`/`ArrowLeft` → réponse précédente, avec focus management via `answerRefs`
+- **Auto-advance** : avance automatiquement 600ms après une sélection active de l'utilisateur (pas sur navigation arrière, détecté via `userJustSelectedRef`)
+- **Badges lettres** : chaque option affiche son raccourci sous forme de badge `<kbd>`
+
+### `ChapterRevealScreen`
+- Écran interstitiel plein-écran (fond `T.vert`) affiché après chaque dimension complétée (Q4, Q8, Q12, Q16)
+- Affiche la dimension complétée (✓) et annonce la prochaine dimension en jaune
+- Auto-avance après 2000ms ou au clic ; `data-testid="chapter-reveal"` pour les tests E2E
 
 ### `ResultScreen`
 - Calcule les scores via `useMemo` (pas de re-calcul inutile)
@@ -131,6 +146,7 @@ Toutes les fonctions pures sont exportées depuis `sm-survival-score.jsx` pour p
 | `DIMENSION_WEIGHTS` | Constante : poids de survie par dimension (`visibility=5, strategic=4, proof=3, business=2, autonomy=1`) |
 | `getPriorityDimension(dimensionScoresPct)` | Dimension prioritaire selon l'algorithme pondéré ; tie-break par poids décroissant |
 | `getOrderedDimensions(dimensionScoresPct)` | 5 IDs ordonnés du plus au moins critique pour l'affichage post-gate |
+| `buildAbandonPayload(screen, currentQ, answers)` | Retourne `{ questionIndex, questionNumber, dimension, answersGiven }` si `screen === QUIZ`, sinon `null` |
 
 ---
 
@@ -166,11 +182,14 @@ Client → POST /api/subscribe { email }
              ▼
         Ghost Admin API POST /members/ + label "SM Score"
              │
-             ├→ 201 (créé) / 409 (doublon) = succès
+             ├→ 201 (créé) / 409 (doublon ancien Ghost) = succès
              │   └→ 200 { success: true }
              │
-             └→ 422 / 5xx = erreur
-                 └→ 500 { error: message }
+             ├→ 422 avec "already exists" dans errors[].message ou errors[].context
+             │   └→ 200 { success: true }   ← membre déjà existant, pas une erreur
+             │
+             └→ autre 4xx / 5xx = erreur
+                 └→ status Ghost { error: "Erreur Ghost API" }
 ```
 
 **Authentification JWT HS256 :**
@@ -186,10 +205,15 @@ Les clés `GHOST_ADMIN_API_KEY` et `GHOST_URL` ne sont jamais exposées côté c
 
 Tracking anonyme via `navigator.sendBeacon` vers un Google Apps Script déployé en webhook. Aucune donnée personnelle (pas d'email, pas d'IP stockée côté app).
 
+**Identifiants de tracking :**
+- `sessionId` — UUID généré à chaque démarrage de quiz, persisté dans localStorage et transmis dans tous les événements de la session
+- `deviceId` — UUID persisté dans `localStorage["sm-device-id"]`, généré une seule fois par appareil, inclus dans chaque payload
+
 Événements trackés :
-- `quiz_started`
-- `quiz_completed` (avec score, catégorie, dimension prioritaire `priority_dim`, scores par dimension)
-- `quiz_abandoned` (avec index de question, dimension, nombre de réponses données)
+- `quiz_started` (avec `sessionId`)
+- `quiz_completed` (avec `sessionId`, score, catégorie, `priority_dim`, scores par dimension)
+- `quiz_abandoned` (avec `sessionId`, `questionIndex`, `questionNumber`, `dimension`, `answersGiven`) — émis sur `visibilitychange` (onglet caché) ou `pagehide`, avec dédup via `abandonSentRef` et reset bfcache
+- `quiz_resumed` (avec `sessionId`, `questionIndex`) — émis au rechargement de page si un quiz était en cours, permet d'apparier abandon + reprise
 - `diagnostics_unlocked`
 
 ---
@@ -199,6 +223,6 @@ Tracking anonyme via `navigator.sendBeacon` vers un Google Apps Script déployé
 - **Zéro CSS externe** : tout le styling est inline avec des tokens centralisés dans `T`
 - **Zéro store externe** : `useState` suffit pour 3 écrans + modal
 - **Zéro routing** : navigation gérée par un état `screen` (landing / quiz / result)
-- **Zéro dépendance pour PDF** : `window.print()` native + CSS `@media print` pour masquer l'UI
+- **PDF client-side** : `jsPDF` + `html2canvas` en import dynamique (lazy-loaded au clic) — pas de dépendance serveur
 - **Zéro dépendance pour crypto** : Node.js `crypto.createHmac` pour JWT HS256 (serverless)
 - **Accessibility first** : ARIA roles, modal, dialog, reduced-motion, progressbar, radiogroup
