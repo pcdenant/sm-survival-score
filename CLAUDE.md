@@ -1,179 +1,58 @@
 # CLAUDE.md
-# Read this file entirely before any action. If this file conflicts with session instructions → this file wins.
 
----
+<!-- Lean agent rules, in the spirit of Karpathy's "agents bloat / don't push back" takes — a template, not his file. Tune it: keep what changes diffs, cut the rest. -->
 
-## 1. PROJECT
+**0 — What you are.** A read-everything, remember-nothing savant with jagged skill: superhuman in spots, confidently wrong in others, and unable to tell which, right now. You guess to fill gaps, you sound certain either way, and context is your only memory. Everything below follows from this.
 
-**Name:** SM Survival Score
-**Purpose:** Diagnostic interactif pour Scrum Masters — mesurer la solidité de leur rôle face aux réductions d'effectifs et générer un plan d'action personnalisé.
-**Status:** [ ] Exploration · [ ] MVP · [x] Production
-**Owner:** Pierre-Cyril Denant
+**1 — Stay reviewable.** Generation is cheap; my verification is the bottleneck. Ship small, single-concern diffs. Stop at checkpoints before building further. Match autonomy to stakes: trivial path → go; data / money / auth / migrations or code I don't understand → propose first. Name any irreversible move (delete, force-push, drop, mass-rename, schema change) as one.
 
-**Stack:**
-- Frontend: React 18 + Vite 5 (JavaScript, pas TypeScript)
-- Backend: Vercel Functions (serverless)
-- DB: Aucune — données statiques dans le code source
-- Styling: CSS inline avec design tokens (objet `T`) — pas de Tailwind
-- Deploy: Vercel
+**2 — Think before typing.** State the assumptions you're acting on. Real ambiguity → give me the options and your pick, don't choose in the dark. Simpler path exists → say so first. I'm wrong → say so. Confused → name it; "I don't know X" beats a confident guess.
 
-**Key decisions:**
-- Un seul fichier composant (`src/sm-survival-score.jsx`) — pas de split en sous-composants séparés
-- Zéro routing — navigation gérée par état `screen` (landing / quiz / result)
-- Logique de scoring exportée comme fonctions pures testables sans React
-- Styles 100% inline via tokens centralisés — pas de fichier CSS
-- Ghost Admin API intégré via serverless function `/api/subscribe` (JWT HS256, pure Node.js crypto) — zéro dépendance applicative ajoutée
-- Analytics fire-and-forget via `navigator.sendBeacon` vers Google Apps Script
-- Persistance quiz via `localStorage` (saveQuizState/loadQuizState/clearQuizState) — restauration transparente au reload
+**3 — Simplicity = correctness, not style.** Fewer lines is a side effect, never the goal — don't golf. Before writing, take the first rung that holds:
+1. Needs to exist at all? no → skip it (YAGNI)
+2. Stdlib does it → use it
+3. Native platform feature → use it (if it's actually good enough)
+4. Already a dependency → use it
+5. One honest line → one line
+6. Else → the minimum that works
 
----
+No abstraction for one caller, no unasked config, no future-proofing (add it the 3rd time, not the 1st). Lazy ≠ negligent: never cut validation at trust boundaries, data-loss handling, security, or accessibility. Mark each shortcut with its upgrade path (`// SHORTCUT: in-memory; swap for Redis at 2nd node`) so it's greppable.
 
-## 2. BEHAVIOR — CORE RULES
+**4 — Surgical edits.** Every changed line traces to my request, else revert. Don't tidy, reflow, or rename in passing. Match existing style. Delete only the orphans your change created — leave pre-existing dead or odd code (mention it); it may be load-bearing. Don't strip comments you don't understand.
 
-### Think before coding
-- State assumptions explicitly. If uncertain → ask before implementing.
-- If multiple interpretations exist → present them, don't pick silently.
-- If simpler approach exists → say so and push back.
-- If something is unclear → stop, name what's confusing, ask.
+**5 — Goals, not instructions.** Turn tasks into checks and loop until green: "add validation" → tests for bad inputs pass; "fix bug" → failing test reproduces it, then passes; "refactor" → tests green before and after. Multi-step → show the plan, one line + check each, then run it. Fuzzy goal ("make it work") → sharpen it with me first.
 
-### Simplicity first
-- Minimum code that solves the problem. Nothing speculative.
-- No features beyond what was asked.
-- No abstractions for single-use code.
-- No "flexibility" that wasn't requested.
-- If you write 200 lines and it could be 50 → rewrite it.
+**6 — Keep me in control.** The real risk isn't bad code, it's me not understanding my own system. Leave a one-line "why" for non-obvious calls. Flag code I can no longer review. Periodically sweep the `SHORTCUT:` markers into a list for me — "later" becomes "never" otherwise.
 
-### Surgical changes
-- Touch only what you must. Don't "improve" adjacent code.
-- Don't refactor things that aren't broken.
-- Match existing style, even if you'd do it differently.
-- Remove only imports/variables YOUR changes made unused — not pre-existing dead code.
-- Every changed line must trace directly to the request.
+**7 — This file.** Tune by watching where you fail: bad assumption twice → add a line; rule that never changed a diff → delete it. The value lives in the project facts below, not the principles above. Shorter beats complete.
 
-### Goal-driven execution
-- Transform tasks into verifiable goals before starting.
-- For multi-step tasks, state a brief plan with verify steps:
-  ```
-  1. [Step] → verify: [check]
-  2. [Step] → verify: [check]
-  ```
-- Loop until verified. Don't report done before checking.
+## Project (fill in, keep current)
 
----
+- **Stack / runtime:** React 18 + Vite 5 (JavaScript, not TypeScript). Vercel Functions serverless (`/api/`). No DB — all data is static in `src/sm-survival-score.jsx`. CSS-in-JS via design-tokens object `T` (no Tailwind, no `.css` files). Ghost Admin API via JWT HS256 (Node.js native `crypto` — zero npm deps). Analytics fire-and-forget to Google Apps Script via `navigator.sendBeacon`. DM Sans from Google Fonts via CSS `@import`. Current version: 1.11.0.
 
-## 3. HARD CONSTRAINTS — NEVER DO
+- **Run / test / lint (exact commands):**
+  - `npm run dev` — Vite dev server (localhost:5173)
+  - `npm run build` — production build → `dist/`
+  - `npm test` — unit tests, pure Node (no framework): `node src/sm-survival-score.test.js && node api/subscribe.test.js`
+  - `npm run test:e2e` — Playwright E2E (browsers at `/opt/pw-browsers`); needs `npm run dev` running or `reuseExistingServer`
+  - No lint command configured — match existing style manually
 
-- Add libraries without explicit approval (explain need first, then wait)
-- Write code that passes tests but bypasses intent
-- Leave `TODO`, `FIXME`, or `console.log` in production paths
-- Generate, suggest, or reference secrets/tokens/credentials
-- Modify `.env` files or include sensitive values anywhere
-- Ask clarifying questions after mistakes — ask before implementing
+- **Non-obvious conventions:**
+  - **One-file architecture**: all data, logic, components, and styles live in `src/sm-survival-score.jsx` (~1 300 lines). Do not split. Internal order is load-bearing: DATA → CONSTANTS → SCORING UTILS → ANALYTICS → DESIGN TOKENS → GLOBAL STYLES → COMPONENTS → SCREENS → APP ROOT.
+  - **Screens via state enum**: `SCREEN = { LANDING, QUIZ, RESULT }` — no router library.
+  - **Styling**: always `style={{ ...T.someToken, additionalProp }}`. Never add CSS files. Global CSS (animations, `@media print`) injected once via `<style>` in DOM by `StyleProvider`.
+  - **Auto-advance guard**: `userJustSelectedRef` (React ref, not state) tracks whether the current question was just answered by the user. It must be cleared in `handlePrev` — otherwise back-navigation triggers auto-advance.
+  - **Ghost duplicate handling**: 201 = new member, 409 = duplicate (old Ghost), 422 + "already exists" in `errors[].context` = duplicate (new Ghost). All three are success cases. Do not simplify this.
+  - **Analytics dedup**: `COMPLETED_TRACKED_KEY` in localStorage prevents double-firing `quiz_completed` on page reload. `abandonSentRef` prevents duplicate abandon signals. Both exist for data integrity — don't remove them.
+  - **Test framework is zero-dependency**: custom `describe/it/assert` defined inline in each `.test.js`. No Jest, no Vitest.
+  - **PDF**: `jsPDF` and `html2canvas` are dynamically imported (`import()`) only on click. Rendered into an off-screen div (`left: -9999px`), snapshot with html2canvas (2× scale), then div is removed. 30s E2E timeout for this flow.
+  - **Env var scoping**: `GHOST_ADMIN_API_KEY` and `GHOST_URL` are server-only (Vercel Functions, `process.env`). `VITE_COLLAB_SOLVED_URL` / `VITE_COLLAB_SOLVED_EMAIL` are client-bundle vars (embedded at build via `import.meta.env.VITE_*`). Leaking `GHOST_*` to client = security breach.
+  - **localStorage keys** (never rename): `sm-survival-score-state` (quiz progress), `sm-device-id` (analytics device UUID), `sm-completed-tracked` (dedup flag).
 
----
+- **Do-not-touch files / dirs:**
+  - `DIMENSIONS`, `QUESTIONS`, `GLOBAL_RESULTS`, `DIAGNOSTICS` data at the top of `sm-survival-score.jsx` — changes ripple across scoring, rendering, and PDF; test suite will catch breakage but fixing is non-trivial.
+  - `DIMENSION_WEIGHTS` — deliberately tuned for layoff-risk prediction; altering it changes which diagnostic unlocks first and breaks existing test expectations.
+  - Ghost JWT logic in `api/subscribe.js` — correct by construction (no deps), verified by 27 tests; rewriting risks subtle crypto errors.
+  - `src/main.jsx` — 10-line entry point; change only if mount target changes.
 
-## 4. CODE STANDARDS
-
-**TypeScript:** `strict: true`, zero `any` (use `unknown`), explicit return types, interfaces for public objects.
-
-**Functions:** One responsibility, max 20 lines, max 3 params (use object if more), verb names (`getUserById`), early return over nested if/else.
-
-**Naming:** `camelCase` vars/functions · `PascalCase` components · `UPPER_SNAKE_CASE` constants · `kebab-case.ts` files · `MyComponent.tsx` components.
-
-**Comments:** Comment the WHY, never the WHAT. Code must be readable without comments. JSDoc on all exported public functions.
-
-**Error handling:** Never empty `catch`. Log errors with context. Return explicit error types, not `null`. Use Result pattern or Error subclasses for business errors.
-
-**React:** Functional components only. Props typed with explicit interface. Extract business logic into custom hooks. Ternary for conditional render (not `&&` — risk of `0` rendered).
-
-**State:** `useState` local · `useReducer` for 3+ related fields · Context for truly global data only.
-
-**API routes:** Handler = orchestration only. Business logic in services/. DB access in repositories/. Validate all inputs with Zod at route boundary.
-
----
-
-## 5. SECURITY — NON-NEGOTIABLE
-
-- Zero secrets in code — always via `process.env`, accessed through typed config module
-- `.env` always in `.gitignore` — `.env.example` updated on every new variable
-- Never log PII (emails, passwords, tokens) — mask in logs
-- Parameterized queries only — never SQL built by concatenation
-- Sanitize all user inputs before persistence
-- bcrypt min cost 12 for passwords · JWT: 15min access / 7d refresh
-- Cookies: `httpOnly: true`, `secure: true`, `sameSite: 'strict'`
-- Flag any security concern immediately, even if not asked
-
----
-
-## 6. APPROVED LIBS — don't replace without discussion
-
-| Usage | Lib |
-|---|---|
-| Charts | recharts (déjà en production) |
-| HTTP client | native fetch |
-| Tests unitaires | Node.js vanilla (zéro dépendances — intentionnel) |
-| Tests E2E | Playwright (@playwright/test — devDependency) |
-| Fonts | Google Fonts (DM Sans, via CSS @import) |
-| JWT / Crypto | Node.js `crypto` natif (HS256 pour Ghost Admin API) |
-| PDF client-side | jspdf + html2canvas (import dynamique — lazy-loaded au clic) |
-
-**Libs actuellement installées :** react, react-dom, recharts, jspdf, html2canvas, @vitejs/plugin-react, vite, @playwright/test
-
-**Avant d'ajouter une lib :** Est-ce que ça peut se faire nativement en < 20 lignes ? Repo actif (< 6 mois) ? Licence MIT/Apache 2.0 ? Si oui → propose, attends l'approbation.
-
----
-
-## 7. GIT
-
-**Commit format (Conventional Commits):**
-```
-feat: add user authentication
-fix: resolve token expiration edge case
-refactor: extract validation to separate module
-test: add coverage for auth service
-docs: update API endpoint documentation
-```
-
-**Pre-commit gate:** lint passes · typecheck passes · related tests pass · no `console.log` · no `.env` included.
-
-**Branches:** `main` (production, protected) · `dev` (integration) · `feat/[name]` · `fix/[name]`
-
----
-
-## 8. ARCHITECTURE
-
-```
-/
-├── src/
-│   ├── main.jsx                  # Point d'entrée React (monte SMSurvivalScore)
-│   └── sm-survival-score.jsx     # Tout : données, logique, composants, styles
-├── api/
-│   ├── subscribe.js              # Vercel Function : POST email → Ghost Admin API (JWT HS256)
-│   └── subscribe.test.js         # 27 tests unitaires Ghost API + JWT
-├── tests/
-│   └── e2e/
-│       └── subscription.spec.js  # 8 tests Playwright e2e
-├── index.html                    # Shell HTML (lang="fr", meta SEO)
-├── vite.config.js
-├── playwright.config.js
-├── package.json
-├── .env.example                  # Variables requises : GHOST_ADMIN_API_KEY, GHOST_URL
-├── README.md
-├── CHANGELOG.md
-└── ARCHITECTURE.md               # Détail technique (flux, composants, API)
-```
-
-**Fichier central :** `src/sm-survival-score.jsx` contient dans l'ordre :
-1. DATA (DIMENSIONS, QUESTIONS, GLOBAL_RESULTS, DIAGNOSTICS)
-2. CONSTANTS (MAX_SCORE, SCORE_THRESHOLDS, SCREEN enum)
-3. SCORING UTILITIES (fonctions pures exportées : computeDimensionScores, computeGlobalScore, getCategory, getDiagnosticLevel, buildDimensionResults, isValidEmail, saveQuizState, loadQuizState, clearQuizState)
-4. SCORING — Algorithme pondéré (DIMENSION_WEIGHTS, getPriorityDimension, getOrderedDimensions)
-5. ANALYTICS (trackEvent via sendBeacon)
-6. DESIGN TOKENS (objet T)
-7. GLOBAL STYLES (StyleProvider, incl. @media print .no-print)
-8. PRIORITY SIGNAL (SIGNAL_TEXTS, PrioritySignal)
-9. COMPOSANTS (BentoCard, DiagnosticCard, LockedDiagnosticCard, ProgressBar, GhostSignupForm, UnlockModal)
-10. SCREENS (LandingScreen, QuestionScreen, ResultScreen)
-11. APP ROOT (SMSurvivalScore — état global, navigation, persistance localStorage)
-
-*Updated: 2026-06-14*
+- **The one gotcha that bites everyone:** `userJustSelectedRef` is a **ref, not state** — it does not trigger re-renders and is invisible in the component tree. Any new navigation path that doesn't call `userJustSelectedRef.current = false` will cause the quiz to auto-advance the instant the user lands on a question. E2E tests won't catch it because they always navigate forward. Always grep for `userJustSelectedRef` before touching navigation logic.
