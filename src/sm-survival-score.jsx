@@ -225,7 +225,26 @@ async function generatePDF(pdfProps) {
   document.body.appendChild(container);
 
   const root = createRoot(container);
-  flushSync(() => root.render(<PDFDocument {...pdfProps} />));
+  flushSync(() => root.render(
+    <PDFDocument
+      {...pdfProps}
+      articleLinks={ARTICLE_LINKS.cards}
+      bannerArticle={ARTICLE_LINKS.banners[pdfProps.category.key] ?? null}
+    />
+  ));
+
+  // Capture safe-break positions and link coordinates before html2canvas
+  const containerRect = container.getBoundingClientRect();
+
+  const safeBreakYs = [...container.querySelectorAll('[data-pdf-break]')]
+    .map(el => Math.round(el.getBoundingClientRect().top - containerRect.top))
+    .filter(y => y > 0)
+    .sort((a, b) => a - b);
+
+  const linkRects = [...container.querySelectorAll('a[href]')].map(a => {
+    const r = a.getBoundingClientRect();
+    return { url: a.href, x: r.left - containerRect.left, y: r.top - containerRect.top, w: r.width, h: r.height };
+  });
 
   const canvas = await html2canvas(container, {
     scale: 2,
@@ -238,19 +257,44 @@ async function generatePDF(pdfProps) {
   const pdf = new jsPDF({ orientation: "portrait", unit: "px", format: [794, 1123] });
   const pageW = pdf.internal.pageSize.getWidth();
   const pageH = pdf.internal.pageSize.getHeight();
-  const ratio = pageW / canvas.width;
-  const imgH = canvas.height * ratio;
-  const imgData = canvas.toDataURL("image/jpeg", 0.92);
 
-  let heightLeft = imgH;
-  let yPos = 0;
-  pdf.addImage(imgData, "JPEG", 0, yPos, pageW, imgH);
-  heightLeft -= pageH;
-  while (heightLeft > 0) {
-    yPos -= pageH;
-    pdf.addPage();
-    pdf.addImage(imgData, "JPEG", 0, yPos, pageW, imgH);
-    heightLeft -= pageH;
+  // Smart page slicing: break at section boundaries, never mid-content
+  const canvasScale = canvas.width / 794; // = 2 (scale: 2)
+  const totalImgH = canvas.height / canvasScale; // total height in PDF px (= DOM px)
+
+  const pageSlices = [];
+  let curY = 0;
+  while (curY < totalImgH) {
+    const targetEnd = curY + pageH;
+    if (targetEnd >= totalImgH) { pageSlices.push({ start: curY, end: totalImgH }); break; }
+    const validBreaks = safeBreakYs.filter(y => y > curY && y <= targetEnd);
+    const breakY = validBreaks.length > 0 ? validBreaks[validBreaks.length - 1] : targetEnd;
+    pageSlices.push({ start: curY, end: breakY });
+    curY = breakY;
+  }
+
+  let isFirstPage = true;
+  for (const { start, end } of pageSlices) {
+    const sliceH = end - start;
+    const sliceCanvas = document.createElement('canvas');
+    sliceCanvas.width = canvas.width;
+    sliceCanvas.height = Math.round(sliceH * canvasScale);
+    sliceCanvas.getContext('2d').drawImage(
+      canvas,
+      0, Math.round(start * canvasScale), canvas.width, Math.round(sliceH * canvasScale),
+      0, 0, canvas.width, Math.round(sliceH * canvasScale)
+    );
+    if (!isFirstPage) pdf.addPage();
+    isFirstPage = false;
+    pdf.addImage(sliceCanvas.toDataURL('image/jpeg', 0.92), 'JPEG', 0, 0, pageW, sliceH);
+  }
+
+  // Add clickable link annotations over the raster image
+  for (const link of linkRects) {
+    const pageIndex = pageSlices.findIndex(({ start, end }) => link.y >= start && link.y < end);
+    if (pageIndex === -1) continue;
+    pdf.setPage(pageIndex + 1);
+    pdf.link(link.x, link.y - pageSlices[pageIndex].start, link.w, link.h, { url: link.url });
   }
 
   pdf.save(filename);
@@ -716,7 +760,7 @@ function ChapterRevealScreen({ completedDimIndex, nextDimIndex, onContinue }) {
   );
 }
 
-function PDFDocument({ globalScore, category, globalResult, dimensionResults, priorityDimId, orderedDimIds, collabUrl, collabEmail }) {
+function PDFDocument({ globalScore, category, globalResult, dimensionResults, priorityDimId, orderedDimIds, collabUrl, collabEmail, articleLinks, bannerArticle }) {
   const dateStr = new Date().toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
   const orderedResults = orderedDimIds.map(id => dimensionResults.find(d => d.id === id));
   const priorityResult = dimensionResults.find(d => d.id === priorityDimId);
@@ -737,35 +781,51 @@ function PDFDocument({ globalScore, category, globalResult, dimensionResults, pr
       </div>
 
       {/* Score + texte global */}
-      <div style={{ padding: "28px 48px", borderBottom: `1px solid ${T.border}`, display: "flex", gap: 32, alignItems: "flex-start" }}>
+      <div data-pdf-break="true" style={{ padding: "28px 48px", borderBottom: `1px solid ${T.border}`, display: "flex", gap: 32, alignItems: "flex-start" }}>
         <div style={{ textAlign: "center", flexShrink: 0 }}>
           <div style={{ fontSize: 80, fontWeight: 900, color: category.key === "irreplaceable" ? T.vert : category.color, lineHeight: 1, letterSpacing: "-0.04em" }}>{globalScore}</div>
           <div style={{ fontSize: 14, color: T.textMuted, marginBottom: 8 }}>/100</div>
           <div style={{ display: "inline-block", padding: "6px 18px", fontSize: 13, fontWeight: 700, color: category.key === "irreplaceable" ? T.vertDark : T.white, background: category.key === "irreplaceable" ? T.jaune : category.color, borderRadius: 20 }}>{category.label}</div>
         </div>
         <div>
-          {globalResult.paragraphs.slice(0, 2).map((p, i) => (
+          {globalResult.paragraphs.map((p, i) => (
             <p key={i} style={{ fontSize: 14, lineHeight: 1.75, color: T.textMid, marginBottom: 12 }}>{p}</p>
           ))}
         </div>
       </div>
 
       {/* Signal prioritaire */}
-      <div style={{ padding: "24px 48px 0" }}>
-        <div style={{ backgroundColor: "#1a1a2e", borderLeft: "3px solid #FFF200", borderRadius: 4, padding: "14px 18px" }}>
-          <p style={{ fontWeight: 600, fontSize: 14, color: "#FFF200", margin: "0 0 6px 0" }}>{signal.title}</p>
-          <p style={{ fontSize: 13, color: "#e8e8e8", margin: 0, lineHeight: 1.5 }}>{signal.body}</p>
+      <div data-pdf-break="true" style={{ padding: "24px 48px 0" }}>
+        <div style={{ backgroundColor: T.vertDark, borderLeft: `3px solid ${T.jaune}`, borderRadius: 4, padding: "14px 18px" }}>
+          <p style={{ fontSize: 9, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.1em", color: "rgba(255,255,255,0.4)", margin: "0 0 6px 0" }}>⚡ Signal prioritaire</p>
+          <p style={{ fontWeight: 600, fontSize: 14, color: T.jaune, margin: "0 0 6px 0" }}>{signal.title}</p>
+          <p style={{ fontSize: 13, color: "rgba(255,255,255,0.75)", margin: 0, lineHeight: 1.5 }}>{signal.body}</p>
         </div>
-        <div style={{ marginTop: 12, padding: "14px 16px", background: T.creme, borderRadius: T.rSm }}>
-          <p style={{ fontSize: 11, fontWeight: 700, color: T.vert, marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.05em" }}>
-            Action immédiate — {priorityResult.shortName}
-          </p>
-          <p style={{ fontSize: 13, lineHeight: 1.65, color: T.textMid }}>{priorityResult.diagnostics[priorityLevel].action}</p>
+        <div style={{ marginTop: 12, background: T.vert, borderRadius: T.rSm, padding: "12px 14px", display: "flex", gap: 10, alignItems: "flex-start" }}>
+          <div style={{ width: 20, height: 20, borderRadius: "50%", background: T.jaune, color: T.vertDark, fontSize: 10, fontWeight: 900, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 2 }}>1</div>
+          <div>
+            <p style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", color: "rgba(255,255,255,0.5)", marginBottom: 3 }}>
+              Action immédiate — {priorityResult.shortName}
+            </p>
+            <p style={{ fontSize: 13, lineHeight: 1.65, color: T.white }}>{priorityResult.diagnostics[priorityLevel].action}</p>
+          </div>
         </div>
       </div>
 
+      {/* Bannière article catégorie */}
+      {bannerArticle && (
+        <div data-pdf-break="true" style={{ padding: "16px 48px 0" }}>
+          <p style={{ fontSize: 13, color: T.textMid, lineHeight: 1.6, margin: 0 }}>
+            {bannerArticle.accroche}{" "}
+            <a href={bannerArticle.url} style={{ color: T.vert, fontWeight: 600, textDecoration: "underline", textUnderlineOffset: 3 }}>
+              {bannerArticle.linkText}
+            </a>
+          </p>
+        </div>
+      )}
+
       {/* Vue d'ensemble */}
-      <div style={{ padding: "24px 48px 0" }}>
+      <div data-pdf-break="true" style={{ padding: "24px 48px 0" }}>
         <h2 style={{ fontSize: 12, fontWeight: 700, color: T.vert, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 16 }}>Vue d'ensemble</h2>
         {orderedResults.map((dim) => {
           const dimCat = getCategory(dim.pct);
@@ -794,32 +854,54 @@ function PDFDocument({ globalScore, category, globalResult, dimensionResults, pr
           const diag = dim.diagnostics[level];
           const dimCat = getCategory(dim.pct);
           const levelLabel = level === "low" ? "Vulnérable" : level === "mid" ? "À renforcer" : "Solide";
+          const article = articleLinks?.[dim.id] ?? null;
           return (
-            <div key={dim.id} style={{ marginBottom: 20, borderLeft: `3px solid ${dimCat.color}`, paddingLeft: 16 }}>
+            <div data-pdf-break="true" key={dim.id} style={{ marginBottom: 20, borderLeft: `3px solid ${dimCat.color}`, paddingLeft: 16 }}>
               <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8, alignItems: "center" }}>
                 <h3 style={{ fontSize: 14, fontWeight: 700, color: T.text, margin: 0 }}>{dim.name}</h3>
                 <span style={{ fontSize: 11, fontWeight: 700, color: dimCat.color, padding: "3px 10px", background: dimCat.bg, borderRadius: 20 }}>{levelLabel} — {dim.score}/8</span>
               </div>
-              <p style={{ fontSize: 13, lineHeight: 1.7, color: T.textMid, marginBottom: 12 }}>{diag.text}</p>
-              <div style={{ padding: "12px 14px", background: T.creme, borderRadius: T.rSm }}>
-                <p style={{ fontSize: 11, fontWeight: 700, color: T.vert, marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.05em" }}>
-                  {level === "high" ? "Prochain niveau" : "Action immédiate"}
-                </p>
-                <p style={{ fontSize: 12, lineHeight: 1.65, color: T.textMid }}>{diag.action}</p>
+              <p style={{ fontSize: 13, lineHeight: 1.7, color: T.textMid, marginBottom: 10 }}>{diag.text}</p>
+              <div style={{ background: T.vert, borderRadius: T.rSm, padding: "12px 14px", display: "flex", gap: 10, alignItems: "flex-start" }}>
+                <div style={{ width: 20, height: 20, borderRadius: "50%", background: T.jaune, color: T.vertDark, fontSize: 10, fontWeight: 900, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 2 }}>1</div>
+                <div>
+                  <p style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", color: "rgba(255,255,255,0.5)", marginBottom: 3 }}>
+                    {level === "high" ? "Prochain niveau" : "Action immédiate"}
+                  </p>
+                  <p style={{ fontSize: 12, lineHeight: 1.65, color: T.white }}>{diag.action}</p>
+                </div>
               </div>
+              {article && (
+                <div style={{ marginTop: 10, padding: "10px 14px", background: T.creme, borderTop: `1px solid ${T.border}` }}>
+                  <a href={article.url} style={{ fontSize: 12, color: T.vert, fontWeight: 600, textDecoration: "underline", textUnderlineOffset: 3 }}>
+                    {article.linkText}
+                  </a>
+                </div>
+              )}
             </div>
           );
         })}
       </div>
 
       {/* CTA Collaboration Solved */}
-      <div style={{ padding: "20px 48px 32px", borderTop: `1px solid ${T.border}`, textAlign: "center", background: T.creme }}>
+      <div data-pdf-break="true" style={{ padding: "20px 48px 32px", borderTop: `1px solid ${T.border}`, textAlign: "center", background: T.creme }}>
         <p style={{ fontSize: 13, fontWeight: 600, color: T.text, marginBottom: 8 }}>
           Pour aller plus loin avec un accompagnement personnalisé
         </p>
-        {collabUrl && <p style={{ fontSize: 13, color: T.vert, fontWeight: 700, marginBottom: 4 }}>{collabUrl}</p>}
-        {collabEmail && <p style={{ fontSize: 13, color: T.textMuted, marginBottom: 12 }}>{collabEmail}</p>}
-        <p style={{ fontSize: 11, color: T.textLight }}>Un outil Collaboration Solved — par Pierre-Cyril Denant</p>
+        {collabUrl && (
+          <a href={collabUrl} style={{ fontSize: 13, color: T.vert, fontWeight: 700, display: "block", marginBottom: 4, textDecoration: "underline", textUnderlineOffset: 3 }}>
+            {collabUrl}
+          </a>
+        )}
+        {collabEmail && (
+          <a href={`mailto:${collabEmail}`} style={{ fontSize: 13, color: T.textMuted, display: "block", marginBottom: 12 }}>
+            {collabEmail}
+          </a>
+        )}
+        <p style={{ fontSize: 11, color: T.textLight, marginBottom: 6 }}>Un outil Collaboration Solved — par Pierre-Cyril Denant</p>
+        <a href="https://dub.sh/sm-survival-score" style={{ fontSize: 11, color: T.textLight, textDecoration: "underline" }}>
+          Faire passer le test à un collègue SM → dub.sh/sm-survival-score
+        </a>
       </div>
     </div>
   );
