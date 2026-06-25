@@ -266,13 +266,18 @@ async function generatePDF(pdfProps) {
   }
   pageSlices.push({ start: curY, end: totalImgH });
 
-  // Create PDF with first page height, then add pages with their own heights
+  // Create PDF with adaptive page heights.
+  // jsPDF normalises [w, h] to portrait (h >= w) — if sliceH < pageW it would flip
+  // the dimensions, making the page narrower than 794px and clipping the right side.
+  // pdfH is the declared page height (≥ pageW+1); sliceH is the actual image height.
   const firstSliceH = pageSlices[0].end - pageSlices[0].start;
-  const pdf = new jsPDF({ orientation: "portrait", unit: "px", format: [pageW, firstSliceH] });
+  const firstPdfH = Math.max(firstSliceH, pageW + 1);
+  const pdf = new jsPDF({ orientation: "portrait", unit: "px", format: [pageW, firstPdfH] });
 
   for (let i = 0; i < pageSlices.length; i++) {
     const { start, end } = pageSlices[i];
     const sliceH = end - start;
+    const pdfH = Math.max(sliceH, pageW + 1); // prevent jsPDF portrait flip
     const sliceCanvas = document.createElement('canvas');
     sliceCanvas.width = canvas.width;
     sliceCanvas.height = Math.round(sliceH * canvasScale);
@@ -281,7 +286,7 @@ async function generatePDF(pdfProps) {
       0, Math.round(start * canvasScale), canvas.width, Math.round(sliceH * canvasScale),
       0, 0, canvas.width, Math.round(sliceH * canvasScale)
     );
-    if (i > 0) pdf.addPage([pageW, sliceH]);
+    if (i > 0) pdf.addPage([pageW, pdfH]);
     pdf.addImage(sliceCanvas.toDataURL('image/jpeg', 0.92), 'JPEG', 0, 0, pageW, sliceH);
   }
 
@@ -821,7 +826,7 @@ function PDFDocument({ globalScore, category, globalResult, dimensionResults, pr
       )}
 
       {/* Vue d'ensemble */}
-      <div style={{ padding: "24px 48px 0" }}>
+      <div style={{ padding: "24px 48px 20px" }}>
         <h2 style={{ fontSize: 12, fontWeight: 700, color: T.vert, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 16 }}>Vue d'ensemble</h2>
         {orderedResults.map((dim) => {
           const dimCat = getCategory(dim.pct);
@@ -852,8 +857,11 @@ function PDFDocument({ globalScore, category, globalResult, dimensionResults, pr
           const levelLabel = level === "low" ? "Vulnérable" : level === "mid" ? "À renforcer" : "Solide";
           const article = articleLinks?.[dim.id] ?? null;
           return (
-            // forced break before card 4 (index 3) → 3 cards on page 2, 2 cards on page 3
-            <div data-pdf-force-break={index === 3 ? "true" : undefined} key={dim.id} style={{ marginBottom: 20, borderLeft: `3px solid ${dimCat.color}`, paddingLeft: 16 }}>
+            // Fragment key must be on outer element
+            <div key={dim.id}>
+            {/* spacer with forced-break before card 4 → 24px breathing room at top of page 3 */}
+            {index === 3 && <div data-pdf-force-break="true" style={{ height: 24 }} />}
+            <div style={{ marginBottom: 20, borderLeft: `3px solid ${dimCat.color}`, paddingLeft: 16 }}>
               <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8, alignItems: "center" }}>
                 <h3 style={{ fontSize: 14, fontWeight: 700, color: T.text, margin: 0 }}>{dim.name}</h3>
                 <span style={{ fontSize: 11, fontWeight: 700, color: dimCat.color, padding: "3px 10px", background: dimCat.bg, borderRadius: 20 }}>{levelLabel} — {dim.score}/8</span>
@@ -875,6 +883,7 @@ function PDFDocument({ globalScore, category, globalResult, dimensionResults, pr
                   </a>
                 </div>
               )}
+            </div>
             </div>
           );
         })}
