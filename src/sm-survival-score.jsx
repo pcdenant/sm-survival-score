@@ -120,6 +120,60 @@ const SCORE_THRESHOLDS = { low: 45, mid: 75 };
 const QUESTIONS_PER_DIM = 4;
 const SCREEN = { LANDING: "landing", QUIZ: "quiz", RESULT: "result" };
 
+const ARTICLE_LINKS = {
+  banners: {
+    vulnerable: {
+      accroche: "Ton manager peut décrire ce que tu fais en 3 mots ?",
+      linkText: "Fais le test →",
+      url: "https://collaborationsolved.com/ton-manager-comprend-il-ton-role-scrum-master/",
+    },
+    stable: {
+      accroche: "Stable aujourd'hui ne veut pas dire stable après la prochaine réorg.",
+      linkText: "Pourquoi l'ombre est un risque →",
+      url: "https://collaborationsolved.com/scrum-master-invisibilite-sortir-ombre/",
+    },
+    irreplaceable: {
+      accroche: "Ce qui te rend irremplaçable aujourd'hui ne le restera pas automatiquement.",
+      linkText: "L'angle mort que l'IA révèle →",
+      url: "https://collaborationsolved.com/ce-que-lia-ne-sait-pas-cest-toi-qui-le-sais/",
+    },
+  },
+  cards: {
+    visibility: {
+      linkText: "Commence ici : Ton manager peut décrire ce que tu fais ? →",
+      url: "https://collaborationsolved.com/ton-manager-comprend-il-ton-role-scrum-master/",
+    },
+    proof: {
+      linkText: "Tu as peut-être déjà les preuves sans le savoir →",
+      url: "https://collaborationsolved.com/preuves-impact-scrum-master-invisibles/",
+    },
+    business: {
+      linkText: "Scrum vs. budget : apprends à traduire →",
+      url: "https://collaborationsolved.com/sm-parles-agile-manager-pense-budget-personne-ne-traduit/",
+    },
+    strategic: null,
+    autonomy: {
+      linkText: "Un outil pour réduire la dépendance de ton équipe en 5 min/semaine →",
+      url: "https://collaborationsolved.com/email-vendredi-scrum-master-prouver-impact/",
+    },
+  },
+};
+
+// Retourne { url, linkText } | { cta: true, text } | null
+function getCardArticle(categoryKey, dimensionId) {
+  if (categoryKey === "irreplaceable") {
+    return { cta: true, text: "Déverrouille les 4 autres dimensions pour identifier l'angle mort qui reste." };
+  }
+  if (dimensionId === "strategic") {
+    return { cta: true, text: "C'est la dimension la plus difficile à construire — et la première consultée en cas de réorg. Je couvre ça chaque semaine dans la newsletter." };
+  }
+  // Anti-doublon : bannière Vulnérable pointe déjà vers Éd.1 (Visibilité)
+  if (categoryKey === "vulnerable" && dimensionId === "visibility") {
+    return { cta: true, text: "Déverrouille les 4 autres dimensions pour aller plus loin." };
+  }
+  return ARTICLE_LINKS.cards[dimensionId] || null;
+}
+
 // ============================================================
 // SCORING UTILITIES
 // ============================================================
@@ -476,7 +530,7 @@ function BentoCard({ children, style = {}, className, ...props }) {
 // COMPONENTS
 // ============================================================
 
-function DiagnosticCard({ dimension, index }) {
+function DiagnosticCard({ dimension, index, cardArticle = null }) {
   const [expanded, setExpanded] = useState(false);
   const level = getDiagnosticLevel(dimension.score);
   const diag = dimension.diagnostics[level];
@@ -525,6 +579,24 @@ function DiagnosticCard({ dimension, index }) {
           </div>
         </div>
       </div>
+      {cardArticle && (
+        <div style={{ padding: "10px 18px 14px", borderTop: `1px solid ${T.borderLight}`, background: T.creme }}>
+          {cardArticle.url ? (
+            <a href={cardArticle.url} target="_blank" rel="noopener noreferrer"
+               style={{ fontSize: 13, color: T.vert, textDecoration: "underline", textUnderlineOffset: 3, fontWeight: 600, fontFamily: T.f }}>
+              {cardArticle.linkText}
+            </a>
+          ) : (
+            <>
+              <p style={{ fontSize: 13, color: T.textMid, fontFamily: T.f, margin: "0 0 6px", lineHeight: 1.5 }}>{cardArticle.text}</p>
+              <a href="#unlock-form"
+                 style={{ fontSize: 13, color: T.vert, textDecoration: "underline", textUnderlineOffset: 3, fontWeight: 600, fontFamily: T.f }}>
+                S'abonner →
+              </a>
+            </>
+          )}
+        </div>
+      )}
     </BentoCard>
   );
 }
@@ -1100,6 +1172,8 @@ function ResultScreen({ answers, onRestart, sessionId }) {
     else navigator.clipboard?.writeText(text);
   }, []);
 
+  const cardArticle = getCardArticle(category.key, priorityDimResult.id);
+
   return (
     <div style={{ fontFamily: T.f, background: T.creme, minHeight: "100vh" }}>
       {/* Hero score */}
@@ -1161,10 +1235,25 @@ function ResultScreen({ answers, onRestart, sessionId }) {
         {/* Signal de priorité — au-dessus des diagnostics */}
         <PrioritySignal priorityDimId={priorityDimId} />
 
+        {/* Bannière article — catégorie globale */}
+        {(() => {
+          const banner = ARTICLE_LINKS.banners[category.key];
+          if (!banner) return null;
+          return (
+            <p style={{ fontSize: 14, color: T.textMid, margin: "8px 0 16px", paddingLeft: 4 }}>
+              {banner.accroche}{" "}
+              <a href={banner.url} target="_blank" rel="noopener noreferrer"
+                 style={{ color: T.vert, fontWeight: 600, textDecoration: "underline", textUnderlineOffset: 3 }}>
+                {banner.linkText}
+              </a>
+            </p>
+          );
+        })()}
+
         {/* Diagnostics */}
         <section aria-label="Diagnostics détaillés" style={{ display: "flex", flexDirection: "column", gap: 16, marginBottom: 16 }}>
           <h3 style={{ fontSize: 13, fontWeight: 700, color: T.vert, textTransform: "uppercase", letterSpacing: "0.06em", paddingLeft: 4 }}>Diagnostic par dimension</h3>
-          <DiagnosticCard dimension={priorityDimResult} index={0} />
+          <DiagnosticCard dimension={priorityDimResult} index={0} cardArticle={cardArticle} />
           {unlocked ? (
             orderedDimResults.filter(d => d.id !== priorityDimId).map((dim, i) => <DiagnosticCard key={dim.id} dimension={dim} index={i + 1} />)
           ) : (
