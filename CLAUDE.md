@@ -28,7 +28,7 @@ No abstraction for one caller, no unasked config, no future-proofing (add it the
 
 ## Project (fill in, keep current)
 
-- **Stack / runtime:** React 18 + Vite 5 (JavaScript, not TypeScript). Vercel Functions serverless (`/api/`). No DB — all data is static in `src/sm-survival-score.jsx`. CSS-in-JS via design-tokens object `T` (no Tailwind, no `.css` files). Ghost Admin API via JWT HS256 (Node.js native `crypto` — zero npm deps). Analytics fire-and-forget to Google Apps Script via `navigator.sendBeacon`. DM Sans from Google Fonts via CSS `@import`. Current version: 1.11.0.
+- **Stack / runtime:** React 18 + Vite 5 (JavaScript, not TypeScript). Vercel Functions serverless (`/api/`). No DB — all data is static in `src/sm-survival-score.jsx`. CSS-in-JS via design-tokens object `T` (no Tailwind, no `.css` files). Ghost Admin API via JWT HS256 (Node.js native `crypto` — zero npm deps). Analytics fire-and-forget to Google Apps Script via `navigator.sendBeacon`. DM Sans from Google Fonts via CSS `@import`. Current version: 1.13.0.
 
 - **Run / test / lint (exact commands):**
   - `npm run dev` — Vite dev server (localhost:5173)
@@ -45,7 +45,7 @@ No abstraction for one caller, no unasked config, no future-proofing (add it the
   - **Ghost duplicate handling**: 201 = new member, 409 = duplicate (old Ghost), 422 + "already exists" in `errors[].context` = duplicate (new Ghost). All three are success cases. Do not simplify this.
   - **Analytics dedup**: `COMPLETED_TRACKED_KEY` in localStorage prevents double-firing `quiz_completed` on page reload. `abandonSentRef` prevents duplicate abandon signals. Both exist for data integrity — don't remove them.
   - **Test framework is zero-dependency**: custom `describe/it/assert` defined inline in each `.test.js`. No Jest, no Vitest.
-  - **PDF**: `jsPDF` and `html2canvas` are dynamically imported (`import()`) only on click. Rendered into an off-screen div (`left: -9999px`), snapshot with html2canvas (2× scale), then div is removed. 30s E2E timeout for this flow.
+  - **PDF**: `jsPDF` and `html2canvas` are dynamically imported (`import()`) only on click. Rendered into an off-screen div (`left: -9999px`), snapshot with html2canvas (2× scale), then div is removed. Pages are cut at `[data-pdf-force-break]` elements (not at a fixed 1123px height). `pdf.link()` adds clickable annotations over all `<a>` in the PDF. 30s E2E timeout for this flow.
   - **Env var scoping**: `GHOST_ADMIN_API_KEY` and `GHOST_URL` are server-only (Vercel Functions, `process.env`). `VITE_COLLAB_SOLVED_URL` / `VITE_COLLAB_SOLVED_EMAIL` are client-bundle vars (embedded at build via `import.meta.env.VITE_*`). Leaking `GHOST_*` to client = security breach.
   - **localStorage keys** (never rename): `sm-survival-score-state` (quiz progress), `sm-device-id` (analytics device UUID), `sm-completed-tracked` (dedup flag).
 

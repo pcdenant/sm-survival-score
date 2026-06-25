@@ -7,6 +7,27 @@ Versionning basé sur [Semantic Versioning](https://semver.org/lang/fr/).
 
 ---
 
+## [1.13.0] — 2026-06-25
+
+### Modifié
+- **PDF : sauts de page propres** — Attributs `data-pdf-force-break` sur chaque section de `PDFDocument` ; `generatePDF` découpe l'image JPEG aux breaks naturels plutôt qu'à 1 123px fixes — plus de cartes diagnostics coupées en milieu
+- **PDF : liens cliquables** — `pdf.link()` ajoute des annotations cliquables sur tous les `<a>` du `PDFDocument` (liens articles, URL footer, email mailto:, URL de partage) — PDF 100 % raster → liens fonctionnels
+- **PDF : contenu étendu** — Tous les paragraphes du résultat global affichés (suppression du `slice(0, 2)`). Bannière article catégorie-spécifique (vulnérable / stable / irremplaçable). Liens articles dans chaque carte de diagnostic. URL de partage `dub.sh/sm-survival-score` dans le footer
+- **PDF : design aligné web** — `PrioritySignal` fond `#1a1a2e` → `T.vertDark` (#004d34) ; blocs action : fond vert + cercle jaune numéroté ; URL et email en `<a>` avec underline (étaient des `<p>` texte brut)
+
+---
+
+## [1.12.0] — 2026-06-24
+
+### Ajouté
+- **`ARTICLE_LINKS`** — Constante dans CONSTANTS regroupant les URLs d'articles ciblés par dimension (`cards`) et par catégorie globale (`banners`)
+- **`getCardArticle(categoryKey, dimensionId)`** — Retourne `{ url, linkText }` (article ciblé), `{ cta: true, text }` (CTA newsletter) ou `null`. Logique anti-doublon : vulnérable + visibilité → CTA newsletter (la bannière pointe déjà vers le même article)
+- **Bannière article dans `ResultScreen`** — Accroche + lien article entre `PrioritySignal` et les cartes diagnostics, spécifique à la catégorie (vulnérable → Éd.1, stable → Éd.10, irremplaçable → Éd.14)
+- **Lien article dans `DiagnosticCard`** — 3ème section après le bloc action : lien ciblé par dimension, ou CTA newsletter scrollant vers `#unlock-form` quand aucun article disponible
+- **`articleLinks` + `bannerArticle` props dans `PDFDocument`** — Les liens et bannière transitent vers le PDF pour cohérence web/PDF
+
+---
+
 ## [1.11.0] — 2026-06-16
 
 ### Ajouté

@@ -83,11 +83,12 @@ ResultScreen
 ### `ResultScreen`
 - Calcule les scores via `useMemo` (pas de re-calcul inutile)
 - Gère 3 états : `unlocked` (booléen), `showModal` (booléen), `subscribedEmail` (string)
-- **Sélection prioritaire** : `priorityDimId` via `getPriorityDimension()` — algorithme pondéré, pas score brut. `orderedDimResults` via `getOrderedDimensions()` pour l'ordre post-gate.
+- **Sélection prioritaire** : `priorityDimId` via `getPriorityDimension()` — algorithme pondéré, pas score brut. `orderedDimResults` via `getOrderedDimensions()` pour l'ordre post-gate
 - `PrioritySignal` : texte de signal contextuel affiché entre radar/barres et diagnostics
+- **Bannière article** : accroche + lien ciblé selon catégorie globale (entre `PrioritySignal` et les cartes), fourni par `ARTICLE_LINKS.banners[category.key]`
 - `GhostSignupForm` : formulaire email soumettant à `/api/subscribe`
 - `UnlockModal` : confirmation post-inscription avec email visible, spam warning, bouton PDF
-- `DiagnosticCard` : diagnostic + action par dimension déverrouillée
+- `DiagnosticCard` : diagnostic + action + lien article par dimension déverrouillée
 - `LockedDiagnosticCard` : aperçu flou pour les dimensions verrouillées
 
 ### `GhostSignupForm`
@@ -107,15 +108,20 @@ ResultScreen
 
 ### `PDFDocument`
 - Composant layout A4 (794px), styles 100% inline, tokens T
-- Sections : en-tête marque, score + texte global, signal prioritaire + action, barres d'ensemble (CSS), 5 diagnostics ordonnés, CTA Collaboration Solved
+- Sections : en-tête marque, score + texte global complet, signal prioritaire + action, bannière article catégorie, barres d'ensemble (CSS), 5 diagnostics ordonnés (texte + action + lien article), CTA Collaboration Solved
+- Chaque section porte `data-pdf-force-break` — `generatePDF` coupe les pages à ces marqueurs, pas en plein milieu d'une carte
+- Props `articleLinks` (par dimension) + `bannerArticle` (par catégorie) transmis depuis `ResultScreen`
+- Tous les `<a>` deviennent des liens cliquables dans le PDF via `pdf.link()`
 - Jamais rendu dans l'arbre principal — uniquement instancié off-screen dans `generatePDF`
 
 ### `generatePDF(pdfProps)`
 - Fonction async (non-composant)
 - Import dynamique de `html2canvas` et `jspdf` (lazy-loaded uniquement au clic)
 - Render `PDFDocument` off-screen via `createRoot` + `flushSync`
+- Collecte les positions des `[data-pdf-force-break]` et de tous les `<a href>` avant le snapshot
 - `html2canvas` capture le nœud DOM en Canvas 2×
-- `jsPDF` encode en JPEG 0.92 et pagine automatiquement (A4 794×1123px)
+- **Pages adaptatives** : découpe le canvas aux positions de force-break ; chaque page a la hauteur exacte de sa section (pas 1 123px fixes)
+- `jsPDF` encode chaque tranche en JPEG 0.92 ; `pdf.link()` ajoute les annotations cliquables par-dessus le raster
 - Nom de fichier : `diagnostic-sm-[score]-[date].pdf` (date ISO)
 - Cleanup DOM + unmount React après génération
 
@@ -158,6 +164,8 @@ Tout le contenu est défini statiquement dans le fichier principal :
 - `QUESTIONS` (20) — 4 par dimension, 3 choix par question (scores 2/1/0)
 - `GLOBAL_RESULTS` — textes d'analyse par catégorie (vulnerable / stable / irreplaceable)
 - `DIAGNOSTICS` — texte + action par dimension × niveau (low / mid / high)
+- `ARTICLE_LINKS` — URLs d'articles ciblés : `cards` (par dimension) + `banners` (par catégorie globale). Utilisé dans `ResultScreen` (bannière + `DiagnosticCard`) et dans `PDFDocument`
+- `getCardArticle(categoryKey, dimensionId)` — Retourne `{ url, linkText }`, `{ cta: true, text }` ou `null`. Logique anti-doublon intégrée (vulnérable + visibilité → CTA newsletter)
 
 Aucune API de contenu. Aucun CMS. Modification directe dans le code source.
 
