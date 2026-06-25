@@ -233,10 +233,10 @@ async function generatePDF(pdfProps) {
     />
   ));
 
-  // Capture safe-break positions and link coordinates before html2canvas
+  // Capture forced page-break positions and link coordinates before html2canvas
   const containerRect = container.getBoundingClientRect();
 
-  const safeBreakYs = [...container.querySelectorAll('[data-pdf-break]')]
+  const forceBreakYs = [...container.querySelectorAll('[data-pdf-force-break]')]
     .map(el => Math.round(el.getBoundingClientRect().top - containerRect.top))
     .filter(y => y > 0)
     .sort((a, b) => a - b);
@@ -254,27 +254,24 @@ async function generatePDF(pdfProps) {
     windowWidth: 794,
   });
 
-  const pdf = new jsPDF({ orientation: "portrait", unit: "px", format: [794, 1123] });
-  const pageW = pdf.internal.pageSize.getWidth();
-  const pageH = pdf.internal.pageSize.getHeight();
-
-  // Smart page slicing: break at section boundaries, never mid-content
-  const canvasScale = canvas.width / 794; // = 2 (scale: 2)
+  const pageW = 794;
+  const canvasScale = canvas.width / pageW; // = 2 (scale: 2)
   const totalImgH = canvas.height / canvasScale; // total height in PDF px (= DOM px)
 
+  // Build page slices at forced-break positions; last slice takes the remainder
   const pageSlices = [];
   let curY = 0;
-  while (curY < totalImgH) {
-    const targetEnd = curY + pageH;
-    if (targetEnd >= totalImgH) { pageSlices.push({ start: curY, end: totalImgH }); break; }
-    const validBreaks = safeBreakYs.filter(y => y > curY && y <= targetEnd);
-    const breakY = validBreaks.length > 0 ? validBreaks[validBreaks.length - 1] : targetEnd;
-    pageSlices.push({ start: curY, end: breakY });
-    curY = breakY;
+  for (const breakY of forceBreakYs) {
+    if (breakY > curY) { pageSlices.push({ start: curY, end: breakY }); curY = breakY; }
   }
+  pageSlices.push({ start: curY, end: totalImgH });
 
-  let isFirstPage = true;
-  for (const { start, end } of pageSlices) {
+  // Create PDF with first page height, then add pages with their own heights
+  const firstSliceH = pageSlices[0].end - pageSlices[0].start;
+  const pdf = new jsPDF({ orientation: "portrait", unit: "px", format: [pageW, firstSliceH] });
+
+  for (let i = 0; i < pageSlices.length; i++) {
+    const { start, end } = pageSlices[i];
     const sliceH = end - start;
     const sliceCanvas = document.createElement('canvas');
     sliceCanvas.width = canvas.width;
@@ -284,8 +281,7 @@ async function generatePDF(pdfProps) {
       0, Math.round(start * canvasScale), canvas.width, Math.round(sliceH * canvasScale),
       0, 0, canvas.width, Math.round(sliceH * canvasScale)
     );
-    if (!isFirstPage) pdf.addPage();
-    isFirstPage = false;
+    if (i > 0) pdf.addPage([pageW, sliceH]);
     pdf.addImage(sliceCanvas.toDataURL('image/jpeg', 0.92), 'JPEG', 0, 0, pageW, sliceH);
   }
 
@@ -781,7 +777,7 @@ function PDFDocument({ globalScore, category, globalResult, dimensionResults, pr
       </div>
 
       {/* Score + texte global */}
-      <div data-pdf-break="true" style={{ padding: "28px 48px", borderBottom: `1px solid ${T.border}`, display: "flex", gap: 32, alignItems: "flex-start" }}>
+      <div style={{ padding: "28px 48px", borderBottom: `1px solid ${T.border}`, display: "flex", gap: 32, alignItems: "flex-start" }}>
         <div style={{ textAlign: "center", flexShrink: 0 }}>
           <div style={{ fontSize: 80, fontWeight: 900, color: category.key === "irreplaceable" ? T.vert : category.color, lineHeight: 1, letterSpacing: "-0.04em" }}>{globalScore}</div>
           <div style={{ fontSize: 14, color: T.textMuted, marginBottom: 8 }}>/100</div>
@@ -795,7 +791,7 @@ function PDFDocument({ globalScore, category, globalResult, dimensionResults, pr
       </div>
 
       {/* Signal prioritaire */}
-      <div data-pdf-break="true" style={{ padding: "24px 48px 0" }}>
+      <div style={{ padding: "24px 48px 0" }}>
         <div style={{ backgroundColor: T.vertDark, borderLeft: `3px solid ${T.jaune}`, borderRadius: 4, padding: "14px 18px" }}>
           <p style={{ fontSize: 9, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.1em", color: "rgba(255,255,255,0.4)", margin: "0 0 6px 0" }}>⚡ Signal prioritaire</p>
           <p style={{ fontWeight: 600, fontSize: 14, color: T.jaune, margin: "0 0 6px 0" }}>{signal.title}</p>
@@ -814,7 +810,7 @@ function PDFDocument({ globalScore, category, globalResult, dimensionResults, pr
 
       {/* Bannière article catégorie */}
       {bannerArticle && (
-        <div data-pdf-break="true" style={{ padding: "16px 48px 0" }}>
+        <div style={{ padding: "16px 48px 0" }}>
           <p style={{ fontSize: 13, color: T.textMid, lineHeight: 1.6, margin: 0 }}>
             {bannerArticle.accroche}{" "}
             <a href={bannerArticle.url} style={{ color: T.vert, fontWeight: 600, textDecoration: "underline", textUnderlineOffset: 3 }}>
@@ -825,7 +821,7 @@ function PDFDocument({ globalScore, category, globalResult, dimensionResults, pr
       )}
 
       {/* Vue d'ensemble */}
-      <div data-pdf-break="true" style={{ padding: "24px 48px 0" }}>
+      <div style={{ padding: "24px 48px 0" }}>
         <h2 style={{ fontSize: 12, fontWeight: 700, color: T.vert, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 16 }}>Vue d'ensemble</h2>
         {orderedResults.map((dim) => {
           const dimCat = getCategory(dim.pct);
@@ -846,17 +842,18 @@ function PDFDocument({ globalScore, category, globalResult, dimensionResults, pr
         })}
       </div>
 
-      {/* Diagnostics détaillés */}
-      <div style={{ padding: "24px 48px 32px" }}>
+      {/* Diagnostics détaillés — forced page break before this section (end of page 1) */}
+      <div data-pdf-force-break="true" style={{ padding: "24px 48px 32px" }}>
         <h2 style={{ fontSize: 12, fontWeight: 700, color: T.vert, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 16 }}>Diagnostic par dimension</h2>
-        {orderedResults.map((dim) => {
+        {orderedResults.map((dim, index) => {
           const level = getDiagnosticLevel(dim.score);
           const diag = dim.diagnostics[level];
           const dimCat = getCategory(dim.pct);
           const levelLabel = level === "low" ? "Vulnérable" : level === "mid" ? "À renforcer" : "Solide";
           const article = articleLinks?.[dim.id] ?? null;
           return (
-            <div data-pdf-break="true" key={dim.id} style={{ marginBottom: 20, borderLeft: `3px solid ${dimCat.color}`, paddingLeft: 16 }}>
+            // forced break before card 4 (index 3) → 3 cards on page 2, 2 cards on page 3
+            <div data-pdf-force-break={index === 3 ? "true" : undefined} key={dim.id} style={{ marginBottom: 20, borderLeft: `3px solid ${dimCat.color}`, paddingLeft: 16 }}>
               <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8, alignItems: "center" }}>
                 <h3 style={{ fontSize: 14, fontWeight: 700, color: T.text, margin: 0 }}>{dim.name}</h3>
                 <span style={{ fontSize: 11, fontWeight: 700, color: dimCat.color, padding: "3px 10px", background: dimCat.bg, borderRadius: 20 }}>{levelLabel} — {dim.score}/8</span>
@@ -884,7 +881,7 @@ function PDFDocument({ globalScore, category, globalResult, dimensionResults, pr
       </div>
 
       {/* CTA Collaboration Solved */}
-      <div data-pdf-break="true" style={{ padding: "20px 48px 32px", borderTop: `1px solid ${T.border}`, textAlign: "center", background: T.creme }}>
+      <div style={{ padding: "20px 48px 32px", borderTop: `1px solid ${T.border}`, textAlign: "center", background: T.creme }}>
         <p style={{ fontSize: 13, fontWeight: 600, color: T.text, marginBottom: 8 }}>
           Pour aller plus loin avec un accompagnement personnalisé
         </p>
