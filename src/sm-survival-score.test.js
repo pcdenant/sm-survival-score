@@ -910,13 +910,13 @@ describe("UI CHANGES v2.0 — source integrity", () => {
   // Changement 4 — DiagnosticCard hiérarchie inversée
   assert(src.includes("Lire l'analyse complète"), "PRESENT: expander text DiagnosticCard");
   assert(src.includes("Action cette semaine"), "PRESENT: action label DiagnosticCard");
-  assert(src.includes("⏱ 5 minutes"), "PRESENT: time estimate DiagnosticCard");
+  assert(src.includes("IconClock") && src.includes("5 minutes"), "PRESENT: time estimate DiagnosticCard");
 
   // Changement 5 — LockedDiagnosticCard score visible
   assert(!src.includes("blur(6px)"), "REMOVED: blur(6px) locked cards");
   assert(!src.includes("Lorem ipsum"), "REMOVED: Lorem ipsum placeholder");
   assert(src.includes("Voir le diagnostic →"), "PRESENT: CTA locked card");
-  assert(src.includes("🔓 Analyse + action concrète"), "PRESENT: hint locked card");
+  assert(src.includes("IconUnlock") && src.includes("Analyse + action concrète"), "PRESENT: hint locked card");
 
   // Changement 6 — Unlock form personnalisé
   assert(src.includes("4 diagnostics verrouillés"), "PRESENT: unlock form label count");

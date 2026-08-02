@@ -196,7 +196,7 @@ export function computeGlobalScore(dimensionScores) {
 
 export function getCategory(percentage) {
   if (percentage < SCORE_THRESHOLDS.low) return { key: "vulnerable", label: "Vulnérable", color: "#dc2626", bg: "#fef2f2" };
-  if (percentage < SCORE_THRESHOLDS.mid) return { key: "stable", label: "Stable", color: "#f59e0b", bg: "#fffbeb" };
+  if (percentage < SCORE_THRESHOLDS.mid) return { key: "stable", label: "Stable", color: "#b45309", bg: "#fffbeb" };
   return { key: "irreplaceable", label: "Irremplaçable", color: "#006946", bg: "#ecfdf5" };
 }
 
@@ -499,6 +499,9 @@ const GLOBAL_CSS = `
   @media print {
     .no-print { display: none !important; }
   }
+  .btn-hover { transition: filter 0.15s ease; }
+  .btn-hover:hover:not(:disabled) { filter: brightness(0.94); }
+  .btn-hover:active:not(:disabled) { filter: brightness(0.88); }
 `;
 
 let stylesInjected = false;
@@ -512,6 +515,54 @@ function StyleProvider({ children }) {
     return () => { document.head.removeChild(el); stylesInjected = false; };
   }, []);
   return children;
+}
+
+// ============================================================
+// ICONS — minimal authored line-icon set (stroke 2.2, no fill)
+// ============================================================
+
+function IconLock({ size = 12, color = "currentColor" }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <rect x="4" y="11" width="16" height="10" rx="2" />
+      <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+    </svg>
+  );
+}
+
+function IconUnlock({ size = 12, color = "currentColor" }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <rect x="4" y="11" width="16" height="10" rx="2" />
+      <path d="M7 11V7a5 5 0 0 1 9.9-1" />
+    </svg>
+  );
+}
+
+function IconClock({ size = 11, color = "currentColor" }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 7v5l3.5 2" />
+    </svg>
+  );
+}
+
+function IconCheck({ size = 28, color = "currentColor" }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2.6} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M5 13l4 4L19 7" />
+    </svg>
+  );
+}
+
+function IconChevron({ size = 12, color = "currentColor", direction = "down" }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"
+      style={{ transform: direction === "up" ? "rotate(180deg)" : "none", transition: "transform 0.15s ease", flexShrink: 0 }}>
+      <path d="M6 9l6 6 6-6" />
+    </svg>
+  );
 }
 
 // ============================================================
@@ -545,9 +596,8 @@ function PrioritySignal({ priorityDimId }) {
   const signal = SIGNAL_TEXTS[priorityDimId];
   if (!signal) return null;
   return (
-    <div style={{ backgroundColor: T.vertDark, borderLeft: `3px solid ${T.jaune}`, borderRadius: T.r, padding: '14px 18px', margin: '20px 0 24px 0' }}>
-      <p style={{ fontSize: 9, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.1em', color: 'rgba(255,255,255,.4)', margin: '0 0 6px 0', fontFamily: T.f }}>⚡ Signal prioritaire</p>
-      <p style={{ fontWeight: 600, fontSize: '0.95rem', color: T.jaune, margin: '0 0 6px 0', fontFamily: T.f }}>{signal.title}</p>
+    <div style={{ backgroundColor: T.vertDark, borderRadius: T.r, padding: '18px 20px', margin: '20px 0 24px 0' }}>
+      <p style={{ fontWeight: 700, fontSize: '0.95rem', color: T.jaune, margin: '0 0 6px 0', fontFamily: T.f, letterSpacing: '-0.01em' }}>{signal.title}</p>
       <p style={{ fontSize: '0.9rem', color: 'rgba(255,255,255,.75)', margin: 0, lineHeight: 1.5, fontFamily: T.f }}>{signal.body}</p>
     </div>
   );
@@ -602,9 +652,11 @@ function DiagnosticCard({ dimension, index, cardArticle = null }) {
         {rest && (
           <button
             onClick={() => setExpanded(e => !e)}
-            style={{ display: "flex", alignItems: "center", gap: 4, background: "none", border: "none", cursor: "pointer", padding: 0, marginBottom: expanded ? 12 : 0, fontFamily: T.f }}
+            className="btn-hover"
+            style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", cursor: "pointer", padding: 0, marginBottom: expanded ? 12 : 0, fontFamily: T.f }}
           >
-            <span style={{ fontSize: 12, color: T.vert, fontWeight: 600 }}>{expanded ? "▲ Réduire" : "▼ Lire l'analyse complète"}</span>
+            <IconChevron size={11} color={T.vert} direction={expanded ? "up" : "down"} />
+            <span style={{ fontSize: 12, color: T.vert, fontWeight: 600 }}>{expanded ? "Réduire" : "Lire l'analyse complète"}</span>
             {!expanded && <span style={{ fontSize: 12, color: T.textLight }}>(30 sec)</span>}
           </button>
         )}
@@ -620,7 +672,9 @@ function DiagnosticCard({ dimension, index, cardArticle = null }) {
               {level === "high" ? "Prochain niveau" : "Action cette semaine"}
             </p>
             <p style={{ fontSize: 13, lineHeight: 1.55, color: T.white, fontFamily: T.f }}>{diag.action}</p>
-            <p style={{ fontSize: 10, color: "rgba(255,255,255,.4)", marginTop: 5, fontFamily: T.f }}>⏱ 5 minutes</p>
+            <p style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 10, color: "rgba(255,255,255,.4)", marginTop: 5, fontFamily: T.f }}>
+              <IconClock size={10} color="rgba(255,255,255,.4)" /> 5 minutes
+            </p>
           </div>
         </div>
       </div>
@@ -662,7 +716,7 @@ function LockedDiagnosticCard({ dimension, onUnlockClick }) {
       <div style={{ padding: "14px 18px 8px", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
           <h4 style={{ fontSize: 14, fontWeight: 700, color: T.text, margin: 0, fontFamily: T.f }}>{dimension.name}</h4>
-          <span style={{ fontSize: 12 }}>🔒</span>
+          <IconLock size={12} color={T.textMuted} />
         </div>
         <span style={{ fontSize: 11, fontWeight: 700, color: cat.color, padding: "3px 10px", background: cat.bg, borderRadius: 20, whiteSpace: "nowrap" }}>
           {levelLabel} — {dimension.score}/8
@@ -672,10 +726,13 @@ function LockedDiagnosticCard({ dimension, onUnlockClick }) {
         {hookText}
       </div>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 18px", background: T.creme, borderTop: `1px solid ${T.border}`, marginTop: 8, gap: 8 }}>
-        <span style={{ fontSize: 11, color: T.textLight }}>🔓 Analyse + action concrète</span>
+        <span style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11, color: T.textLight }}>
+          <IconUnlock size={11} color={T.textLight} /> Analyse + action concrète
+        </span>
         <button
           onClick={onUnlockClick}
           aria-label={`Déverrouiller le diagnostic ${dimension.name}`}
+          className="btn-hover"
           style={{ background: T.vert, color: T.white, padding: "10px 16px", borderRadius: T.rSm, fontSize: 12, fontWeight: 700, fontFamily: T.f, border: "none", cursor: "pointer", whiteSpace: "nowrap", minHeight: 44 }}
         >
           Voir le diagnostic →
@@ -1082,7 +1139,7 @@ function GhostSignupForm({ onSuccess }) {
           style={{ flex: 1, padding: "10px 14px", borderRadius: 8, border: `1px solid ${T.white}40`,
             background: `${T.white}15`, color: T.white, fontSize: 14, outline: "none" }}
         />
-        <button type="submit" disabled={status === "submitting"}
+        <button type="submit" disabled={status === "submitting"} className="btn-hover"
           style={{ padding: "10px 20px", borderRadius: 8, background: T.jaune, color: T.vert,
             fontWeight: 700, fontSize: 14, border: "none", cursor: status === "submitting" ? "wait" : "pointer" }}>
           {status === "submitting" ? "..." : "Déverrouiller"}
@@ -1114,7 +1171,9 @@ function UnlockModal({ email, onClose, pdfProps }) {
         zIndex: 1000, padding: 24 }}>
       <div style={{ background: T.white, borderRadius: T.rLg, maxWidth: 440,
         width: "100%", padding: "40px 32px", textAlign: "center" }}>
-        <p style={{ fontSize: 32, marginBottom: 16 }}>✓</p>
+        <div style={{ width: 56, height: 56, borderRadius: "50%", background: T.vertLight, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
+          <IconCheck size={26} color={T.vert} />
+        </div>
         <h2 id="modal-title" style={{ fontSize: 20, fontWeight: 800, color: T.vert, marginBottom: 12 }}>
           Diagnostics déverrouillés
         </h2>
@@ -1122,13 +1181,13 @@ function UnlockModal({ email, onClose, pdfProps }) {
           Un email a été envoyé à <strong style={{ color: T.text }}>{email}</strong>.
           Vérifie aussi tes spams — sans confirmation, tu ne recevras pas les conseils de la semaine.
         </p>
-        <button onClick={handleDownloadPDF} disabled={isGenerating} style={{ display: "block", width: "100%",
+        <button onClick={handleDownloadPDF} disabled={isGenerating} className="btn-hover" style={{ display: "block", width: "100%",
           padding: "14px 24px", background: isGenerating ? T.textLight : T.vert, color: T.white, fontWeight: 700,
           fontSize: 15, fontFamily: T.f, border: "none", borderRadius: T.r,
           cursor: isGenerating ? "wait" : "pointer", marginBottom: 12 }}>
           {isGenerating ? "Génération..." : "Télécharger mon rapport (PDF)"}
         </button>
-        <button onClick={onClose} style={{ display: "block", width: "100%",
+        <button onClick={onClose} className="btn-hover" style={{ display: "block", width: "100%",
           padding: "12px 24px", background: "transparent", color: T.textMuted,
           fontWeight: 600, fontSize: 14, fontFamily: T.f,
           border: `1px solid ${T.border}`, borderRadius: T.r, cursor: "pointer" }}>
@@ -1354,7 +1413,7 @@ function ResultScreen({ answers, onRestart, sessionId }) {
   const orderedDimIds = useMemo(() => getOrderedDimensions(dimensionScoresPct), [dimensionScoresPct]);
   const orderedDimResults = useMemo(() => orderedDimIds.map(id => dimensionResults.find(d => d.id === id)), [orderedDimIds, dimensionResults]);
   const priorityDimResult = useMemo(() => dimensionResults.find(d => d.id === priorityDimId), [priorityDimId, dimensionResults]);
-  const radarData = useMemo(() => dimensionResults.map(dim => ({ dimension: dim.shortName, score: dim.score, fullMark: MAX_DIM_SCORE })), [dimensionResults]);
+  const radarData = useMemo(() => dimensionResults.map(dim => ({ dimension: dim.shortName, score: Math.max(dim.score, MAX_DIM_SCORE * 0.08), fullMark: MAX_DIM_SCORE })), [dimensionResults]);
   const pdfProps = useMemo(() => ({
     globalScore,
     category,
@@ -1428,6 +1487,7 @@ function ResultScreen({ answers, onRestart, sessionId }) {
             disabled={isGeneratingCard}
             aria-label="Télécharger ma carte de score à partager"
             aria-busy={isGeneratingCard}
+            className="btn-hover"
             style={{ marginTop: 28, fontFamily: T.f, fontSize: 15, fontWeight: 700, background: T.jaune, color: T.vertDark, border: "none", borderRadius: T.rSm, padding: "14px 32px", minHeight: 48, opacity: isGeneratingCard ? 0.7 : 1, cursor: isGeneratingCard ? "wait" : "pointer" }}
           >
             {isGeneratingCard ? "Génération..." : "Télécharger ma carte de score"}
@@ -1475,8 +1535,8 @@ function ResultScreen({ answers, onRestart, sessionId }) {
                     <span style={{ fontSize: 13, color: T.text, fontWeight: 500 }}>{dim.shortName}</span>
                     <span style={{ fontSize: 13, fontWeight: 700, color: dimCategory.color, fontFamily: "monospace" }}>{dim.score}/{MAX_DIM_SCORE}</span>
                   </div>
-                  <div role="meter" aria-valuenow={dim.score} aria-valuemin={0} aria-valuemax={MAX_DIM_SCORE} aria-label={dim.name} style={{ height: 6, background: T.cremeDeep, borderRadius: 3 }}>
-                    <div style={{ height: 6, width: `${Math.max(dim.pct, 3)}%`, background: dimCategory.color, borderRadius: 3, transition: "width 0.6s ease-out" }} />
+                  <div role="meter" aria-valuenow={dim.score} aria-valuemin={0} aria-valuemax={MAX_DIM_SCORE} aria-label={dim.name} style={{ height: 6, background: T.cremeDeep, borderRadius: 3, overflow: "hidden" }}>
+                    <div style={{ height: 6, width: "100%", transformOrigin: "left", transform: `scaleX(${Math.max(dim.pct, 3) / 100})`, background: dimCategory.color, borderRadius: 3, transition: "transform 0.6s ease-out" }} />
                   </div>
                 </div>
               );
@@ -1510,7 +1570,7 @@ function ResultScreen({ answers, onRestart, sessionId }) {
             orderedDimResults.filter(d => d.id !== priorityDimId).map((dim, i) => <DiagnosticCard key={dim.id} dimension={dim} index={i + 1} />)
           ) : (
             <>
-              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
                 {orderedDimResults.filter(d => d.id !== priorityDimId).map(dim => <LockedDiagnosticCard key={dim.id} dimension={dim} onUnlockClick={handleScrollToUnlock} />)}
               </div>
               <BentoCard id="unlock-form" style={{ background: T.vert, border: "none", textAlign: "center", padding: "36px 28px" }}>
@@ -1528,10 +1588,10 @@ function ResultScreen({ answers, onRestart, sessionId }) {
 
         {/* Actions */}
         <div className="no-print" style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap", marginBottom: 32 }}>
-          <button onClick={handleShare} aria-label="Partager le test" style={T.btnAction}>
+          <button onClick={handleShare} aria-label="Partager le test" className="btn-hover" style={T.btnAction}>
             Envoie le test à un collègue SM
           </button>
-          <button onClick={onRestart} aria-label="Refaire le test" style={T.btnGhost}>
+          <button onClick={onRestart} aria-label="Refaire le test" className="btn-hover" style={T.btnGhost}>
             Refaire le test
           </button>
         </div>
