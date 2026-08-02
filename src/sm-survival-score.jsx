@@ -1164,11 +1164,11 @@ function LandingScreen({ onStart }) {
           {[
             { num: "1 100", text: "postes agile supprimés chez Capital One en 2023 — qualifiés de « critiques » jusqu'au bout" },
             { num: "18%",   text: "des Scrum Masters licenciés depuis 2022 selon ScrumAlliance" },
-            { num: "5",     text: "dimensions analysées : visibilité, preuves, langage, autonomie, stratégie" },
+            { num: "5",     text: "dimensions analysées : visibilité, preuves, business, autonomie, stratégique" },
           ].map(({ num, text }, i, arr) => (
-            <div key={num} style={{ display: "flex", gap: 14, alignItems: "flex-start", marginBottom: i < arr.length - 1 ? 16 : 0 }}>
-              <span style={{ fontSize: 22, fontWeight: 900, color: T.jaune, letterSpacing: "-0.03em", lineHeight: 1, flexShrink: 0, width: 52, textAlign: "right" }}>{num}</span>
-              <span style={{ fontSize: 13, color: `${T.white}55`, lineHeight: 1.55, paddingTop: 3 }}>{text}</span>
+            <div key={num} style={{ display: "flex", gap: 14, alignItems: "flex-start", marginBottom: i < arr.length - 1 ? 20 : 0 }}>
+              <span style={{ fontSize: 32, fontWeight: 900, color: T.jaune, letterSpacing: "-0.03em", lineHeight: 1, flexShrink: 0, width: 92, textAlign: "right", whiteSpace: "nowrap" }}>{num}</span>
+              <span style={{ fontSize: 13, color: `${T.white}bb`, lineHeight: 1.55, paddingTop: 6 }}>{text}</span>
             </div>
           ))}
         </div>
