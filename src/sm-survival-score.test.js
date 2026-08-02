@@ -680,6 +680,84 @@ describe("WORDING INTEGRITY — PrioritySignal texts applied", () => {
 });
 
 // ============================================================
+// WORDING INTEGRITY — variante « dimension déjà solide »
+//
+// PrioritySignal affichait « tant que cette dimension reste faible » même au-dessus
+// d'une carte « Solide — 8/8 ». Ces tests vérifient que la variante existe pour les
+// 5 dimensions et que les deux rendus (écran + PDF) passent par le même sélecteur.
+// ============================================================
+
+describe("WORDING INTEGRITY — SIGNAL_TEXTS_HIGH", () => {
+  const src = readFileSync(join(__dirname, "sm-survival-score.jsx"), "utf8");
+
+  const highBlock = src.slice(src.indexOf("const SIGNAL_TEXTS_HIGH"), src.indexOf("export function getSignalText"));
+  assert(highBlock.length > 0, "PRESENT: const SIGNAL_TEXTS_HIGH");
+
+  ["visibility", "strategic", "proof", "business", "autonomy"].forEach(dim => {
+    assert(new RegExp(`\\b${dim}:\\s*\\{`).test(highBlock), `SIGNAL_TEXTS_HIGH couvre la dimension ${dim}`);
+  });
+
+  const titleCount = (highBlock.match(/title:/g) || []).length;
+  const bodyCount = (highBlock.match(/body:/g) || []).length;
+  assertEqual(titleCount, 5, "SIGNAL_TEXTS_HIGH a 5 titres");
+  assertEqual(bodyCount, 5, "SIGNAL_TEXTS_HIGH a 5 corps de texte");
+
+  // La variante ne doit pas réutiliser le vocabulaire « angle mort / reste faible »
+  assert(!/angle mort/.test(highBlock), "SIGNAL_TEXTS_HIGH n'annonce pas un « angle mort »");
+  assert(!/reste faible/.test(highBlock), "SIGNAL_TEXTS_HIGH ne dit pas « reste faible »");
+
+  // Les deux rendus passent par le sélecteur, sinon le PDF peut se contredire seul
+  assert(src.includes("getSignalText(priorityDimId, level)"), "PrioritySignal utilise getSignalText");
+  assert(src.includes("getSignalText(priorityDimId, priorityLevel)"), "PDFDocument utilise getSignalText");
+  assert(!/const signal = SIGNAL_TEXTS\[/.test(src), "ABSENT: accès direct à SIGNAL_TEXTS hors du sélecteur");
+  assert(src.includes("level={getDiagnosticLevel(priorityDimResult.score)}"), "PRESENT: le niveau est passé à PrioritySignal");
+});
+
+// ============================================================
+// UNLOCK — le rapport reste accessible, le modal reste pilotable au clavier
+// ============================================================
+
+describe("UNLOCK — accès persistant et accessibilité du modal", () => {
+  const src = readFileSync(join(__dirname, "sm-survival-score.jsx"), "utf8");
+
+  // generatePDF n'était appelable que depuis le modal : le fermer perdait le rapport
+  const pdfCallSites = (src.match(/await generatePDF\(pdfProps\)/g) || []).length;
+  assertEqual(pdfCallSites, 2, "generatePDF est atteignable depuis le modal ET la page");
+  assert(src.includes("Mon rapport (PDF)"), "PRESENT: bouton PDF persistant après déverrouillage");
+  assert(src.includes("unlocked && ("), "PRESENT: le bouton PDF persistant est conditionné à unlocked");
+
+  // Le libellé accessible doit rester distinct de celui du modal, sinon le test e2e
+  // getByRole(/Télécharger mon rapport/) matche deux boutons et casse en mode strict
+  assert(!src.includes('aria-label="Télécharger mon rapport'), "le bouton persistant n'entre pas en collision avec le libellé du modal");
+
+  assert(src.includes('e.key === "Escape"'), "PRESENT: fermeture du modal par Escape");
+  assert(src.includes('aria-label="Fermer"'), "PRESENT: bouton de fermeture visible");
+  assert(src.includes("previouslyFocused"), "PRESENT: restauration du focus à la fermeture");
+  assert(src.includes("headingRef.current?.focus()"), "PRESENT: focus déplacé dans le modal à l'ouverture");
+  assert(src.includes('e.key !== "Tab"'), "PRESENT: piège à focus sur Tab");
+
+  // L'ancre pointait vers #unlock-form, supprimé du DOM une fois débloqué
+  assert(src.includes("unlocked && rawCardArticle?.cta ? null : rawCardArticle"),
+    "PRESENT: la CTA d'abonnement disparaît une fois débloqué (ancre morte)");
+});
+
+// ============================================================
+// STRUCTURE DES TITRES — h1 → h2 → h3, sans saut
+// ============================================================
+
+describe("A11Y — hiérarchie des titres de l'écran résultat", () => {
+  const src = readFileSync(join(__dirname, "sm-survival-score.jsx"), "utf8");
+  const resultScreen = src.slice(src.indexOf("function ResultScreen"), src.indexOf("APP ROOT"));
+
+  assert(/<h1 aria-label={`Score : \${globalScore} sur 100`}/.test(resultScreen),
+    "le score porte le h1 (il était en <div>, jamais annoncé comme titre)");
+  ["Ton profil", "Par dimension", "Diagnostic par dimension"].forEach(label => {
+    assert(new RegExp(`<h2[^>]*>${label}</h2>`).test(resultScreen), `section « ${label} » en h2`);
+  });
+  assert(!/<h4/.test(src), "ABSENT: h4 (les titres de carte sont passés en h3)");
+});
+
+// ============================================================
 // STORAGE UTILITIES
 // ============================================================
 
