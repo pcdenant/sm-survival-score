@@ -920,7 +920,8 @@ describe("UI CHANGES v2.0 — source integrity", () => {
 
   // Changement 6 — Unlock form personnalisé
   assert(src.includes("4 diagnostics verrouillés"), "PRESENT: unlock form label count");
-  assert(src.includes("firstLockedDim"), "PRESENT: variable personnalisation firstLockedDim");
+  assert(src.includes("displayLockedDim"), "PRESENT: variable personnalisation displayLockedDim");
+  assert(src.includes("setFocusedLockedDim"), "PRESENT: unlock form suit la carte cliquée");
 
   // Changement 7 — Responsive bars shortName
   assert(src.includes("dim.shortName"), "PRESENT: dim.shortName dans bars card");
