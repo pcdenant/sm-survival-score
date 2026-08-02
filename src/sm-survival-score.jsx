@@ -933,7 +933,10 @@ function buildRadarPolygon(dimensionResults, { radius = 130, xPad = 150, yPad = 
 
   const points = dimensionResults.map((dim, i) => {
     const angle = angleFor(i);
-    const r = (dim.score / maxScore) * radius;
+    // Floor at 4% so an all-zero profile (the "Vulnérable" case this card exists
+    // for) still renders a visible polygon instead of collapsing to a single dot —
+    // same convention as the dimension bars elsewhere (Math.max(dim.pct, 3)).
+    const r = Math.max(dim.score / maxScore, 0.04) * radius;
     return { x: cx + r * Math.cos(angle), y: cy + r * Math.sin(angle) };
   });
 
@@ -1339,6 +1342,7 @@ function ResultScreen({ answers, onRestart, sessionId }) {
   const [showModal, setShowModal] = useState(false);
   const [subscribedEmail, setSubscribedEmail] = useState("");
   const [isGeneratingCard, setIsGeneratingCard] = useState(false);
+  const [cardError, setCardError] = useState(false);
 
   const dimensionScores = useMemo(() => computeDimensionScores(answers), [answers]);
   const globalScore = useMemo(() => computeGlobalScore(dimensionScores), [dimensionScores]);
@@ -1398,8 +1402,11 @@ function ResultScreen({ answers, onRestart, sessionId }) {
 
   const handleDownloadScoreCard = useCallback(async () => {
     setIsGeneratingCard(true);
+    setCardError(false);
     try {
       await generateScoreCard({ globalScore, category, dimensionResults, sessionId });
+    } catch {
+      setCardError(true);
     } finally {
       setIsGeneratingCard(false);
     }
@@ -1416,16 +1423,18 @@ function ResultScreen({ answers, onRestart, sessionId }) {
           <div aria-label={`Score : ${globalScore} sur 100`} style={{ fontSize: "clamp(64px, 18vw, 96px)", fontWeight: 900, color: category.key === "irreplaceable" ? T.jaune : category.color, lineHeight: 1, letterSpacing: "-0.04em", animation: "scaleIn 0.4s ease-out 0.15s both", willChange: "transform, opacity" }}>{globalScore}</div>
           <p style={{ fontSize: 16, color: `${T.white}80`, marginBottom: 20 }}>/100</p>
           <div style={{ display: "inline-block", padding: "10px 28px", fontSize: 15, fontWeight: 700, color: category.key === "irreplaceable" ? T.vertDark : T.white, background: category.key === "irreplaceable" ? T.jaune : category.color, borderRadius: 24 }}>{category.label}</div>
-          <div>
-            <button
-              onClick={handleDownloadScoreCard}
-              disabled={isGeneratingCard}
-              aria-label="Télécharger ma carte de score à partager"
-              style={{ marginTop: 28, fontFamily: T.f, fontSize: 15, fontWeight: 700, background: T.jaune, color: T.vertDark, border: "none", borderRadius: T.rSm, padding: "14px 32px", minHeight: 48, cursor: isGeneratingCard ? "wait" : "pointer" }}
-            >
-              {isGeneratingCard ? "Génération..." : "Télécharger ma carte de score"}
-            </button>
-          </div>
+          <button
+            onClick={handleDownloadScoreCard}
+            disabled={isGeneratingCard}
+            aria-label="Télécharger ma carte de score à partager"
+            aria-busy={isGeneratingCard}
+            style={{ marginTop: 28, fontFamily: T.f, fontSize: 15, fontWeight: 700, background: T.jaune, color: T.vertDark, border: "none", borderRadius: T.rSm, padding: "14px 32px", minHeight: 48, opacity: isGeneratingCard ? 0.7 : 1, cursor: isGeneratingCard ? "wait" : "pointer" }}
+          >
+            {isGeneratingCard ? "Génération..." : "Télécharger ma carte de score"}
+          </button>
+          {cardError && (
+            <p role="alert" style={{ marginTop: 10, fontSize: 13, color: T.jaune, fontFamily: T.f }}>Impossible de générer la carte — réessaie.</p>
+          )}
         </div>
       </header>
 
