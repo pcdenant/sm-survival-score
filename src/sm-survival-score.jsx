@@ -722,7 +722,7 @@ function LockedDiagnosticCard({ dimension, onUnlockClick }) {
           {levelLabel} — {dimension.score}/8
         </span>
       </div>
-      <div style={{ padding: "0 18px", fontSize: 13, lineHeight: 1.6, color: T.textMid, fontFamily: T.f, WebkitMaskImage: "linear-gradient(to bottom, #000 20%, transparent 100%)", maskImage: "linear-gradient(to bottom, #000 20%, transparent 100%)", height: 50, overflow: "hidden" }}>
+      <div style={{ padding: "0 18px", fontSize: 13, lineHeight: 1.6, color: T.textMid, fontFamily: T.f, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
         {hookText}
       </div>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 18px", background: T.creme, borderTop: `1px solid ${T.border}`, marginTop: 8, gap: 8 }}>
@@ -1193,6 +1193,15 @@ function UnlockModal({ email, onClose, pdfProps }) {
           border: `1px solid ${T.border}`, borderRadius: T.r, cursor: "pointer" }}>
           Voir mes résultats
         </button>
+        {pdfProps.collabUrl && (
+          <p style={{ fontSize: 12, color: T.textLight, marginTop: 16, fontFamily: T.f }}>
+            Besoin d'en parler à quelqu'un ?{" "}
+            <a href={pdfProps.collabUrl} target="_blank" rel="noopener noreferrer"
+               style={{ color: T.textMuted, fontWeight: 600, textDecoration: "underline", textUnderlineOffset: 3 }}>
+              Collaboration Solved
+            </a>
+          </p>
+        )}
       </div>
     </div>
   );
@@ -1402,6 +1411,7 @@ function ResultScreen({ answers, onRestart, sessionId }) {
   const [subscribedEmail, setSubscribedEmail] = useState("");
   const [isGeneratingCard, setIsGeneratingCard] = useState(false);
   const [cardError, setCardError] = useState(false);
+  const [focusedLockedDim, setFocusedLockedDim] = useState(null);
 
   const dimensionScores = useMemo(() => computeDimensionScores(answers), [answers]);
   const globalScore = useMemo(() => computeGlobalScore(dimensionScores), [dimensionScores]);
@@ -1444,11 +1454,14 @@ function ResultScreen({ answers, onRestart, sessionId }) {
     });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const firstLockedDim = orderedDimResults[1];
-  const firstLockedLevel = getDiagnosticLevel(firstLockedDim.score);
+  // Dimension mise en avant dans le formulaire : celle dont on vient de cliquer la carte,
+  // sinon la 1re verrouillée (cas où l'utilisateur scrolle jusqu'au formulaire sans cliquer)
+  const displayLockedDim = focusedLockedDim ?? orderedDimResults[1];
+  const firstLockedLevel = getDiagnosticLevel(displayLockedDim.score);
   const firstLockedLevelLabel = firstLockedLevel === "low" ? "Vulnérable" : firstLockedLevel === "mid" ? "À renforcer" : "Solide";
 
-  const handleScrollToUnlock = useCallback(() => {
+  const handleScrollToUnlock = useCallback((dim = null) => {
+    setFocusedLockedDim(dim);
     document.getElementById("unlock-form")?.scrollIntoView({ behavior: "smooth", block: "center" });
   }, []);
 
@@ -1571,12 +1584,12 @@ function ResultScreen({ answers, onRestart, sessionId }) {
           ) : (
             <>
               <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-                {orderedDimResults.filter(d => d.id !== priorityDimId).map(dim => <LockedDiagnosticCard key={dim.id} dimension={dim} onUnlockClick={handleScrollToUnlock} />)}
+                {orderedDimResults.filter(d => d.id !== priorityDimId).map(dim => <LockedDiagnosticCard key={dim.id} dimension={dim} onUnlockClick={() => handleScrollToUnlock(dim)} />)}
               </div>
               <BentoCard id="unlock-form" style={{ background: T.vert, border: "none", textAlign: "center", padding: "36px 28px" }}>
                 <p style={{ fontSize: 11, fontWeight: 700, color: `${T.white}50`, letterSpacing: ".08em", textTransform: "uppercase", marginBottom: 6, fontFamily: T.f }}>4 diagnostics verrouillés</p>
                 <p style={{ fontSize: 18, fontWeight: 800, color: T.white, marginBottom: 8, letterSpacing: "-0.01em", fontFamily: T.f }}>
-                  Ton niveau en {firstLockedDim.shortName} :{" "}
+                  Ton niveau en {displayLockedDim.shortName} :{" "}
                   <span style={{ color: T.jaune }}>{firstLockedLevelLabel}</span>
                 </p>
                 <p style={{ fontSize: 13, color: `${T.white}bb`, marginBottom: 24, lineHeight: 1.6, fontFamily: T.f }}>Entre ton email pour débloquer l'analyse et l'action concrète sur tes 4 dimensions restantes.</p>
