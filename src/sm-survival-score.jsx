@@ -565,6 +565,14 @@ function IconCheck({ size = 28, color = "currentColor" }) {
   );
 }
 
+function IconClose({ size = 18, color = "currentColor" }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M6 6l12 12M18 6L6 18" />
+    </svg>
+  );
+}
+
 function IconChevron({ size = 12, color = "currentColor", direction = "down" }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"
@@ -601,8 +609,37 @@ const SIGNAL_TEXTS = {
   },
 };
 
-function PrioritySignal({ priorityDimId }) {
-  const signal = SIGNAL_TEXTS[priorityDimId];
+// Variante quand la dimension prioritaire est déjà solide (score ≥ 6). Sans ça, le bloc
+// affiche « tant que cette dimension reste faible » au-dessus d'une carte « Solide — 8/8 ».
+const SIGNAL_TEXTS_HIGH = {
+  visibility: {
+    title: 'Ton point le plus fragile : ce que ton management retient de toi. Et il tient.',
+    body: "La visibilité ne se stocke pas. Elle se renouvelle à chaque changement de direction. Ce qui est acquis aujourd'hui se redémontre au prochain comité.",
+  },
+  strategic: {
+    title: 'Ton point le plus fragile : comment tu es perçu. Et il tient.',
+    body: "La perception de ton rôle est bonne — mais elle est attachée aux gens en poste. Une réorg la remet à zéro plus vite que tes résultats.",
+  },
+  proof: {
+    title: 'Ton point le plus fragile : tes preuves. Et elles tiennent.',
+    body: "Tu as de quoi répondre quand la question arrive. Le risque n'est plus le trou, c'est la péremption : des preuves d'il y a deux ans ne défendent pas le poste d'aujourd'hui.",
+  },
+  business: {
+    title: 'Ton point le plus fragile : ton langage. Et il tient.',
+    body: "Tu traduis déjà ton travail dans un format que la direction comprend. Ce qui change, c'est ce que la direction mesure — le vocabulaire de l'an dernier ne porte pas toujours cette année.",
+  },
+  autonomy: {
+    title: "Ton point le plus fragile : l'autonomie de ton équipe. Et elle tient.",
+    body: "Ton équipe fonctionne sans toi, ce qui te rend défendable pour de bonnes raisons. Garde-la : l'autonomie se dégrade dès qu'on arrête de la travailler.",
+  },
+};
+
+export function getSignalText(dimId, level) {
+  return (level === "high" ? SIGNAL_TEXTS_HIGH[dimId] : SIGNAL_TEXTS[dimId]) ?? null;
+}
+
+function PrioritySignal({ priorityDimId, level }) {
+  const signal = getSignalText(priorityDimId, level);
   if (!signal) return null;
   return (
     <div style={{ backgroundColor: T.vertDark, borderRadius: T.r, padding: '18px 20px', margin: '20px 0 24px 0' }}>
@@ -654,7 +691,7 @@ function DiagnosticCard({ dimension, index, cardArticle = null }) {
     >
       <div style={{ padding: "18px 18px 14px" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12, flexWrap: "wrap", gap: 8 }}>
-          <h4 style={{ fontSize: 15, fontWeight: 700, color: T.text, margin: 0, fontFamily: T.f }}>{dimension.name}</h4>
+          <h3 style={{ fontSize: 15, fontWeight: 700, color: T.text, margin: 0, fontFamily: T.f }}>{dimension.name}</h3>
           <span style={{ fontSize: 11, fontWeight: 700, color: cat.color, padding: "4px 12px", background: cat.bg, borderRadius: 20, whiteSpace: "nowrap" }}>{levelLabel} — {dimension.score}/8</span>
         </div>
         <p style={{ fontSize: 15, fontWeight: 600, lineHeight: 1.55, color: T.text, fontFamily: T.f, marginBottom: 12 }}>{headline}</p>
@@ -724,7 +761,7 @@ function LockedDiagnosticCard({ dimension, onUnlockClick }) {
     >
       <div style={{ padding: "14px 18px 8px", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          <h4 style={{ fontSize: 14, fontWeight: 700, color: T.text, margin: 0, fontFamily: T.f }}>{dimension.name}</h4>
+          <h3 style={{ fontSize: 14, fontWeight: 700, color: T.text, margin: 0, fontFamily: T.f }}>{dimension.name}</h3>
           <IconLock size={12} color={T.textMuted} />
         </div>
         <span style={{ fontSize: 11, fontWeight: 700, color: cat.color, padding: "3px 10px", background: cat.bg, borderRadius: 20, whiteSpace: "nowrap" }}>
@@ -831,8 +868,8 @@ function PDFDocument({ globalScore, category, globalResult, dimensionResults, pr
   const dateStr = new Date().toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
   const orderedResults = orderedDimIds.map(id => dimensionResults.find(d => d.id === id));
   const priorityResult = dimensionResults.find(d => d.id === priorityDimId);
-  const signal = SIGNAL_TEXTS[priorityDimId];
   const priorityLevel = getDiagnosticLevel(priorityResult.score);
+  const signal = getSignalText(priorityDimId, priorityLevel);
 
   return (
     <div style={{ width: 794, fontFamily: T.f, background: T.white, color: T.text }}>
@@ -1167,12 +1204,40 @@ function GhostSignupForm({ onSuccess }) {
 
 function UnlockModal({ email, onClose, pdfProps }) {
   const [isGenerating, setIsGenerating] = useState(false);
+  const dialogRef = useRef(null);
+  const headingRef = useRef(null);
 
   const handleDownloadPDF = useCallback(async () => {
     setIsGenerating(true);
     await generatePDF(pdfProps);
     setIsGenerating(false);
   }, [pdfProps]);
+
+  // GhostSignupForm se démonte au succès : sans ça le focus retombe sur <body> et
+  // un utilisateur clavier/lecteur d'écran n'apprend jamais que le modal s'est ouvert.
+  useEffect(() => {
+    const previouslyFocused = document.activeElement;
+    headingRef.current?.focus();
+
+    const onKeyDown = (e) => {
+      if (e.key === "Escape") { onClose(); return; }
+      if (e.key !== "Tab") return;
+      const focusables = dialogRef.current?.querySelectorAll(
+        'button:not([disabled]), a[href], input, [tabindex]:not([tabindex="-1"])'
+      );
+      if (!focusables?.length) return;
+      const first = focusables[0];
+      const last = focusables[focusables.length - 1];
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    };
+
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("keydown", onKeyDown);
+      if (previouslyFocused instanceof HTMLElement) previouslyFocused.focus();
+    };
+  }, [onClose]);
 
   return (
     <div
@@ -1182,12 +1247,18 @@ function UnlockModal({ email, onClose, pdfProps }) {
       style={{ position: "fixed", inset: 0, background: "rgba(11,36,25,0.65)",
         display: "flex", alignItems: "center", justifyContent: "center",
         zIndex: 1000, padding: 24 }}>
-      <div style={{ background: T.white, borderRadius: T.rLg, maxWidth: 440,
-        width: "100%", padding: "40px 32px", textAlign: "center" }}>
+      <div ref={dialogRef} style={{ background: T.white, borderRadius: T.rLg, maxWidth: 440,
+        width: "100%", padding: "40px 32px", textAlign: "center", position: "relative" }}>
+        <button onClick={onClose} aria-label="Fermer" className="btn-hover"
+          style={{ position: "absolute", top: 8, right: 8, width: 44, height: 44, display: "flex",
+            alignItems: "center", justifyContent: "center", background: "transparent", border: "none",
+            borderRadius: T.rSm, cursor: "pointer", color: T.textMuted, fontFamily: T.f }}>
+          <IconClose size={18} color={T.textMuted} />
+        </button>
         <div style={{ width: 56, height: 56, borderRadius: "50%", background: T.vertLight, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
           <IconCheck size={26} color={T.vert} />
         </div>
-        <h2 id="modal-title" style={{ fontSize: 20, fontWeight: 800, color: T.vert, marginBottom: 12 }}>
+        <h2 id="modal-title" ref={headingRef} tabIndex={-1} style={{ fontSize: 20, fontWeight: 800, color: T.vert, marginBottom: 12, outline: "none" }}>
           Diagnostics déverrouillés
         </h2>
         <p style={{ fontSize: 14, color: T.textMuted, lineHeight: 1.65, marginBottom: 28 }}>
@@ -1425,6 +1496,7 @@ function ResultScreen({ answers, onRestart, sessionId }) {
   const [isGeneratingCard, setIsGeneratingCard] = useState(false);
   const [cardError, setCardError] = useState(false);
   const [focusedLockedDim, setFocusedLockedDim] = useState(null);
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
 
   const dimensionScores = useMemo(() => computeDimensionScores(answers), [answers]);
   const globalScore = useMemo(() => computeGlobalScore(dimensionScores), [dimensionScores]);
@@ -1497,7 +1569,15 @@ function ResultScreen({ answers, onRestart, sessionId }) {
     }
   }, [globalScore, category, dimensionResults, sessionId]);
 
-  const cardArticle = getCardArticle(category.key, priorityDimResult.id);
+  const handleDownloadPdf = useCallback(async () => {
+    setIsGeneratingPdf(true);
+    try { await generatePDF(pdfProps); } finally { setIsGeneratingPdf(false); }
+  }, [pdfProps]);
+
+  // Une fois débloqué, la variante « cta » invite à s'abonner via une ancre #unlock-form
+  // dont la cible n'existe plus — et son texte est périmé. Seuls les vrais liens article restent.
+  const rawCardArticle = getCardArticle(category.key, priorityDimResult.id);
+  const cardArticle = unlocked && rawCardArticle?.cta ? null : rawCardArticle;
 
   return (
     <div style={{ fontFamily: T.f, background: T.creme, minHeight: "100vh" }}>
@@ -1505,7 +1585,7 @@ function ResultScreen({ answers, onRestart, sessionId }) {
       <header style={{ background: T.vert, padding: "48px 24px 56px", textAlign: "center", animation: "fadeIn 0.4s ease-out" }}>
         <div style={{ maxWidth: 520, margin: "0 auto" }}>
           <p style={{ fontSize: 12, color: `${T.white}99`, marginBottom: 12, letterSpacing: "0.06em", textTransform: "uppercase", fontWeight: 600 }}>Ton score</p>
-          <div aria-label={`Score : ${globalScore} sur 100`} style={{ fontSize: "clamp(64px, 18vw, 96px)", fontWeight: 900, color: category.onDark, lineHeight: 1, letterSpacing: "-0.04em", animation: "scaleIn 0.4s ease-out 0.15s both", willChange: "transform, opacity" }}>{globalScore}</div>
+          <h1 aria-label={`Score : ${globalScore} sur 100`} style={{ fontSize: "clamp(64px, 18vw, 96px)", fontWeight: 900, color: category.onDark, lineHeight: 1, letterSpacing: "-0.04em", animation: "scaleIn 0.4s ease-out 0.15s both", willChange: "transform, opacity" }}>{globalScore}</h1>
           <p style={{ fontSize: 16, color: `${T.white}80`, marginBottom: 20 }}>/100</p>
           <div style={{ display: "inline-block", padding: "10px 28px", fontSize: 15, fontWeight: 700, color: category.key === "irreplaceable" ? T.vertDark : T.white, background: category.key === "irreplaceable" ? T.jaune : category.color, borderRadius: 24 }}>{category.label}</div>
           <button
@@ -1537,7 +1617,7 @@ function ResultScreen({ answers, onRestart, sessionId }) {
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 16, marginBottom: 16 }}>
           {/* Radar card */}
           <BentoCard style={{ animation: "fadeUp 0.4s ease-out 0.3s both" }}>
-            <h3 style={{ fontSize: 13, fontWeight: 700, color: T.vert, marginBottom: 12, textTransform: "uppercase", letterSpacing: "0.06em" }}>Ton profil</h3>
+            <h2 style={{ fontSize: 13, fontWeight: 700, color: T.vert, marginBottom: 12, textTransform: "uppercase", letterSpacing: "0.06em" }}>Ton profil</h2>
             <div style={{ width: "100%", height: 260 }} role="img" aria-label={`Radar chart de ton profil : ${radarData.map(d => `${d.dimension} ${d.score}/8`).join(", ")}`}>
               <ResponsiveContainer>
                 <RadarChart data={radarData} cx="50%" cy="50%" outerRadius="65%">
@@ -1552,7 +1632,7 @@ function ResultScreen({ answers, onRestart, sessionId }) {
 
           {/* Scores card */}
           <BentoCard style={{ animation: "fadeUp 0.4s ease-out 0.35s both" }}>
-            <h3 style={{ fontSize: 13, fontWeight: 700, color: T.vert, marginBottom: 16, textTransform: "uppercase", letterSpacing: "0.06em" }}>Par dimension</h3>
+            <h2 style={{ fontSize: 13, fontWeight: 700, color: T.vert, marginBottom: 16, textTransform: "uppercase", letterSpacing: "0.06em" }}>Par dimension</h2>
             {dimensionResults.map((dim, i) => {
               const dimCategory = getCategory(dim.pct);
               return (
@@ -1571,7 +1651,7 @@ function ResultScreen({ answers, onRestart, sessionId }) {
         </div>
 
         {/* Signal de priorité — au-dessus des diagnostics */}
-        <PrioritySignal priorityDimId={priorityDimId} />
+        <PrioritySignal priorityDimId={priorityDimId} level={getDiagnosticLevel(priorityDimResult.score)} />
 
         {/* Bannière article — catégorie globale */}
         {(() => {
@@ -1590,7 +1670,7 @@ function ResultScreen({ answers, onRestart, sessionId }) {
 
         {/* Diagnostics */}
         <section aria-label="Diagnostics détaillés" style={{ display: "flex", flexDirection: "column", gap: 16, marginBottom: 16 }}>
-          <h3 style={{ fontSize: 13, fontWeight: 700, color: T.vert, textTransform: "uppercase", letterSpacing: "0.06em", paddingLeft: 4 }}>Diagnostic par dimension</h3>
+          <h2 style={{ fontSize: 13, fontWeight: 700, color: T.vert, textTransform: "uppercase", letterSpacing: "0.06em", paddingLeft: 4 }}>Diagnostic par dimension</h2>
           <DiagnosticCard dimension={priorityDimResult} index={0} cardArticle={cardArticle} />
           {unlocked ? (
             orderedDimResults.filter(d => d.id !== priorityDimId).map((dim, i) => <DiagnosticCard key={dim.id} dimension={dim} index={i + 1} />)
@@ -1614,6 +1694,14 @@ function ResultScreen({ answers, onRestart, sessionId }) {
 
         {/* Actions */}
         <div className="no-print" style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap", marginBottom: 32 }}>
+          {/* Sans ça, fermer le modal supprime définitivement l'accès au rapport déjà payé par l'email */}
+          {unlocked && (
+            <button onClick={handleDownloadPdf} disabled={isGeneratingPdf} aria-busy={isGeneratingPdf}
+              aria-label="Télécharger le rapport PDF" className="btn-hover"
+              style={{ ...T.btnAction, opacity: isGeneratingPdf ? 0.7 : 1, cursor: isGeneratingPdf ? "wait" : "pointer" }}>
+              {isGeneratingPdf ? "Génération..." : "Mon rapport (PDF)"}
+            </button>
+          )}
           <button onClick={handleShare} aria-label="Partager le test" className="btn-hover" style={T.btnAction}>
             Envoie le test à un collègue SM
           </button>
