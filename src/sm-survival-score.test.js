@@ -1022,6 +1022,60 @@ describe("ANALYTICS — source integrity", () => {
 });
 
 // ============================================================
+// CONTRASTE WCAG — les couleurs de catégorie, mesurées sur la vraie source
+//
+// PRODUCT.md promet « WCAG AA vérifié sur toutes les combinaisons fond/texte ».
+// Ces tests rendent la promesse exécutable : un token assombri pour passer AA
+// sur fond clair a déjà cassé le score du héros sur fond vert sans rien casser
+// dans la suite. Les ratios sont recalculés depuis le fichier source, pas copiés.
+// ============================================================
+
+function relativeLuminance(hex) {
+  const [r, g, b] = [0, 2, 4].map(i => parseInt(hex.replace("#", "").substr(i, 2), 16) / 255);
+  const f = c => (c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4));
+  return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b);
+}
+
+function contrastRatio(hexA, hexB) {
+  const [hi, lo] = [relativeLuminance(hexA), relativeLuminance(hexB)].sort((a, b) => b - a);
+  return (hi + 0.05) / (lo + 0.05);
+}
+
+describe("CONTRASTE WCAG — couleurs de catégorie", () => {
+  const src = readFileSync(join(__dirname, "sm-survival-score.jsx"), "utf8");
+  const VERT = "#006946"; // T.vert — fond du héros et de la carte de score
+
+  // Sanity check du calcul lui-même, sur des paires connues
+  assert(Math.abs(contrastRatio("#000000", "#ffffff") - 21) < 0.01, "contrastRatio: noir/blanc = 21:1");
+  assert(Math.abs(contrastRatio("#ffffff", "#ffffff") - 1) < 0.01, "contrastRatio: blanc/blanc = 1:1");
+
+  const categories = [...src.matchAll(
+    /key:\s*"(\w+)",\s*label:\s*"[^"]+",\s*color:\s*"(#[0-9a-fA-F]{6})",\s*onDark:\s*"(#[0-9a-fA-F]{6})",\s*bg:\s*"(#[0-9a-fA-F]{6})"/g
+  )].map(m => ({ key: m[1], color: m[2], onDark: m[3], bg: m[4] }));
+
+  assertEqual(categories.length, 3, "getCategory expose 3 catégories avec color + onDark + bg");
+
+  categories.forEach(c => {
+    // onDark porte le score du héros (clamp(64px,…) poids 900) et de la carte de
+    // score (240px) sur T.vert → « large text », seuil AA = 3:1
+    const onVert = contrastRatio(c.onDark, VERT);
+    assert(onVert >= 3, `${c.key}: onDark ${c.onDark} sur T.vert = ${onVert.toFixed(2)}:1 (≥ 3:1 requis)`);
+
+    // color porte le texte des badges sur bg, et le blanc du badge du héros → 4.5:1
+    const onBg = contrastRatio(c.color, c.bg);
+    assert(onBg >= 4.5, `${c.key}: color ${c.color} sur bg ${c.bg} = ${onBg.toFixed(2)}:1 (≥ 4.5:1 requis)`);
+  });
+
+  // Le bug d'origine : réutiliser `color` (calibré fond clair) sur le fond vert.
+  // Si quelqu'un le refait, ce test tombe avant la revue.
+  const stable = categories.find(c => c.key === "stable");
+  assert(contrastRatio(stable.color, VERT) < 3,
+    "régression connue: le token `color` de stable échoue bien sur T.vert (d'où l'existence de onDark)");
+  assert(!/color:\s*category\.key === "irreplaceable" \? T\.jaune : category\.color/.test(src),
+    "ABSENT: ancien ternaire qui posait category.color sur le héros vert");
+});
+
+// ============================================================
 // RESULTS
 // ============================================================
 
