@@ -914,6 +914,141 @@ function PDFDocument({ globalScore, category, globalResult, dimensionResults, pr
 }
 
 // ============================================================
+// SCORE CARD — shareable image (1080×1080, downloaded as PNG)
+// ============================================================
+
+// Hand-rolled SVG radar (not Recharts) — html2canvas cannot reliably capture
+// Recharts' generated SVG (gradients/foreignObject), see PDFDocument above
+// which omits the radar for the same reason.
+// Canvas is wider than tall: label text (e.g. "Stratégique") needs generous
+// horizontal clearance since html2canvas does not respect `overflow: visible`
+// on an SVG root, so out-of-bounds text gets clipped instead of overflowing.
+function buildRadarPolygon(dimensionResults, { radius = 130, xPad = 150, yPad = 45, maxScore = MAX_DIM_SCORE } = {}) {
+  const width = (radius + 38 + xPad) * 2;
+  const height = (radius + 38 + yPad) * 2;
+  const cx = width / 2;
+  const cy = height / 2;
+  const n = dimensionResults.length;
+  const angleFor = (i) => (Math.PI * 2 * i) / n - Math.PI / 2;
+
+  const points = dimensionResults.map((dim, i) => {
+    const angle = angleFor(i);
+    const r = (dim.score / maxScore) * radius;
+    return { x: cx + r * Math.cos(angle), y: cy + r * Math.sin(angle) };
+  });
+
+  const gridRings = [0.25, 0.5, 0.75, 1].map((f) =>
+    dimensionResults
+      .map((_, i) => {
+        const angle = angleFor(i);
+        const r = f * radius;
+        return `${cx + r * Math.cos(angle)},${cy + r * Math.sin(angle)}`;
+      })
+      .join(" ")
+  );
+
+  const axisLines = dimensionResults.map((_, i) => {
+    const angle = angleFor(i);
+    return { x2: cx + radius * Math.cos(angle), y2: cy + radius * Math.sin(angle) };
+  });
+
+  const labels = dimensionResults.map((dim, i) => {
+    const angle = angleFor(i);
+    const lr = radius + 38;
+    return { x: cx + lr * Math.cos(angle), y: cy + lr * Math.sin(angle), text: dim.shortName };
+  });
+
+  return { width, height, cx, cy, points, gridRings, axisLines, labels };
+}
+
+function ScoreCardDocument({ globalScore, category, dimensionResults }) {
+  const radar = useMemo(() => buildRadarPolygon(dimensionResults), [dimensionResults]);
+  const scoreColor = category.key === "irreplaceable" ? T.jaune : category.color;
+  const badgeBg = category.key === "irreplaceable" ? T.jaune : category.color;
+  const badgeText = category.key === "irreplaceable" ? T.vertDark : T.white;
+
+  return (
+    <div style={{ width: 1080, height: 1080, background: T.vert, fontFamily: T.f, boxSizing: "border-box", padding: "64px 56px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "space-between" }}>
+      <p style={{ fontSize: 24, fontWeight: 800, color: T.jaune, letterSpacing: "0.18em", textTransform: "uppercase", margin: 0 }}>SM Survival Score</p>
+
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+        <div style={{ fontSize: 240, fontWeight: 900, color: scoreColor, lineHeight: 1, letterSpacing: "-0.04em" }}>{globalScore}</div>
+        <p style={{ fontSize: 28, fontWeight: 600, color: `${T.white}cc`, margin: "4px 0 24px" }}>/100</p>
+        <div style={{ padding: "14px 40px", fontSize: 26, fontWeight: 700, color: badgeText, background: badgeBg, borderRadius: 32, marginBottom: 48 }}>{category.label}</div>
+
+        <svg width={radar.width} height={radar.height} style={{ overflow: "visible" }}>
+          {radar.gridRings.map((ring, i) => (
+            <polygon key={i} points={ring} fill="none" stroke={`${T.white}33`} strokeWidth={1.5} />
+          ))}
+          {radar.axisLines.map((line, i) => (
+            <line key={i} x1={radar.cx} y1={radar.cy} x2={line.x2} y2={line.y2} stroke={`${T.white}33`} strokeWidth={1.5} />
+          ))}
+          <polygon
+            points={radar.points.map((p) => `${p.x},${p.y}`).join(" ")}
+            fill={T.jaune} fillOpacity={0.22} stroke={T.jaune} strokeWidth={3} strokeLinejoin="round"
+          />
+          {radar.points.map((p, i) => (
+            <circle key={i} cx={p.x} cy={p.y} r={6} fill={T.jaune} />
+          ))}
+          {radar.labels.map((l, i) => (
+            <text
+              key={i} x={l.x} y={l.y} fill={`${T.white}e6`} fontSize={20} fontWeight={700} fontFamily={T.f}
+              textAnchor={l.x < radar.cx - 5 ? "end" : l.x > radar.cx + 5 ? "start" : "middle"}
+              dominantBaseline={l.y < radar.cy - 5 ? "auto" : l.y > radar.cy + 5 ? "hanging" : "middle"}
+            >
+              {l.text}
+            </text>
+          ))}
+        </svg>
+      </div>
+
+      <div style={{ textAlign: "center" }}>
+        <p style={{ fontSize: 22, fontWeight: 700, color: T.white, margin: "0 0 4px" }}>Collaboration Solved</p>
+        <p style={{ fontSize: 18, fontWeight: 500, color: `${T.white}cc`, margin: 0 }}>dub.sh/sm-survival-score</p>
+      </div>
+    </div>
+  );
+}
+
+async function generateScoreCard({ globalScore, category, dimensionResults, sessionId }) {
+  const dateStr = new Date().toISOString().slice(0, 10);
+  const filename = `score-sm-survival-${globalScore}-${dateStr}.png`;
+
+  const { default: html2canvas } = await import("html2canvas");
+
+  const container = document.createElement("div");
+  container.style.cssText = "position:absolute;left:-9999px;top:0;width:1080px;height:1080px;";
+  document.body.appendChild(container);
+
+  const root = createRoot(container);
+  flushSync(() => root.render(<ScoreCardDocument globalScore={globalScore} category={category} dimensionResults={dimensionResults} />));
+
+  const canvas = await html2canvas(container, {
+    width: 1080,
+    height: 1080,
+    windowWidth: 1080,
+    scale: 1,
+    useCORS: true,
+    logging: false,
+  });
+
+  root.unmount();
+  document.body.removeChild(container);
+
+  const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/png"));
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+
+  trackEvent("score_card_generated", { sessionId, score_global: globalScore, category: category.label });
+}
+
+// ============================================================
 // SCREENS
 // ============================================================
 
@@ -1203,6 +1338,7 @@ function ResultScreen({ answers, onRestart, sessionId }) {
   const [unlocked, setUnlocked] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [subscribedEmail, setSubscribedEmail] = useState("");
+  const [isGeneratingCard, setIsGeneratingCard] = useState(false);
 
   const dimensionScores = useMemo(() => computeDimensionScores(answers), [answers]);
   const globalScore = useMemo(() => computeGlobalScore(dimensionScores), [dimensionScores]);
@@ -1260,6 +1396,15 @@ function ResultScreen({ answers, onRestart, sessionId }) {
     else navigator.clipboard?.writeText(text);
   }, []);
 
+  const handleDownloadScoreCard = useCallback(async () => {
+    setIsGeneratingCard(true);
+    try {
+      await generateScoreCard({ globalScore, category, dimensionResults, sessionId });
+    } finally {
+      setIsGeneratingCard(false);
+    }
+  }, [globalScore, category, dimensionResults, sessionId]);
+
   const cardArticle = getCardArticle(category.key, priorityDimResult.id);
 
   return (
@@ -1271,6 +1416,16 @@ function ResultScreen({ answers, onRestart, sessionId }) {
           <div aria-label={`Score : ${globalScore} sur 100`} style={{ fontSize: "clamp(64px, 18vw, 96px)", fontWeight: 900, color: category.key === "irreplaceable" ? T.jaune : category.color, lineHeight: 1, letterSpacing: "-0.04em", animation: "scaleIn 0.4s ease-out 0.15s both", willChange: "transform, opacity" }}>{globalScore}</div>
           <p style={{ fontSize: 16, color: `${T.white}80`, marginBottom: 20 }}>/100</p>
           <div style={{ display: "inline-block", padding: "10px 28px", fontSize: 15, fontWeight: 700, color: category.key === "irreplaceable" ? T.vertDark : T.white, background: category.key === "irreplaceable" ? T.jaune : category.color, borderRadius: 24 }}>{category.label}</div>
+          <div>
+            <button
+              onClick={handleDownloadScoreCard}
+              disabled={isGeneratingCard}
+              aria-label="Télécharger ma carte de score à partager"
+              style={{ marginTop: 28, fontFamily: T.f, fontSize: 15, fontWeight: 700, background: T.jaune, color: T.vertDark, border: "none", borderRadius: T.rSm, padding: "14px 32px", minHeight: 48, cursor: isGeneratingCard ? "wait" : "pointer" }}
+            >
+              {isGeneratingCard ? "Génération..." : "Télécharger ma carte de score"}
+            </button>
+          </div>
         </div>
       </header>
 
