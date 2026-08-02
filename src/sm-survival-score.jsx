@@ -196,7 +196,7 @@ export function computeGlobalScore(dimensionScores) {
 
 export function getCategory(percentage) {
   if (percentage < SCORE_THRESHOLDS.low) return { key: "vulnerable", label: "Vulnérable", color: "#dc2626", bg: "#fef2f2" };
-  if (percentage < SCORE_THRESHOLDS.mid) return { key: "stable", label: "Stable", color: "#f59e0b", bg: "#fffbeb" };
+  if (percentage < SCORE_THRESHOLDS.mid) return { key: "stable", label: "Stable", color: "#b45309", bg: "#fffbeb" };
   return { key: "irreplaceable", label: "Irremplaçable", color: "#006946", bg: "#ecfdf5" };
 }
 
@@ -1413,7 +1413,7 @@ function ResultScreen({ answers, onRestart, sessionId }) {
   const orderedDimIds = useMemo(() => getOrderedDimensions(dimensionScoresPct), [dimensionScoresPct]);
   const orderedDimResults = useMemo(() => orderedDimIds.map(id => dimensionResults.find(d => d.id === id)), [orderedDimIds, dimensionResults]);
   const priorityDimResult = useMemo(() => dimensionResults.find(d => d.id === priorityDimId), [priorityDimId, dimensionResults]);
-  const radarData = useMemo(() => dimensionResults.map(dim => ({ dimension: dim.shortName, score: dim.score, fullMark: MAX_DIM_SCORE })), [dimensionResults]);
+  const radarData = useMemo(() => dimensionResults.map(dim => ({ dimension: dim.shortName, score: Math.max(dim.score, MAX_DIM_SCORE * 0.08), fullMark: MAX_DIM_SCORE })), [dimensionResults]);
   const pdfProps = useMemo(() => ({
     globalScore,
     category,
