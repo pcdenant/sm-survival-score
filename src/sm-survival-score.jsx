@@ -685,7 +685,7 @@ function DiagnosticCard({ dimension, index, cardArticle = null }) {
 
   return (
     <BentoCard
-      style={{ borderLeft: `4px solid ${cat.color}`, animation: `fadeUp 0.3s ease-out ${index * 0.06}s both`, padding: 0, overflow: "hidden" }}
+      style={{ animation: `fadeUp 0.3s ease-out ${index * 0.06}s both`, padding: 0, overflow: "hidden" }}
       role="article"
       aria-label={`Diagnostic : ${dimension.name}`}
     >
@@ -757,7 +757,7 @@ function LockedDiagnosticCard({ dimension, onUnlockClick }) {
     <div
       aria-label={`Diagnostic verrouillé : ${dimension.name}`}
       role="region"
-      style={{ background: T.white, border: `1px solid ${T.borderLight}`, borderLeft: `4px solid ${cat.color}`, borderRadius: T.rLg, overflow: "hidden" }}
+      style={{ background: T.white, border: `1px solid ${T.borderLight}`, borderRadius: T.rLg, overflow: "hidden" }}
     >
       <div style={{ padding: "14px 18px 8px", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
@@ -900,7 +900,7 @@ function PDFDocument({ globalScore, category, globalResult, dimensionResults, pr
 
       {/* Signal prioritaire */}
       <div style={{ padding: "24px 48px 0" }}>
-        <div style={{ backgroundColor: T.vertDark, borderLeft: `3px solid ${T.jaune}`, borderRadius: 4, padding: "14px 18px" }}>
+        <div style={{ backgroundColor: T.vertDark, borderRadius: 4, padding: "14px 18px" }}>
           <p style={{ fontSize: 9, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.1em", color: "rgba(255,255,255,0.4)", margin: "0 0 6px 0" }}>⚡ Signal prioritaire</p>
           <p style={{ fontWeight: 600, fontSize: 14, color: T.jaune, margin: "0 0 6px 0" }}>{signal.title}</p>
           <p style={{ fontSize: 13, color: "rgba(255,255,255,0.75)", margin: 0, lineHeight: 1.5 }}>{signal.body}</p>
@@ -964,7 +964,7 @@ function PDFDocument({ globalScore, category, globalResult, dimensionResults, pr
             <div key={dim.id}>
             {/* spacer with forced-break before card 4 → 24px breathing room at top of page 3 */}
             {index === 3 && <div data-pdf-force-break="true" style={{ height: 24 }} />}
-            <div style={{ marginBottom: 20, borderLeft: `3px solid ${dimCat.color}`, paddingLeft: 16 }}>
+            <div style={{ marginBottom: 20 }}>
               <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8, alignItems: "center" }}>
                 <h3 style={{ fontSize: 14, fontWeight: 700, color: T.text, margin: 0 }}>{dim.name}</h3>
                 <span style={{ fontSize: 11, fontWeight: 700, color: dimCat.color, padding: "3px 10px", background: dimCat.bg, borderRadius: 20 }}>{levelLabel} — {dim.score}/8</span>
@@ -1195,6 +1195,11 @@ function GhostSignupForm({ onSuccess }) {
           {status === "submitting" ? "..." : "Déverrouiller"}
         </button>
       </div>
+      {/* L'abonnement newsletter n'était annoncé qu'après soumission, dans le modal.
+          .8 et pas .7 : sur T.vert, .7 tombe à 4.17:1 et .8 à 4.94:1 (AA = 4.5:1). */}
+      <p style={{ fontSize: 12, color: "rgba(255,255,255,.8)", margin: 0, fontFamily: T.f }}>
+        Un email par semaine. Désabonnement en un clic.
+      </p>
       {status === "error" && (
         <p role="alert" style={{ fontSize: 12, color: T.jaune, margin: 0 }}>Email invalide ou erreur — réessaie.</p>
       )}

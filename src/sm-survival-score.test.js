@@ -742,6 +742,46 @@ describe("UNLOCK — accès persistant et accessibilité du modal", () => {
 });
 
 // ============================================================
+// SIDE-TAB — bordures de sévérité supprimées
+//
+// Le badge de niveau (« À renforcer — 4/8 », texte coloré sur fond teinté) encode
+// déjà la sévérité sur chaque carte : la bordure gauche colorée en était une
+// seconde copie. Ce test épingle la décision pour que le motif ne revienne pas.
+// ============================================================
+
+describe("SIDE-TAB — plus de bordure latérale de sévérité", () => {
+  const src = readFileSync(join(__dirname, "sm-survival-score.jsx"), "utf8");
+
+  assert(!/borderLeft/.test(src), "ABSENT: borderLeft (les 4 bordures side-tab sont supprimées)");
+
+  // Le badge doit toujours porter la couleur de catégorie, sinon on a perdu l'info
+  assert(/color: cat\.color, padding/.test(src), "PRESENT: le badge de carte porte toujours cat.color");
+  assert(/background: dimCategory\.color/.test(src), "PRESENT: les barres portent toujours la couleur de catégorie");
+});
+
+// ============================================================
+// CONSENTEMENT — ce à quoi on s'abonne est dit AVANT de soumettre
+// ============================================================
+
+describe("CONSENTEMENT — mention sous le champ email", () => {
+  const src = readFileSync(join(__dirname, "sm-survival-score.jsx"), "utf8");
+  const form = src.slice(src.indexOf("function GhostSignupForm"), src.indexOf("function UnlockModal"));
+
+  assert(form.includes("Un email par semaine. Désabonnement en un clic."),
+    "PRESENT: fréquence + désabonnement, dans le formulaire lui-même");
+
+  // Composite la couleur sur T.vert et vérifie AA. rgba(255,255,255,.7) échoue (4.17:1),
+  // .8 passe (4.94:1) — le test empêche de recopier le .733 voisin qui échoue déjà.
+  const alphaMatch = form.match(/color: "rgba\(255,255,255,\.(\d+)\)"/);
+  assert(alphaMatch, "PRESENT: la mention utilise une couleur rgba explicite");
+  const alpha = Number(`0.${alphaMatch[1]}`);
+  const vert = [0x00, 0x69, 0x46];
+  const composited = "#" + vert.map(c => Math.round(255 * alpha + c * (1 - alpha)).toString(16).padStart(2, "0")).join("");
+  const ratio = contrastRatio(composited, "#006946");
+  assert(ratio >= 4.5, `mention de consentement: ${composited} sur T.vert = ${ratio.toFixed(2)}:1 (≥ 4.5:1 requis)`);
+});
+
+// ============================================================
 // STRUCTURE DES TITRES — h1 → h2 → h3, sans saut
 // ============================================================
 
