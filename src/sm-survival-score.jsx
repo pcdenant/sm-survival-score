@@ -194,10 +194,13 @@ export function computeGlobalScore(dimensionScores) {
   return Math.round((Object.values(dimensionScores).reduce((a, b) => a + b, 0) / MAX_SCORE) * 100);
 }
 
+// `color` est calibré pour un fond clair (badges, barres, bordures) ; `onDark` pour le vert
+// foncé (score du héros, carte de score). Un seul token ne peut pas servir les deux : plus on
+// fonce pour passer AA sur fond clair, plus on échoue sur fond foncé.
 export function getCategory(percentage) {
-  if (percentage < SCORE_THRESHOLDS.low) return { key: "vulnerable", label: "Vulnérable", color: "#dc2626", bg: "#fef2f2" };
-  if (percentage < SCORE_THRESHOLDS.mid) return { key: "stable", label: "Stable", color: "#b45309", bg: "#fffbeb" };
-  return { key: "irreplaceable", label: "Irremplaçable", color: "#006946", bg: "#ecfdf5" };
+  if (percentage < SCORE_THRESHOLDS.low) return { key: "vulnerable", label: "Vulnérable", color: "#c81e1e", onDark: "#ffb4ab", bg: "#fef2f2" };
+  if (percentage < SCORE_THRESHOLDS.mid) return { key: "stable", label: "Stable", color: "#b45309", onDark: "#ffd166", bg: "#fffbeb" };
+  return { key: "irreplaceable", label: "Irremplaçable", color: "#006946", onDark: "#FFF200", bg: "#ecfdf5" };
 }
 
 export function getDiagnosticLevel(score) { return score <= 3 ? "low" : score <= 5 ? "mid" : "high"; }
@@ -502,6 +505,12 @@ const GLOBAL_CSS = `
   .btn-hover { transition: filter 0.15s ease; }
   .btn-hover:hover:not(:disabled) { filter: brightness(0.94); }
   .btn-hover:active:not(:disabled) { filter: brightness(0.88); }
+  /* Sous 420px le champ + bouton ne tiennent plus sur une ligne : empilement */
+  @media (max-width: 420px) {
+    .signup-row { flex-direction: column; }
+    .signup-row > * { width: 100%; }
+  }
+  .signup-input:focus-visible { outline: 2px solid ${T.jaune}; outline-offset: 2px; }
 `;
 
 let stylesInjected = false;
@@ -1023,7 +1032,7 @@ function buildRadarPolygon(dimensionResults, { radius = 130, xPad = 150, yPad = 
 
 function ScoreCardDocument({ globalScore, category, dimensionResults }) {
   const radar = useMemo(() => buildRadarPolygon(dimensionResults), [dimensionResults]);
-  const scoreColor = category.key === "irreplaceable" ? T.jaune : category.color;
+  const scoreColor = category.onDark;
   const badgeBg = category.key === "irreplaceable" ? T.jaune : category.color;
   const badgeText = category.key === "irreplaceable" ? T.vertDark : T.white;
 
@@ -1132,21 +1141,25 @@ function GhostSignupForm({ onSuccess }) {
 
   return (
     <form onSubmit={handleSubmit} noValidate style={{ display: "flex", flexDirection: "column", gap: 12, maxWidth: 380, margin: "0 auto" }}>
-      <div style={{ display: "flex", gap: 8 }}>
+      <div className="signup-row" style={{ display: "flex", gap: 8 }}>
         <input
           type="email" value={email} onChange={(e) => setEmail(e.target.value)}
           placeholder="ton@email.com" required
-          style={{ flex: 1, padding: "10px 14px", borderRadius: 8, border: `1px solid ${T.white}40`,
+          aria-label="Ton adresse email"
+          autoComplete="email" inputMode="email"
+          className="signup-input"
+          // minWidth:0 — sans ça l'input refuse de rétrécir et pousse le bouton hors écran <420px
+          style={{ flex: 1, minWidth: 0, padding: "12px 14px", minHeight: 48, borderRadius: 8, border: `1px solid ${T.white}40`,
             background: `${T.white}15`, color: T.white, fontSize: 14, outline: "none" }}
         />
         <button type="submit" disabled={status === "submitting"} className="btn-hover"
-          style={{ padding: "10px 20px", borderRadius: 8, background: T.jaune, color: T.vert,
+          style={{ padding: "12px 20px", minHeight: 48, borderRadius: 8, background: T.jaune, color: T.vert,
             fontWeight: 700, fontSize: 14, border: "none", cursor: status === "submitting" ? "wait" : "pointer" }}>
           {status === "submitting" ? "..." : "Déverrouiller"}
         </button>
       </div>
       {status === "error" && (
-        <p style={{ fontSize: 12, color: T.jaune, margin: 0 }}>Email invalide ou erreur — réessaie.</p>
+        <p role="alert" style={{ fontSize: 12, color: T.jaune, margin: 0 }}>Email invalide ou erreur — réessaie.</p>
       )}
     </form>
   );
@@ -1492,7 +1505,7 @@ function ResultScreen({ answers, onRestart, sessionId }) {
       <header style={{ background: T.vert, padding: "48px 24px 56px", textAlign: "center", animation: "fadeIn 0.4s ease-out" }}>
         <div style={{ maxWidth: 520, margin: "0 auto" }}>
           <p style={{ fontSize: 12, color: `${T.white}99`, marginBottom: 12, letterSpacing: "0.06em", textTransform: "uppercase", fontWeight: 600 }}>Ton score</p>
-          <div aria-label={`Score : ${globalScore} sur 100`} style={{ fontSize: "clamp(64px, 18vw, 96px)", fontWeight: 900, color: category.key === "irreplaceable" ? T.jaune : category.color, lineHeight: 1, letterSpacing: "-0.04em", animation: "scaleIn 0.4s ease-out 0.15s both", willChange: "transform, opacity" }}>{globalScore}</div>
+          <div aria-label={`Score : ${globalScore} sur 100`} style={{ fontSize: "clamp(64px, 18vw, 96px)", fontWeight: 900, color: category.onDark, lineHeight: 1, letterSpacing: "-0.04em", animation: "scaleIn 0.4s ease-out 0.15s both", willChange: "transform, opacity" }}>{globalScore}</div>
           <p style={{ fontSize: 16, color: `${T.white}80`, marginBottom: 20 }}>/100</p>
           <div style={{ display: "inline-block", padding: "10px 28px", fontSize: 15, fontWeight: 700, color: category.key === "irreplaceable" ? T.vertDark : T.white, background: category.key === "irreplaceable" ? T.jaune : category.color, borderRadius: 24 }}>{category.label}</div>
           <button

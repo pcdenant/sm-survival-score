@@ -12,3 +12,6 @@ build/
 .vercel/
 .netlify/
 test-results/
+
+# Impeccable live-server runtime state (PID, port, session token)
+.impeccable/live/
