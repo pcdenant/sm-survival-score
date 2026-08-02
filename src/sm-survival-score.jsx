@@ -1006,8 +1006,8 @@ function ScoreCardDocument({ globalScore, category, dimensionResults }) {
       </div>
 
       <div style={{ textAlign: "center" }}>
-        <p style={{ fontSize: 22, fontWeight: 700, color: T.white, margin: "0 0 4px" }}>Collaboration Solved</p>
-        <p style={{ fontSize: 18, fontWeight: 500, color: `${T.white}cc`, margin: 0 }}>dub.sh/sm-survival-score</p>
+        <p style={{ fontSize: 16, fontWeight: 600, color: `${T.white}99`, letterSpacing: "0.04em", margin: "0 0 14px" }}>Un outil Collaboration Solved</p>
+        <div style={{ display: "inline-block", padding: "12px 30px", fontSize: 20, fontWeight: 800, color: T.vertDark, background: T.jaune, borderRadius: 28 }}>dub.sh/sm-survival-score</div>
       </div>
     </div>
   );
