@@ -736,7 +736,12 @@ describe("UNLOCK — accès persistant et accessibilité du modal", () => {
 
   assert(src.includes('e.key === "Escape"'), "PRESENT: fermeture du modal par Escape");
   assert(src.includes('aria-label="Fermer"'), "PRESENT: bouton de fermeture visible");
-  assert(src.includes("previouslyFocused"), "PRESENT: restauration du focus à la fermeture");
+  // `previouslyFocused = document.activeElement` ne pouvait pas marcher : setUnlocked et
+  // setShowModal partent dans le même commit, donc le bouton qui avait le focus est déjà
+  // démonté quand l'effet le lit — on capturait <body>. Le parent passe donc une cible qui survit.
+  assert(!src.includes("previouslyFocused"), "ABSENT: capture d'activeElement déjà démonté");
+  assert(src.includes("onRestoreFocus"), "PRESENT: restauration du focus vers une cible qui survit");
+  assert(src.includes("unlockedNoticeRef.current?.focus()"), "PRESENT: le focus revient sur la confirmation");
   assert(src.includes("headingRef.current?.focus()"), "PRESENT: focus déplacé dans le modal à l'ouverture");
   assert(src.includes('e.key !== "Tab"'), "PRESENT: piège à focus sur Tab");
 
