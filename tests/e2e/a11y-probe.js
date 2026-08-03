@@ -111,26 +111,36 @@ export const PROBE_SOURCE = `(() => {
   // ---- 2. Contraste non-textuel (WCAG 1.4.11) --------------------------------
   // Uniquement les formes qui portent du sens. Les bordures purement décoratives
   // (délimitation de carte déjà assurée par le fond) sont hors périmètre — décision produit.
+  // Une forme est perceptible si SON FOND *ou* SA BORDURE tranche sur la surface —
+  // pas forcément les deux. Une pastille à fond pâle mais cerclée est parfaitement
+  // identifiable ; exiger les deux forcerait des aplats saturés sans gain réel.
   for (const el of root.querySelectorAll("[data-a11y-shape]")) {
     if (!visible(el)) continue;
     const s = getComputedStyle(el);
     const bg = effectiveBg(el.parentElement || document.body);
+    const candidates = [];
+
     const own = parseColor(s.backgroundColor);
     if (own && own.a > 0) {
       const fill = own.a < 1 ? composite(own, bg) : own;
-      const got = ratio(fill, bg);
-      if (got < NON_TEXT) {
-        add("shape-contrast", el, { ratio: +got.toFixed(2), required: NON_TEXT, fill: hex(fill), against: hex(bg) });
-      }
+      candidates.push({ via: "fill", ratio: ratio(fill, bg), color: hex(fill) });
     }
     const bw = parseFloat(s.borderTopWidth) || 0;
     const bc = parseColor(s.borderTopColor);
-    if (bw > 0 && bc && bc.a > 0) {
+    if (bw > 0 && s.borderTopStyle !== "none" && bc && bc.a > 0) {
       const border = bc.a < 1 ? composite(bc, bg) : bc;
-      const got = ratio(border, bg);
-      if (got < NON_TEXT) {
-        add("border-contrast", el, { ratio: +got.toFixed(2), required: NON_TEXT, border: hex(border), against: hex(bg) });
-      }
+      candidates.push({ via: "border", ratio: ratio(border, bg), color: hex(border) });
+    }
+
+    const best = candidates.sort((a, b) => b.ratio - a.ratio)[0];
+    if (!best || best.ratio < NON_TEXT) {
+      add("shape-contrast", el, {
+        ratio: best ? +best.ratio.toFixed(2) : 0,
+        required: NON_TEXT,
+        via: best ? best.via : "aucun",
+        color: best ? best.color : null,
+        against: hex(bg),
+      });
     }
   }
 
@@ -150,8 +160,19 @@ export const PROBE_SOURCE = `(() => {
 
   // ---- 3. Cibles tactiles ----------------------------------------------------
   const INTERACTIVE = "button, a[href], input, select, textarea, [tabindex]:not([tabindex='-1'])";
+
+  // WCAG 2.2 SC 2.5.8 exempte explicitement les cibles « inline » : un lien dans une phrase
+  // est dimensionné par la ligne de texte, et l'agrandir casserait l'interligne. On ne
+  // l'exempte que s'il est réellement au fil du texte (display inline + du texte autour).
+  const isInlineInText = (el) => {
+    if (el.tagName !== "A") return false;
+    if (!getComputedStyle(el).display.startsWith("inline")) return false;
+    const parentText = (el.parentElement?.textContent || "").replace(el.textContent || "", "").trim();
+    return parentText.length > 0;
+  };
+
   for (const el of root.querySelectorAll(INTERACTIVE)) {
-    if (!visible(el)) continue;
+    if (!visible(el) || isInlineInText(el)) continue;
     const r = el.getBoundingClientRect();
     if (r.width < TOUCH_MIN || r.height < TOUCH_MIN) {
       add("touch-target", el, {
