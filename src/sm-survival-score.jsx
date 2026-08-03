@@ -532,7 +532,7 @@ function StyleProvider({ children }) {
 
 function IconLock({ size = 12, color = "currentColor" }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} data-a11y-icon strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <rect x="4" y="11" width="16" height="10" rx="2" />
       <path d="M7 11V7a5 5 0 0 1 10 0v4" />
     </svg>
@@ -541,7 +541,7 @@ function IconLock({ size = 12, color = "currentColor" }) {
 
 function IconUnlock({ size = 12, color = "currentColor" }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} data-a11y-icon strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <rect x="4" y="11" width="16" height="10" rx="2" />
       <path d="M7 11V7a5 5 0 0 1 9.9-1" />
     </svg>
@@ -550,7 +550,7 @@ function IconUnlock({ size = 12, color = "currentColor" }) {
 
 function IconClock({ size = 11, color = "currentColor" }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} data-a11y-icon strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <circle cx="12" cy="12" r="9" />
       <path d="M12 7v5l3.5 2" />
     </svg>
@@ -559,7 +559,7 @@ function IconClock({ size = 11, color = "currentColor" }) {
 
 function IconCheck({ size = 28, color = "currentColor" }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2.6} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} data-a11y-icon strokeWidth={2.6} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <path d="M5 13l4 4L19 7" />
     </svg>
   );
@@ -567,7 +567,7 @@ function IconCheck({ size = 28, color = "currentColor" }) {
 
 function IconClose({ size = 18, color = "currentColor" }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} data-a11y-icon strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <path d="M6 6l12 12M18 6L6 18" />
     </svg>
   );
@@ -575,7 +575,7 @@ function IconClose({ size = 18, color = "currentColor" }) {
 
 function IconChevron({ size = 12, color = "currentColor", direction = "down" }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} data-a11y-icon strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"
       style={{ transform: direction === "up" ? "rotate(180deg)" : "none", transition: "transform 0.15s ease", flexShrink: 0 }}>
       <path d="M6 9l6 6 6-6" />
     </svg>
@@ -692,7 +692,7 @@ function DiagnosticCard({ dimension, index, cardArticle = null }) {
       <div style={{ padding: "18px 18px 14px" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12, flexWrap: "wrap", gap: 8 }}>
           <h3 style={{ fontSize: 15, fontWeight: 700, color: T.text, margin: 0, fontFamily: T.f }}>{dimension.name}</h3>
-          <span style={{ fontSize: 11, fontWeight: 700, color: cat.color, padding: "4px 12px", background: cat.bg, borderRadius: 20, whiteSpace: "nowrap" }}>{levelLabel} — {dimension.score}/8</span>
+          <span data-a11y-shape style={{ fontSize: 11, fontWeight: 700, color: cat.color, padding: "4px 12px", background: cat.bg, borderRadius: 20, whiteSpace: "nowrap" }}>{levelLabel} — {dimension.score}/8</span>
         </div>
         <p style={{ fontSize: 15, fontWeight: 600, lineHeight: 1.55, color: T.text, fontFamily: T.f, marginBottom: 12 }}>{headline}</p>
         {rest && (
@@ -764,7 +764,7 @@ function LockedDiagnosticCard({ dimension, onUnlockClick }) {
           <h3 style={{ fontSize: 14, fontWeight: 700, color: T.text, margin: 0, fontFamily: T.f }}>{dimension.name}</h3>
           <IconLock size={12} color={T.textMuted} />
         </div>
-        <span style={{ fontSize: 11, fontWeight: 700, color: cat.color, padding: "3px 10px", background: cat.bg, borderRadius: 20, whiteSpace: "nowrap" }}>
+        <span data-a11y-shape style={{ fontSize: 11, fontWeight: 700, color: cat.color, padding: "3px 10px", background: cat.bg, borderRadius: 20, whiteSpace: "nowrap" }}>
           {levelLabel} — {dimension.score}/8
         </span>
       </div>
@@ -1184,7 +1184,7 @@ function GhostSignupForm({ onSuccess }) {
           placeholder="ton@email.com" required
           aria-label="Ton adresse email"
           autoComplete="email" inputMode="email"
-          className="signup-input"
+          className="signup-input" data-a11y-shape
           // minWidth:0 — sans ça l'input refuse de rétrécir et pousse le bouton hors écran <420px
           style={{ flex: 1, minWidth: 0, padding: "12px 14px", minHeight: 48, borderRadius: 8, border: `1px solid ${T.white}40`,
             background: `${T.white}15`, color: T.white, fontSize: 14, outline: "none" }}
@@ -1592,7 +1592,7 @@ function ResultScreen({ answers, onRestart, sessionId }) {
           <p style={{ fontSize: 12, color: `${T.white}99`, marginBottom: 12, letterSpacing: "0.06em", textTransform: "uppercase", fontWeight: 600 }}>Ton score</p>
           <h1 aria-label={`Score : ${globalScore} sur 100`} style={{ fontSize: "clamp(64px, 18vw, 96px)", fontWeight: 900, color: category.onDark, lineHeight: 1, letterSpacing: "-0.04em", animation: "scaleIn 0.4s ease-out 0.15s both", willChange: "transform, opacity" }}>{globalScore}</h1>
           <p style={{ fontSize: 16, color: `${T.white}80`, marginBottom: 20 }}>/100</p>
-          <div style={{ display: "inline-block", padding: "10px 28px", fontSize: 15, fontWeight: 700, color: category.key === "irreplaceable" ? T.vertDark : T.white, background: category.key === "irreplaceable" ? T.jaune : category.color, borderRadius: 24 }}>{category.label}</div>
+          <div data-a11y-shape style={{ display: "inline-block", padding: "10px 28px", fontSize: 15, fontWeight: 700, color: category.key === "irreplaceable" ? T.vertDark : T.white, background: category.key === "irreplaceable" ? T.jaune : category.color, borderRadius: 24 }}>{category.label}</div>
           <button
             onClick={handleDownloadScoreCard}
             disabled={isGeneratingCard}
@@ -1646,7 +1646,7 @@ function ResultScreen({ answers, onRestart, sessionId }) {
                     <span style={{ fontSize: 13, color: T.text, fontWeight: 500 }}>{dim.shortName}</span>
                     <span style={{ fontSize: 13, fontWeight: 700, color: dimCategory.color, fontFamily: "monospace" }}>{dim.score}/{MAX_DIM_SCORE}</span>
                   </div>
-                  <div role="meter" aria-valuenow={dim.score} aria-valuemin={0} aria-valuemax={MAX_DIM_SCORE} aria-label={dim.name} style={{ height: 6, background: T.cremeDeep, borderRadius: 3, overflow: "hidden" }}>
+                  <div data-a11y-shape role="meter" aria-valuenow={dim.score} aria-valuemin={0} aria-valuemax={MAX_DIM_SCORE} aria-label={dim.name} style={{ height: 6, background: T.cremeDeep, borderRadius: 3, overflow: "hidden" }}>
                     <div style={{ height: 6, width: "100%", transformOrigin: "left", transform: `scaleX(${Math.max(dim.pct, 3) / 100})`, background: dimCategory.color, borderRadius: 3, transition: "transform 0.6s ease-out" }} />
                   </div>
                 </div>

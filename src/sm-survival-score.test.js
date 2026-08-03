@@ -75,10 +75,14 @@ function computeGlobalScore(dimScores) {
   return Math.round((total / 40) * 100);
 }
 
+// Miroir de getCategory pour les tests de logique (pas de transform JSX ici, donc pas d'import).
+// Volontairement sans couleurs : elles avaient dérivé de la source (#ef4444/#f59e0b/#22c55e
+// contre #c81e1e/#b45309/#006946) sans qu'aucun test ne le voie. Les couleurs réelles sont
+// extraites de la source et vérifiées dans « CONTRASTE WCAG », seul endroit qui doit les connaître.
 function getCategory(pct) {
-  if (pct < 45) return { key: "vulnerable", label: "Vulnérable", color: "#ef4444" };
-  if (pct < 75) return { key: "stable", label: "Stable", color: "#f59e0b" };
-  return { key: "irreplaceable", label: "Irremplaçable", color: "#22c55e" };
+  if (pct < 45) return { key: "vulnerable", label: "Vulnérable" };
+  if (pct < 75) return { key: "stable", label: "Stable" };
+  return { key: "irreplaceable", label: "Irremplaçable" };
 }
 
 function getDiagnosticLevel(score) {
@@ -1023,7 +1027,13 @@ describe("UI CHANGES v2.0 — source integrity", () => {
 
   // Changement 3 — PrioritySignal brand colors
   assert(!src.includes("'#1a1a2e'"), "REMOVED: backgroundColor #1a1a2e (PrioritySignal off-brand)");
-  assert(src.includes("⚡ Signal prioritaire"), "PRESENT: super-label PrioritySignal");
+  // Le super-label « ⚡ Signal prioritaire » a été retiré de l'écran (distill, PR #45) mais reste
+  // dans le PDF. L'assertion pleine-source passait donc pour la mauvaise raison : elle était
+  // satisfaite par PDFDocument alors qu'elle prétendait vérifier PrioritySignal. On cible chacun.
+  const prioritySignalSrc = src.slice(src.indexOf("function PrioritySignal"), src.indexOf("function BentoCard"));
+  const pdfDocumentSrc = src.slice(src.indexOf("function PDFDocument"), src.indexOf("function buildRadarPolygon"));
+  assert(!prioritySignalSrc.includes("⚡ Signal prioritaire"), "ABSENT: super-label retiré de PrioritySignal (écran)");
+  assert(pdfDocumentSrc.includes("⚡ Signal prioritaire"), "PRESENT: super-label conservé dans le PDF");
 
   // Changement 4 — DiagnosticCard hiérarchie inversée
   assert(src.includes("Lire l'analyse complète"), "PRESENT: expander text DiagnosticCard");
