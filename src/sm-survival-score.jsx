@@ -208,8 +208,11 @@ export function buildDimensionResults(dimensionScores, dimensions = DIMENSIONS) 
   return dimensions.map(dim => ({ ...dim, score: dimensionScores[dim.id], pct: Math.round((dimensionScores[dim.id] / MAX_DIM_SCORE) * 100) }));
 }
 
+// `includes("@") && includes(".")` acceptait « a@b. », « a b@c.d », « a@b@c.d » et « hello.world@ » :
+// le serveur les rejetait ensuite en 400, et l'utilisateur recevait un message d'erreur générique
+// pour une faute que le client pouvait voir. Même règle que api/subscribe.js, volontairement.
 export function isValidEmail(email) {
-  return typeof email === "string" && email.includes("@") && email.includes(".");
+  return typeof email === "string" && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
 }
 
 async function generatePDF(pdfProps) {
@@ -227,8 +230,9 @@ async function generatePDF(pdfProps) {
   document.body.appendChild(container);
 
   const root = createRoot(container);
-  flushSync(() => root.render(
-    <PDFDocument
+  try {
+    flushSync(() => root.render(
+      <PDFDocument
       {...pdfProps}
       articleLinks={ARTICLE_LINKS.cards}
       bannerArticle={ARTICLE_LINKS.banners[pdfProps.category.key] ?? null}
@@ -300,9 +304,11 @@ async function generatePDF(pdfProps) {
     pdf.link(link.x, link.y - pageSlices[pageIndex].start, link.w, link.h, { url: link.url });
   }
 
-  pdf.save(filename);
-  root.unmount();
-  document.body.removeChild(container);
+    pdf.save(filename);
+  } finally {
+    root.unmount();
+    container.remove();
+  }
 }
 
 // ============================================================
@@ -619,24 +625,24 @@ const SIGNAL_TEXTS = {
 // affiche « tant que cette dimension reste faible » au-dessus d'une carte « Solide — 8/8 ».
 const SIGNAL_TEXTS_HIGH = {
   visibility: {
-    title: 'Ton point le plus fragile : ce que ton management retient de toi. Et il tient.',
-    body: "La visibilité ne se stocke pas. Elle se renouvelle à chaque changement de direction. Ce qui est acquis aujourd'hui se redémontre au prochain comité.",
+    title: 'Ton point le plus fragile : ce que ton management retient de toi.',
+    body: "Et il tient. Sauf que la visibilité ne se stocke pas. Elle se rejoue à chaque changement de direction. Ce qui est acquis aujourd'hui se redemande demain.",
   },
   strategic: {
-    title: 'Ton point le plus fragile : comment tu es perçu. Et il tient.',
-    body: "La perception de ton rôle est bonne — mais elle est attachée aux gens en poste. Une réorg la remet à zéro plus vite que tes résultats.",
+    title: 'Ton point le plus fragile : comment tu es perçu.',
+    body: "Et ça tient. Mais cette perception est attachée aux gens en poste. Une réorg la remet à zéro plus vite que tes résultats.",
   },
   proof: {
-    title: 'Ton point le plus fragile : tes preuves. Et elles tiennent.',
-    body: "Tu as de quoi répondre quand la question arrive. Le risque n'est plus le trou, c'est la péremption : des preuves d'il y a deux ans ne défendent pas le poste d'aujourd'hui.",
+    title: 'Ton point le plus fragile : tes preuves.',
+    body: "Et elles tiennent. Tu as de quoi répondre quand la question arrive. Le risque n'est plus le trou. C'est la date. Des preuves d'il y a deux ans ne défendent pas le poste d'aujourd'hui.",
   },
   business: {
-    title: 'Ton point le plus fragile : ton langage. Et il tient.',
-    body: "Tu traduis déjà ton travail dans un format que la direction comprend. Ce qui change, c'est ce que la direction mesure — le vocabulaire de l'an dernier ne porte pas toujours cette année.",
+    title: 'Ton point le plus fragile : ton langage.',
+    body: "Et il tient. Tu traduis déjà ton travail dans un format que la direction comprend. Ce qui bouge, c'est ce qu'elle mesure. Le vocabulaire de l'an dernier ne porte pas toujours cette année.",
   },
   autonomy: {
-    title: "Ton point le plus fragile : l'autonomie de ton équipe. Et elle tient.",
-    body: "Ton équipe fonctionne sans toi, ce qui te rend défendable pour de bonnes raisons. Garde-la : l'autonomie se dégrade dès qu'on arrête de la travailler.",
+    title: "Ton point le plus fragile : l'autonomie de ton équipe.",
+    body: "Et elle tient. Ton équipe fonctionne sans toi, et c'est ce qui te rend défendable. Garde-la. L'autonomie se dégrade dès qu'on arrête de la travailler.",
   },
 };
 
@@ -686,6 +692,7 @@ function DiagnosticCard({ dimension, index, rank = null, cardArticle = null }) {
   const level = getDiagnosticLevel(dimension.score);
   const isPriority = rank === 1;
   const [expanded, setExpanded] = useState(false);
+  const analysisId = `analyse-${dimension.id}`;
   const diag = dimension.diagnostics[level];
   const cat = getCategory(dimension.pct);
   const levelLabel = level === "low" ? "Vulnérable" : level === "mid" ? "À renforcer" : "Solide";
@@ -721,6 +728,8 @@ function DiagnosticCard({ dimension, index, rank = null, cardArticle = null }) {
         {rest && (
           <button
             onClick={() => setExpanded(e => !e)}
+            aria-expanded={expanded}
+            aria-controls={analysisId}
             className="btn-hover"
             style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", cursor: "pointer", padding: "17px 0", margin: "-17px 0", marginBottom: expanded ? -5 : -17, minHeight: 48, fontFamily: T.f }}
           >
@@ -730,7 +739,7 @@ function DiagnosticCard({ dimension, index, rank = null, cardArticle = null }) {
           </button>
         )}
         {expanded && rest && (
-          <p style={{ fontSize: 13, lineHeight: 1.75, color: T.textMid, fontFamily: T.f, marginBottom: 0 }}>{rest}</p>
+          <p id={analysisId} style={{ fontSize: 13, lineHeight: 1.75, color: T.textMid, fontFamily: T.f, marginBottom: 0 }}>{rest}</p>
         )}
       </div>
       <div style={{ background: T.vert, padding: "16px 18px" }}>
@@ -1153,21 +1162,25 @@ async function generateScoreCard({ globalScore, category, dimensionResults, sess
   document.body.appendChild(container);
 
   const root = createRoot(container);
-  flushSync(() => root.render(<ScoreCardDocument globalScore={globalScore} category={category} dimensionResults={dimensionResults} />));
+  let canvas;
+  try {
+    flushSync(() => root.render(<ScoreCardDocument globalScore={globalScore} category={category} dimensionResults={dimensionResults} />));
 
-  const canvas = await html2canvas(container, {
-    width: 1080,
-    height: 1080,
-    windowWidth: 1080,
-    scale: 1,
-    useCORS: true,
-    logging: false,
-  });
-
-  root.unmount();
-  document.body.removeChild(container);
+    canvas = await html2canvas(container, {
+      width: 1080,
+      height: 1080,
+      windowWidth: 1080,
+      scale: 1,
+      useCORS: true,
+      logging: false,
+    });
+  } finally {
+    root.unmount();
+    container.remove();
+  }
 
   const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/png"));
+  if (!blob) throw new Error("canvas.toBlob a renvoyé null");
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
@@ -1184,13 +1197,48 @@ async function generateScoreCard({ globalScore, category, dimensionResults, sess
 // SCREENS
 // ============================================================
 
+// Les six façons d'échouer se rejoignaient toutes sur un seul message, « Email invalide ou
+// erreur — réessaie. » : une faute de frappe et un Ghost à terre étaient indiscernables, et
+// on disait « invalide » à quelqu'un dont l'adresse était bonne. Le serveur produit déjà des
+// messages distincts (api/subscribe.js) que le client jetait sans les lire.
+const SIGNUP_ERRORS = {
+  invalid: {
+    text: "Cette adresse a l'air incomplète. Vérifie qu'elle ressemble à prenom@domaine.com.",
+    recoverable: true,
+  },
+  rejected: {
+    text: "Le serveur n'a pas accepté cette adresse. Vérifie-la, ou essaie une autre.",
+    recoverable: true,
+  },
+  server: {
+    // Panne de notre côté : ne pas dire à l'utilisateur que son adresse est fautive, et ne pas
+    // le laisser croire qu'il a perdu son diagnostic.
+    text: "Le service est momentanément indisponible — ce n'est pas ton adresse. Réessaie dans quelques minutes, tes résultats restent affichés.",
+    recoverable: false,
+  },
+  offline: {
+    text: "Connexion interrompue. Vérifie ton réseau et réessaie — tes résultats restent affichés.",
+    recoverable: false,
+  },
+};
+
 function GhostSignupForm({ onSuccess }) {
   const [email, setEmail] = useState("");
   const [status, setStatus] = useState("idle"); // "idle" | "submitting" | "error"
+  const [errorKind, setErrorKind] = useState(null);
+  const inputRef = useRef(null);
+
+  const fail = useCallback((kind) => {
+    setErrorKind(kind);
+    setStatus("error");
+    // Ramener le focus sur le champ : l'erreur était annoncée mais le curseur restait
+    // sur le bouton, donc corriger demandait de retrouver le champ à l'aveugle.
+    if (SIGNUP_ERRORS[kind].recoverable) inputRef.current?.focus();
+  }, []);
 
   const handleSubmit = useCallback(async (e) => {
     e.preventDefault();
-    if (!isValidEmail(email)) { setStatus("error"); return; }
+    if (!isValidEmail(email)) { fail("invalid"); return; }
     setStatus("submitting");
     try {
       const res = await fetch("/api/subscribe", {
@@ -1198,27 +1246,39 @@ function GhostSignupForm({ onSuccess }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email }),
       });
-      if (res.ok) { onSuccess(email); } else { setStatus("error"); }
-    } catch { setStatus("error"); }
-  }, [email, onSuccess]);
+      if (res.ok) { onSuccess(email); return; }
+      fail(res.status >= 500 ? "server" : "rejected");
+    } catch { fail("offline"); }
+  }, [email, onSuccess, fail]);
+
+  // Sans ça le message restait affiché sous une adresse déjà corrigée, jusqu'au prochain envoi.
+  const handleChange = useCallback((e) => {
+    setEmail(e.target.value);
+    if (status === "error") { setStatus("idle"); setErrorKind(null); }
+  }, [status]);
+
+  const error = status === "error" ? SIGNUP_ERRORS[errorKind] : null;
 
   return (
     <form onSubmit={handleSubmit} noValidate style={{ display: "flex", flexDirection: "column", gap: 12, maxWidth: 380, margin: "0 auto" }}>
       <div className="signup-row" style={{ display: "flex", gap: 8 }}>
         <input
-          type="email" value={email} onChange={(e) => setEmail(e.target.value)}
+          ref={inputRef}
+          type="email" value={email} onChange={handleChange}
           placeholder="ton@email.com" required
           aria-label="Ton adresse email"
+          aria-invalid={status === "error" ? "true" : undefined}
+          aria-describedby={error ? "signup-error" : undefined}
           autoComplete="email" inputMode="email"
           className="signup-input" data-a11y-shape
           // minWidth:0 — sans ça l'input refuse de rétrécir et pousse le bouton hors écran <420px
           style={{ flex: 1, minWidth: 0, padding: "12px 14px", minHeight: 48, borderRadius: 8, border: `1px solid ${T.white}a6`,
             background: `${T.white}15`, color: T.white, fontSize: 14 }}
         />
-        <button type="submit" disabled={status === "submitting"} className="btn-hover"
+        <button type="submit" disabled={status === "submitting"} aria-busy={status === "submitting"} className="btn-hover"
           style={{ padding: "12px 20px", minHeight: 48, borderRadius: 8, background: T.jaune, color: T.vert,
             fontWeight: 700, fontSize: 14, border: "none", cursor: status === "submitting" ? "wait" : "pointer" }}>
-          {status === "submitting" ? "..." : "Déverrouiller"}
+          {status === "submitting" ? "Envoi…" : "Déverrouiller"}
         </button>
       </div>
       {/* L'abonnement newsletter n'était annoncé qu'après soumission, dans le modal.
@@ -1226,49 +1286,65 @@ function GhostSignupForm({ onSuccess }) {
       <p style={{ fontSize: 12, color: "rgba(255,255,255,.8)", margin: 0, fontFamily: T.f }}>
         Un email par semaine. Désabonnement en un clic.
       </p>
-      {status === "error" && (
-        <p role="alert" style={{ fontSize: 12, color: T.jaune, margin: 0 }}>Email invalide ou erreur — réessaie.</p>
+      {error && (
+        <p id="signup-error" role="alert" style={{ fontSize: 12, color: T.jaune, margin: 0, lineHeight: 1.5, textAlign: "left" }}>{error.text}</p>
       )}
     </form>
   );
 }
 
-function UnlockModal({ email, onClose, pdfProps }) {
+function UnlockModal({ email, onClose, pdfProps, onRestoreFocus }) {
   const [isGenerating, setIsGenerating] = useState(false);
+  const [pdfError, setPdfError] = useState(false);
   const dialogRef = useRef(null);
   const headingRef = useRef(null);
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
 
   const handleDownloadPDF = useCallback(async () => {
     setIsGenerating(true);
-    await generatePDF(pdfProps);
-    setIsGenerating(false);
+    setPdfError(false);
+    try { await generatePDF(pdfProps); } catch { setPdfError(true); } finally { setIsGenerating(false); }
   }, [pdfProps]);
 
-  // GhostSignupForm se démonte au succès : sans ça le focus retombe sur <body> et
-  // un utilisateur clavier/lecteur d'écran n'apprend jamais que le modal s'est ouvert.
+  // La restauration du focus était structurellement impossible : setUnlocked et setShowModal
+  // partent dans le même commit, donc GhostSignupForm — et le bouton qui avait le focus — est
+  // déjà démonté quand l'effet lit document.activeElement. On récupérait <body>, et le rendre
+  // au démontage ne rendait rien. Le parent fournit donc une cible qui, elle, survit.
   useEffect(() => {
-    const previouslyFocused = document.activeElement;
     headingRef.current?.focus();
 
     const onKeyDown = (e) => {
-      if (e.key === "Escape") { onClose(); return; }
+      if (e.key === "Escape") { onCloseRef.current(); return; }
       if (e.key !== "Tab") return;
-      const focusables = dialogRef.current?.querySelectorAll(
+      // Recalculé à chaque frappe : le bouton PDF devient disabled pendant la génération,
+      // le navigateur le blurre, activeElement retombe sur <body>, et sans repli le piège
+      // ne reconnaissait plus ni le premier ni le dernier élément — Tab s'échappait du modal.
+      const focusables = [...(dialogRef.current?.querySelectorAll(
         'button:not([disabled]), a[href], input, [tabindex]:not([tabindex="-1"])'
-      );
-      if (!focusables?.length) return;
+      ) ?? [])];
+      if (!focusables.length) return;
       const first = focusables[0];
       const last = focusables[focusables.length - 1];
+      const inside = dialogRef.current?.contains(document.activeElement);
+      if (!inside) { e.preventDefault(); first.focus(); return; }
       if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
       else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
     };
 
+    // La page derrière restait défilable sous l'overlay.
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
     document.addEventListener("keydown", onKeyDown);
     return () => {
       document.removeEventListener("keydown", onKeyDown);
-      if (previouslyFocused instanceof HTMLElement) previouslyFocused.focus();
+      document.body.style.overflow = prevOverflow;
+      onRestoreFocus?.();
     };
-  }, [onClose]);
+    // Dépendances vides volontairement : onClose était une lambda recréée à chaque rendu du
+    // parent, donc l'effet se rejouait sans cesse et le nettoyage arrachait le focus de
+    // l'utilisateur hors du modal ouvert. La ref garde le handler à jour sans rejouer l'effet.
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <div
@@ -1302,6 +1378,11 @@ function UnlockModal({ email, onClose, pdfProps }) {
           cursor: isGenerating ? "wait" : "pointer", marginBottom: 12 }}>
           {isGenerating ? "Génération..." : "Télécharger mon rapport (PDF)"}
         </button>
+        {pdfError && (
+          <p role="alert" style={{ fontSize: 12, color: T.textMid, margin: "0 0 12px", lineHeight: 1.5 }}>
+            La génération a échoué. Réessaie — et si ça persiste, le rapport reste disponible depuis tes résultats.
+          </p>
+        )}
         <button onClick={onClose} className="btn-hover" style={{ display: "block", width: "100%",
           padding: "12px 24px", minHeight: 48, background: "transparent", color: T.textMuted,
           fontWeight: 600, fontSize: 14, fontFamily: T.f,
@@ -1528,6 +1609,8 @@ function ResultScreen({ answers, onRestart, sessionId }) {
   const [cardError, setCardError] = useState(false);
   const [focusedLockedDim, setFocusedLockedDim] = useState(null);
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
+  const [pdfError, setPdfError] = useState(false);
+  const unlockedNoticeRef = useRef(null);
 
   const dimensionScores = useMemo(() => computeDimensionScores(answers), [answers]);
   const globalScore = useMemo(() => computeGlobalScore(dimensionScores), [dimensionScores]);
@@ -1577,7 +1660,11 @@ function ResultScreen({ answers, onRestart, sessionId }) {
 
   const handleScrollToUnlock = useCallback((dim = null) => {
     setFocusedLockedDim(dim);
-    document.getElementById("unlock-form")?.scrollIntoView({ behavior: "smooth", block: "center" });
+    const target = document.getElementById("unlock-form");
+    const reduced = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    target?.scrollIntoView({ behavior: reduced ? "auto" : "smooth", block: "center" });
+    // Amener le focus dans le champ : sans ça l'utilisateur clavier ne bouge pas avec le cadrage.
+    target?.querySelector('input[type="email"]')?.focus({ preventScroll: true });
   }, []);
 
 
@@ -1601,7 +1688,8 @@ function ResultScreen({ answers, onRestart, sessionId }) {
 
   const handleDownloadPdf = useCallback(async () => {
     setIsGeneratingPdf(true);
-    try { await generatePDF(pdfProps); } finally { setIsGeneratingPdf(false); }
+    setPdfError(false);
+    try { await generatePDF(pdfProps); } catch { setPdfError(true); } finally { setIsGeneratingPdf(false); }
   }, [pdfProps]);
 
   // Une fois débloqué, la variante « cta » invite à s'abonner via une ancre #unlock-form
@@ -1672,6 +1760,34 @@ function ResultScreen({ answers, onRestart, sessionId }) {
           })}
         </BentoCard>
 
+        {/* PRODUCT.md vend « un scoring rigoureux et transparent (5 dimensions × 4 questions,
+            seuils précis) ». L'écran affichait le verdict sans rien de tout ça : ni la base de
+            40 points derrière le /100, ni les seuils, ni le fait qu'une pondération décide de
+            la dimension prioritaire. Un produit qui reproche aux SM d'affirmer leur valeur au
+            lieu de la prouver ne peut pas se contenter d'affirmer un score. Replié par défaut :
+            c'est une justification, pas une étape du parcours. */}
+        <details style={{ marginBottom: 16 }}>
+          <summary style={{ cursor: "pointer", fontSize: 13, fontWeight: 600, color: T.vert, fontFamily: T.f, padding: "12px 4px", minHeight: 48, display: "flex", alignItems: "center" }}>
+            Comment ce score est calculé
+          </summary>
+          <div style={{ padding: "4px 4px 12px", fontSize: 13, lineHeight: 1.7, color: T.textMid, fontFamily: T.f }}>
+            <p style={{ margin: "0 0 8px" }}>
+              20 questions, {QUESTIONS_PER_DIM} par dimension. Chaque réponse vaut 0, 1 ou 2 points, donc {MAX_DIM_SCORE} points
+              au maximum par dimension et {MAX_SCORE} au total, ramenés sur 100.
+            </p>
+            <p style={{ margin: "0 0 8px" }}>
+              Sous {SCORE_THRESHOLDS.low} le profil est dit vulnérable, jusqu'à {SCORE_THRESHOLDS.mid} stable, au-delà irremplaçable.
+              Par dimension les paliers sont différents : 0–3 vulnérable, 4–5 à renforcer, 6–8 solide.
+            </p>
+            <p style={{ margin: 0 }}>
+              La dimension prioritaire n'est pas ton score le plus bas. Chaque dimension porte un poids
+              de survie — visibilité {DIMENSION_WEIGHTS.visibility}, stratégique {DIMENSION_WEIGHTS.strategic}, preuves {DIMENSION_WEIGHTS.proof},
+              business {DIMENSION_WEIGHTS.business}, autonomie {DIMENSION_WEIGHTS.autonomy} — et la priorité revient à celle où
+              l'écart pèse le plus lourd. Être invisible coûte plus cher qu'une équipe peu autonome.
+            </p>
+          </div>
+        </details>
+
         {/* Signal de priorité — au-dessus des diagnostics */}
         <PrioritySignal priorityDimId={priorityDimId} level={getDiagnosticLevel(priorityDimResult.score)} />
 
@@ -1692,6 +1808,19 @@ function ResultScreen({ answers, onRestart, sessionId }) {
 
         {/* Diagnostics */}
         <section aria-label="Diagnostics détaillés" style={{ display: "flex", flexDirection: "column", gap: 16, marginBottom: 16 }}>
+          {/* role="status" : la bascule verrouillé → déverrouillé remplaçait quatre blocs sous la
+              position de défilement de l'utilisateur, pendant qu'il regardait le modal. Rien sur
+              la page elle-même n'en rendait compte. */}
+          {unlocked && (
+            <p
+              ref={unlockedNoticeRef}
+              tabIndex={-1}
+              role="status"
+              style={{ margin: 0, padding: "12px 16px", background: T.vertLight, color: T.vertDark, borderRadius: T.rSm, fontSize: 13, fontWeight: 600, fontFamily: T.f, outline: "none" }}
+            >
+              Tes 5 diagnostics sont ouverts. Ton rapport PDF reste accessible en bas de page.
+            </p>
+          )}
           <h2 style={{ fontSize: 13, fontWeight: 700, color: T.vert, textTransform: "uppercase", letterSpacing: "0.06em", paddingLeft: 4 }}>Diagnostic par dimension</h2>
           <DiagnosticCard dimension={priorityDimResult} index={0} rank={1} cardArticle={cardArticle} />
           {unlocked ? (
@@ -1724,10 +1853,22 @@ function ResultScreen({ answers, onRestart, sessionId }) {
               {isGeneratingPdf ? "Génération..." : "Mon rapport (PDF)"}
             </button>
           )}
+          {pdfError && (
+            <p role="alert" style={{ width: "100%", textAlign: "center", fontSize: 13, color: T.textMid, margin: 0, lineHeight: 1.5 }}>
+              La génération du PDF a échoué. Réessaie — tes résultats restent affichés.
+            </p>
+          )}
           <button onClick={handleShare} aria-label="Partager le test" className="btn-hover" style={T.btnAction}>
             Envoie le test à un collègue SM
           </button>
-          <button onClick={onRestart} aria-label="Refaire le test" className="btn-hover" style={T.btnGhost}>
+          <button
+            onClick={() => {
+              if (window.confirm("Refaire le test effacera ce diagnostic et tes 20 réponses. Continuer ?")) onRestart();
+            }}
+            aria-label="Refaire le test — efface le diagnostic actuel"
+            className="btn-hover"
+            style={T.btnGhost}
+          >
             Refaire le test
           </button>
         </div>
@@ -1737,7 +1878,14 @@ function ResultScreen({ answers, onRestart, sessionId }) {
           <p style={{ fontSize: 12, color: T.textLight }}>Un outil <a href="https://dub.sh/cs-website" target="_blank" rel="noopener noreferrer" style={{ fontWeight: 700, color: T.textMuted, textDecoration: "underline", textUnderlineOffset: 3 }}>Collaboration Solved</a> — par Pierre-Cyril Denant</p>
         </footer>
       </main>
-      {showModal && <UnlockModal email={subscribedEmail} onClose={() => setShowModal(false)} pdfProps={pdfProps} />}
+      {showModal && (
+        <UnlockModal
+          email={subscribedEmail}
+          onClose={() => setShowModal(false)}
+          pdfProps={pdfProps}
+          onRestoreFocus={() => unlockedNoticeRef.current?.focus()}
+        />
+      )}
     </div>
   );
 }
