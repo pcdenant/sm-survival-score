@@ -786,6 +786,39 @@ describe("CONSENTEMENT — mention sous le champ email", () => {
 });
 
 // ============================================================
+// COMPOSITION — la sévérité se lit sans lire les pastilles
+//
+// Trois critiques ont relevé que cinq cartes empilées se lisaient comme cinq bandes
+// identiques : la sévérité ne vivait que dans une pastille de 11px. Elle passe dans la
+// composition (rang, traitement de la carte prioritaire) et dans un classement unique
+// partagé par les barres, le dossier de cartes et le PDF.
+// ============================================================
+
+describe("COMPOSITION — rang et classement unique", () => {
+  const src = readFileSync(join(__dirname, "sm-survival-score.jsx"), "utf8");
+  const resultScreen = src.slice(src.indexOf("function ResultScreen"), src.indexOf("APP ROOT"));
+
+  // Un seul classement : les barres suivaient DIMENSIONS (ordre éditorial fixe) pendant que
+  // le dossier suivait la priorité pondérée — deux ordres pour les mêmes 5 dimensions.
+  assert(resultScreen.includes("orderedDimResults.map((dim, i)"), "les barres suivent le classement pondéré");
+  assert(!resultScreen.includes("dimensionResults.map((dim, i)"), "ABSENT: ancien ordre éditorial des barres");
+  assert(resultScreen.includes("isPriority") && resultScreen.includes("priorité"),
+    "PRESENT: la dimension prioritaire est marquée dans les barres (le PDF le faisait déjà, pas l'écran)");
+
+  // Le rang doit atteindre les cartes verrouillées aussi, sinon le classement disparaît
+  // juste avant le formulaire — là où il sert d'argument.
+  assert(/rank=\{1\}/.test(resultScreen), "carte prioritaire: rank=1");
+  assert(/rank=\{i \+ 2\}/.test(resultScreen), "cartes suivantes: rang continu");
+  assert((resultScreen.match(/rank=\{i \+ 2\}/g) || []).length === 2,
+    "le rang est passé aux cartes déverrouillées ET verrouillées");
+
+  const card = src.slice(src.indexOf("function DiagnosticCard"), src.indexOf("function LockedDiagnosticCard"));
+  assert(card.includes("Priorité 1 — commence ici"), "PRESENT: en-tête de la carte prioritaire");
+  assert(card.includes("{rank ?? \"1\"}"), "le disque numéroté porte le rang réel");
+  assert(!/>1<\/div>/.test(card), "ABSENT: disque « 1 » codé en dur sur les cinq cartes");
+});
+
+// ============================================================
 // STRUCTURE DES TITRES — h1 → h2 → h3, sans saut
 // ============================================================
 
@@ -795,7 +828,10 @@ describe("A11Y — hiérarchie des titres de l'écran résultat", () => {
 
   assert(/<h1 aria-label={`Score : \${globalScore} sur 100`}/.test(resultScreen),
     "le score porte le h1 (il était en <div>, jamais annoncé comme titre)");
-  ["Ton profil", "Par dimension", "Diagnostic par dimension"].forEach(label => {
+  // « Ton profil » (le radar) a été retiré de l'écran : il rendait les mêmes 5 chiffres que
+  // les barres, en moins lisible. Il subsiste dans le PDF et la carte de score.
+  assert(!resultScreen.includes("RadarChart"), "ABSENT: radar à l'écran (doublon des barres)");
+  ["Par dimension", "Diagnostic par dimension"].forEach(label => {
     assert(new RegExp(`<h2[^>]*>${label}</h2>`).test(resultScreen), `section « ${label} » en h2`);
   });
   assert(!/<h4/.test(src), "ABSENT: h4 (les titres de carte sont passés en h3)");
