@@ -1,7 +1,6 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { flushSync } from "react-dom";
 import { createRoot } from "react-dom/client";
-import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer } from "recharts";
 
 // ============================================================
 // DATA
@@ -678,9 +677,15 @@ function BentoCard({ children, style = {}, className, ...props }) {
 // COMPONENTS
 // ============================================================
 
-function DiagnosticCard({ dimension, index, cardArticle = null }) {
-  const [expanded, setExpanded] = useState(false);
+// `rank` : position dans le classement pondéré (1 = prioritaire). La sévérité était portée
+// uniquement par une pastille de 11px, si bien que cinq cartes empilées se lisaient comme
+// cinq bandes identiques — le produit vend précisément le fait que certaines dimensions
+// pèsent et d'autres non. Elle passe donc dans la composition : la carte prioritaire s'ouvre
+// avec son rang et une bande d'accent, une dimension déjà solide s'affiche repliée.
+function DiagnosticCard({ dimension, index, rank = null, cardArticle = null }) {
   const level = getDiagnosticLevel(dimension.score);
+  const isPriority = rank === 1;
+  const [expanded, setExpanded] = useState(false);
   const diag = dimension.diagnostics[level];
   const cat = getCategory(dimension.pct);
   const levelLabel = level === "low" ? "Vulnérable" : level === "mid" ? "À renforcer" : "Solide";
@@ -692,16 +697,27 @@ function DiagnosticCard({ dimension, index, cardArticle = null }) {
 
   return (
     <BentoCard
-      style={{ animation: `fadeUp 0.3s ease-out ${index * 0.06}s both`, padding: 0, overflow: "hidden" }}
+      style={{
+        animation: `fadeUp 0.3s ease-out ${index * 0.06}s both`, padding: 0, overflow: "hidden",
+        ...(isPriority ? { boxShadow: `0 2px 16px ${T.vert}1f`, border: `1px solid ${T.vert}` } : null),
+      }}
       role="article"
-      aria-label={`Diagnostic : ${dimension.name}`}
+      aria-label={rank ? `Diagnostic ${rank} sur 5 : ${dimension.name}` : `Diagnostic : ${dimension.name}`}
     >
-      <div style={{ padding: "18px 18px 14px" }}>
+      {isPriority && (
+        <div style={{ background: T.vert, padding: "6px 18px", fontSize: 11, fontWeight: 800, letterSpacing: ".08em", textTransform: "uppercase", color: T.jaune, fontFamily: T.f }}>
+          Priorité 1 — commence ici
+        </div>
+      )}
+      <div style={{ padding: isPriority ? "18px 18px 14px" : "16px 18px 12px" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12, flexWrap: "wrap", gap: 8 }}>
-          <h3 style={{ fontSize: 15, fontWeight: 700, color: T.text, margin: 0, fontFamily: T.f }}>{dimension.name}</h3>
+          <h3 style={{ fontSize: isPriority ? 17 : 15, fontWeight: 700, color: T.text, margin: 0, fontFamily: T.f, letterSpacing: isPriority ? "-0.01em" : 0 }}>
+            {rank && !isPriority && <span style={{ color: T.textMuted, fontWeight: 600, marginRight: 6 }}>{rank}.</span>}
+            {dimension.name}
+          </h3>
           <span data-a11y-shape style={{ fontSize: 11, fontWeight: 700, color: cat.color, padding: "4px 12px", background: cat.bg, border: `1px solid ${cat.color}`, borderRadius: 20, whiteSpace: "nowrap" }}>{levelLabel} — {dimension.score}/8</span>
         </div>
-        <p style={{ fontSize: 15, fontWeight: 600, lineHeight: 1.55, color: T.text, fontFamily: T.f, marginBottom: 12 }}>{headline}</p>
+        <p style={{ fontSize: isPriority ? 16 : 14, fontWeight: 600, lineHeight: 1.55, color: T.text, fontFamily: T.f, marginBottom: 12 }}>{headline}</p>
         {rest && (
           <button
             onClick={() => setExpanded(e => !e)}
@@ -719,7 +735,7 @@ function DiagnosticCard({ dimension, index, cardArticle = null }) {
       </div>
       <div style={{ background: T.vert, padding: "16px 18px" }}>
         <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
-          <div style={{ width: 22, height: 22, borderRadius: "50%", background: T.jaune, color: T.vertDark, fontSize: 11, fontWeight: 900, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 1 }}>1</div>
+          <div aria-hidden="true" style={{ width: 22, height: 22, borderRadius: "50%", background: T.jaune, color: T.vertDark, fontSize: 11, fontWeight: 900, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 1 }}>{rank ?? "1"}</div>
           <div>
             <p style={{ fontSize: 9, fontWeight: 800, textTransform: "uppercase", letterSpacing: ".08em", color: T.onVertMuted, marginBottom: 3, fontFamily: T.f }}>
               {level === "high" ? "Prochain niveau" : "Action cette semaine"}
@@ -753,7 +769,7 @@ function DiagnosticCard({ dimension, index, cardArticle = null }) {
   );
 }
 
-function LockedDiagnosticCard({ dimension, onUnlockClick }) {
+function LockedDiagnosticCard({ dimension, rank = null, onUnlockClick }) {
   const cat = getCategory(dimension.pct);
   const level = getDiagnosticLevel(dimension.score);
   const levelLabel = level === "low" ? "Vulnérable" : level === "mid" ? "À renforcer" : "Solide";
@@ -762,13 +778,16 @@ function LockedDiagnosticCard({ dimension, onUnlockClick }) {
 
   return (
     <div
-      aria-label={`Diagnostic verrouillé : ${dimension.name}`}
+      aria-label={rank ? `Diagnostic verrouillé ${rank} sur 5 : ${dimension.name}` : `Diagnostic verrouillé : ${dimension.name}`}
       role="region"
       style={{ background: T.white, border: `1px solid ${T.borderLight}`, borderRadius: T.rLg, overflow: "hidden" }}
     >
       <div style={{ padding: "14px 18px 8px", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          <h3 style={{ fontSize: 14, fontWeight: 700, color: T.text, margin: 0, fontFamily: T.f }}>{dimension.name}</h3>
+          <h3 style={{ fontSize: 14, fontWeight: 700, color: T.text, margin: 0, fontFamily: T.f }}>
+            {rank && <span style={{ color: T.textMuted, fontWeight: 600, marginRight: 6 }}>{rank}.</span>}
+            {dimension.name}
+          </h3>
           <IconLock size={12} color={T.textMuted} />
         </div>
         <span data-a11y-shape style={{ fontSize: 11, fontWeight: 700, color: cat.color, padding: "3px 10px", background: cat.bg, border: `1px solid ${cat.color}`, borderRadius: 20, whiteSpace: "nowrap" }}>
@@ -1520,7 +1539,6 @@ function ResultScreen({ answers, onRestart, sessionId }) {
   const orderedDimIds = useMemo(() => getOrderedDimensions(dimensionScoresPct), [dimensionScoresPct]);
   const orderedDimResults = useMemo(() => orderedDimIds.map(id => dimensionResults.find(d => d.id === id)), [orderedDimIds, dimensionResults]);
   const priorityDimResult = useMemo(() => dimensionResults.find(d => d.id === priorityDimId), [priorityDimId, dimensionResults]);
-  const radarData = useMemo(() => dimensionResults.map(dim => ({ dimension: dim.shortName, score: Math.max(dim.score, MAX_DIM_SCORE * 0.08), fullMark: MAX_DIM_SCORE })), [dimensionResults]);
   const pdfProps = useMemo(() => ({
     globalScore,
     category,
@@ -1625,42 +1643,34 @@ function ResultScreen({ answers, onRestart, sessionId }) {
           ))}
         </BentoCard>
 
-        {/* Bento grid: radar + bars side by side on desktop, stacked on mobile */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 16, marginBottom: 16 }}>
-          {/* Radar card */}
-          <BentoCard style={{ animation: "fadeUp 0.4s ease-out 0.3s both" }}>
-            <h2 style={{ fontSize: 13, fontWeight: 700, color: T.vert, marginBottom: 12, textTransform: "uppercase", letterSpacing: "0.06em" }}>Ton profil</h2>
-            <div style={{ width: "100%", height: 260 }} role="img" aria-label={`Radar chart de ton profil : ${radarData.map(d => `${d.dimension} ${d.score}/8`).join(", ")}`}>
-              <ResponsiveContainer>
-                <RadarChart data={radarData} cx="50%" cy="50%" outerRadius="65%">
-                  <PolarGrid stroke={T.border} />
-                  <PolarAngleAxis dataKey="dimension" tick={{ fontSize: 11, fill: T.textMuted, fontFamily: T.f }} />
-                  <PolarRadiusAxis angle={90} domain={[0, 8]} tick={{ fontSize: 9, fill: T.textLight }} tickCount={5} />
-                  <Radar dataKey="score" stroke={T.vert} fill={T.vert} fillOpacity={0.12} strokeWidth={2.5} dot={{ r: 4, fill: T.vert }} />
-                </RadarChart>
-              </ResponsiveContainer>
-            </div>
-          </BentoCard>
-
-          {/* Scores card */}
-          <BentoCard style={{ animation: "fadeUp 0.4s ease-out 0.35s both" }}>
-            <h2 style={{ fontSize: 13, fontWeight: 700, color: T.vert, marginBottom: 16, textTransform: "uppercase", letterSpacing: "0.06em" }}>Par dimension</h2>
-            {dimensionResults.map((dim, i) => {
-              const dimCategory = getCategory(dim.pct);
-              return (
-                <div key={dim.id} style={{ marginBottom: i < dimensionResults.length - 1 ? 16 : 0 }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
-                    <span style={{ fontSize: 13, color: T.text, fontWeight: 500 }}>{dim.shortName}</span>
-                    <span style={{ fontSize: 13, fontWeight: 700, color: dimCategory.color, fontFamily: "monospace" }}>{dim.score}/{MAX_DIM_SCORE}</span>
-                  </div>
-                  <div data-a11y-shape role="meter" aria-valuenow={dim.score} aria-valuemin={0} aria-valuemax={MAX_DIM_SCORE} aria-label={dim.name} style={{ height: 6, background: T.cremeDeep, border: `1px solid ${T.trackBorder}`, borderRadius: 3, overflow: "hidden" }}>
-                    <div style={{ height: 6, width: "100%", transformOrigin: "left", transform: `scaleX(${Math.max(dim.pct, 3) / 100})`, background: dimCategory.color, borderRadius: 3, transition: "transform 0.6s ease-out" }} />
-                  </div>
+        {/* Une seule lecture des 5 dimensions.
+            Le radar rendait exactement les mêmes chiffres que les barres, côte à côte, dans le
+            plus gros bloc de la page — et moins bien : monochrome, donc sans sévérité, et illisible
+            à 360px. Il reste dans le PDF et la carte de score, où il fait office d'objet et non de
+            doublon. Les barres suivent désormais l'ordre de priorité pondéré du dossier de
+            diagnostics et marquent la dimension prioritaire, comme le PDF le fait déjà : trois
+            artefacts, un seul classement. */}
+        <BentoCard style={{ marginBottom: 16, animation: "fadeUp 0.4s ease-out 0.3s both" }}>
+          <h2 style={{ fontSize: 13, fontWeight: 700, color: T.vert, marginBottom: 16, textTransform: "uppercase", letterSpacing: "0.06em" }}>Par dimension</h2>
+          {orderedDimResults.map((dim, i) => {
+            const dimCategory = getCategory(dim.pct);
+            const isPriority = dim.id === priorityDimId;
+            return (
+              <div key={dim.id} style={{ marginBottom: i < orderedDimResults.length - 1 ? 16 : 0 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 8, marginBottom: 6 }}>
+                  <span style={{ fontSize: 13, color: T.text, fontWeight: isPriority ? 700 : 500 }}>
+                    {dim.shortName}
+                    {isPriority && <span style={{ fontSize: 11, fontWeight: 700, color: T.vert, marginLeft: 8, textTransform: "uppercase", letterSpacing: "0.04em" }}>priorité</span>}
+                  </span>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: dimCategory.color, fontFamily: "monospace", whiteSpace: "nowrap" }}>{dim.score}/{MAX_DIM_SCORE}</span>
                 </div>
-              );
-            })}
-          </BentoCard>
-        </div>
+                <div data-a11y-shape role="meter" aria-valuenow={dim.score} aria-valuemin={0} aria-valuemax={MAX_DIM_SCORE} aria-label={isPriority ? `${dim.name} — dimension prioritaire` : dim.name} style={{ height: 6, background: T.cremeDeep, border: `1px solid ${T.trackBorder}`, borderRadius: 3, overflow: "hidden" }}>
+                  <div style={{ height: 6, width: "100%", transformOrigin: "left", transform: `scaleX(${Math.max(dim.pct, 3) / 100})`, background: dimCategory.color, borderRadius: 3, transition: "transform 0.6s ease-out" }} />
+                </div>
+              </div>
+            );
+          })}
+        </BentoCard>
 
         {/* Signal de priorité — au-dessus des diagnostics */}
         <PrioritySignal priorityDimId={priorityDimId} level={getDiagnosticLevel(priorityDimResult.score)} />
@@ -1683,13 +1693,13 @@ function ResultScreen({ answers, onRestart, sessionId }) {
         {/* Diagnostics */}
         <section aria-label="Diagnostics détaillés" style={{ display: "flex", flexDirection: "column", gap: 16, marginBottom: 16 }}>
           <h2 style={{ fontSize: 13, fontWeight: 700, color: T.vert, textTransform: "uppercase", letterSpacing: "0.06em", paddingLeft: 4 }}>Diagnostic par dimension</h2>
-          <DiagnosticCard dimension={priorityDimResult} index={0} cardArticle={cardArticle} />
+          <DiagnosticCard dimension={priorityDimResult} index={0} rank={1} cardArticle={cardArticle} />
           {unlocked ? (
-            orderedDimResults.filter(d => d.id !== priorityDimId).map((dim, i) => <DiagnosticCard key={dim.id} dimension={dim} index={i + 1} />)
+            orderedDimResults.filter(d => d.id !== priorityDimId).map((dim, i) => <DiagnosticCard key={dim.id} dimension={dim} index={i + 1} rank={i + 2} />)
           ) : (
             <>
               <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-                {orderedDimResults.filter(d => d.id !== priorityDimId).map(dim => <LockedDiagnosticCard key={dim.id} dimension={dim} onUnlockClick={() => handleScrollToUnlock(dim)} />)}
+                {orderedDimResults.filter(d => d.id !== priorityDimId).map((dim, i) => <LockedDiagnosticCard key={dim.id} dimension={dim} rank={i + 2} onUnlockClick={() => handleScrollToUnlock(dim)} />)}
               </div>
               <BentoCard id="unlock-form" style={{ background: T.vert, border: "none", textAlign: "center", padding: "36px 28px" }}>
                 <p style={{ fontSize: 11, fontWeight: 700, color: T.onVertMuted, letterSpacing: ".08em", textTransform: "uppercase", marginBottom: 6, fontFamily: T.f }}>4 diagnostics verrouillés</p>
