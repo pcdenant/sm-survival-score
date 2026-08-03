@@ -34,6 +34,16 @@ async function gotoResult(page, answers) {
   await page.waitForSelector("h1");
   // Recharts mesure son conteneur avant de peindre ; sans ça on sonde un bloc vide.
   await page.waitForTimeout(400);
+  await settle(page);
+}
+
+// Les cartes entrent en fadeUp (opacité 0→1, décalées jusqu'à ~0.24s). Sonder pendant
+// l'animation échantillonne des couleurs composées à mi-parcours — axe a ainsi rapporté
+// un #bb621e qui n'existe nulle part dans la source : c'est #b45309 à opacité partielle.
+async function settle(page) {
+  await page.waitForFunction(() => document.getAnimations().every((a) => a.playState !== "running"), null, {
+    timeout: 5000,
+  }).catch(() => {});
 }
 
 async function unlock(page) {
@@ -80,6 +90,7 @@ test("a11y — déverrouillé (5 diagnostics ouverts)", async ({ page }) => {
   await unlock(page);
   await page.getByRole("button", { name: "Fermer" }).click();
   await expect(page.getByRole("dialog")).toBeHidden();
+  await settle(page);
   const violations = await probe(page);
   expect(violations, `\n${report(violations)}\n`).toEqual([]);
 });
@@ -88,6 +99,7 @@ test("a11y — modal de déverrouillage", async ({ page }) => {
   await page.setViewportSize(VIEWPORTS.mobile);
   await gotoResult(page, BANDS.stable);
   await unlock(page);
+  await settle(page);
   await page.evaluate(() => document.querySelector('[role="dialog"]')?.setAttribute("data-a11y-scope", ""));
   const violations = await probe(page);
   expect(violations, `\n${report(violations)}\n`).toEqual([]);
@@ -124,6 +136,7 @@ test("axe — écran résultat (verrouillé et déverrouillé)", async ({ page }
 
   await unlock(page);
   await page.getByRole("button", { name: "Fermer" }).click();
+  await settle(page);
   const unlocked = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"]).analyze();
   expect(
     unlocked.violations,
