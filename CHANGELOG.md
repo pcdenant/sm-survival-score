@@ -7,6 +7,51 @@ Versionning basé sur [Semantic Versioning](https://semver.org/lang/fr/).
 
 ---
 
+## [1.14.0] — 2026-08-03
+
+Révision complète de l'écran résultat, conduite par quatre passes `/impeccable critique`
+(21 → 18 → 21 → 25 sur 40). Le détail des constats est archivé dans `.impeccable/critique/`,
+et le retour d'expérience — notamment les régressions introduites en cours de route et ce
+qu'elles ont en commun — dans `RETROSPECTIVE.md`.
+
+### Ajouté
+- **Gate d'accessibilité mesuré sur le DOM rendu** — `tests/e2e/a11y.spec.js` + `tests/e2e/a11y-probe.js`. Parcourt 3 bandes de score × verrouillé/déverrouillé × 390/1280px, plus le modal : contraste texte avec composition alpha contre les ancêtres réels, contraste non-textuel des formes porteuses de sens, indicateur de focus vérifié contre *sa propre* surface, cibles tactiles ≥ 48px, et `@axe-core/playwright` pour ARIA / noms accessibles / ordre des titres. Les tests unitaires lisent la source : ils ne voient ni l'héritage, ni la composition alpha, ni la surface réelle — d'où un test navigateur
+- **`SIGNAL_TEXTS_HIGH` + `getSignalText(dimId, level)`** — variante du signal prioritaire quand la dimension est déjà solide. Le bloc affichait « tant que cette dimension reste faible » au-dessus d'une carte « Solide — 8/8 »
+- **Taxonomie d'erreurs d'inscription** (`SIGNUP_ERRORS`) — six modes d'échec distincts au lieu d'un message unique, avec `aria-invalid`, `aria-describedby`, effacement à la frappe et retour du focus dans le champ
+- **Bloc « Comment ce score est calculé »** — base de 40 points, seuils 45/75, paliers par dimension 0–3 / 4–5 / 6–8, et les cinq poids de survie. Valeurs lues depuis les constantes, donc non dérivables
+- **Accusé de réception après déverrouillage** (`role="status"`) — la bascule remplaçait quatre blocs sous la position de défilement sans que rien ne le signale
+- **Rang de priorité sur les cartes** — carte prioritaire avec en-tête dédié, cartes suivantes numérotées 2 à 5, y compris verrouillées
+- **Bouton PDF persistant** — fermer le modal supprimait définitivement l'accès au rapport
+- **Jeu d'icônes SVG** (`IconLock`, `IconUnlock`, `IconClock`, `IconCheck`, `IconChevron`, `IconClose`) en remplacement des emoji
+- **Mention de consentement** sous le champ email — l'abonnement hebdomadaire n'était annoncé qu'après soumission
+- **Tests de contraste WCAG** calculés depuis la source, et confirmation avant « Refaire le test »
+
+### Modifié
+- **Échelle de gris recalibrée** — `T.textMuted` et `T.textLight` tenaient 2.30–4.29:1 sur crème et blanc ; le minimum AA impose ~`#6e6e6e`, donc la hiérarchie se joue désormais à la taille et à la graisse
+- **Texte secondaire sur vert unifié** (`T.onVertMuted`) — cinq alphas différents entre 1.98 et 4.41:1
+- **Couleurs de catégorie séparées par surface** — `color` (fond clair) et `onDark` (fond vert). Un seul token ne peut pas servir les deux : l'assombrir pour passer AA sur clair le fait échouer sur foncé
+- **Barres classées par risque** et marquage de la dimension prioritaire — l'écran, les cartes et le PDF suivaient jusque-là deux ordres différents pour les mêmes cinq dimensions
+- **Hiérarchie de titres** — le score passe en `h1`, les sections en `h2`, les cartes en `h3` ; l'écran démarrait à `h3` avec le score en `<div>`
+- **Modal** — Escape, piège à focus résistant au bouton qui se désactive, verrou de défilement, focus rendu à une cible qui survit au démontage
+- **Formulaire à 360px** — `minWidth: 0` et empilement sous 420px ; le bouton sortait de l'écran (scrollWidth 389 contre clientWidth 360)
+- **Validation email** alignée sur la règle du serveur — `includes("@")` acceptait `a@b.` et `a b@c.d`
+- `PDFDocument` et `PrioritySignal` passent par le même sélecteur de signal, pour que le PDF ne puisse pas se contredire seul
+
+### Corrigé
+- **Score du héros illisible** — 1.35:1 (stable) et 1.40:1 (vulnérable) contre 3:1 requis. Régression d'un correctif antérieur : `category.color` servait à la fois les pastilles sur fond clair et le score sur fond vert
+- **Radar invisible à 0/100** — les cinq axes s'effondraient au centre, précisément pour l'utilisateur que le produit vise
+- **Génération PDF sans gestion d'échec** — le bouton du modal n'avait aucun `catch` et restait grisé sur « Génération... » définitivement ; celui de la page échouait silencieusement. Les deux fuyaient un conteneur hors écran avec une racine React vivante
+- **Ancre `#unlock-form` morte** après déverrouillage, et CTA verrouillées pointant toutes vers une dimension fixe
+- **Texte des cartes verrouillées** coupé en milieu de mot par une troncature en pixels
+- **Contraste** — 14 paires de texte et ~25 formes sous le seuil ; cibles tactiles sous 48px
+- Deux tests non fiables : un miroir de `getCategory` dont les couleurs avaient dérivé de la source, et une assertion satisfaite par le mauvais composant
+
+### Supprimé
+- **Radar de l'écran résultat** — il rendait les mêmes cinq chiffres que les barres, à côté d'elles, dans le plus gros bloc de la page, et moins bien : monochrome donc sans sévérité, et à l'étroit à 360px. Conservé dans le PDF et la carte de score. Effet de bord : `recharts` sort du bundle, **562 kB → 213 kB**, et disparition de l'`aria-label` qui annonçait « 0.64/8 » (le plancher d'affichage du graphique) aux lecteurs d'écran
+- **Bordures latérales de sévérité** — la pastille de niveau portait déjà l'information
+
+---
+
 ## [1.13.0] — 2026-06-25
 
 ### Modifié

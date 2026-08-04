@@ -28,17 +28,17 @@ No abstraction for one caller, no unasked config, no future-proofing (add it the
 
 ## Project (fill in, keep current)
 
-- **Stack / runtime:** React 18 + Vite 5 (JavaScript, not TypeScript). Vercel Functions serverless (`/api/`). No DB — all data is static in `src/sm-survival-score.jsx`. CSS-in-JS via design-tokens object `T` (no Tailwind, no `.css` files). Ghost Admin API via JWT HS256 (Node.js native `crypto` — zero npm deps). Analytics fire-and-forget to Google Apps Script via `navigator.sendBeacon`. DM Sans from Google Fonts via CSS `@import`. Current version: 1.13.0.
+- **Stack / runtime:** React 18 + Vite 5 (JavaScript, not TypeScript). Vercel Functions serverless (`/api/`). No DB — all data is static in `src/sm-survival-score.jsx`. CSS-in-JS via design-tokens object `T` (no Tailwind, no `.css` files). Ghost Admin API via JWT HS256 (Node.js native `crypto` — zero npm deps). Analytics fire-and-forget to Google Apps Script via `navigator.sendBeacon`. DM Sans from Google Fonts via CSS `@import`. Current version: 1.14.0.
 
 - **Run / test / lint (exact commands):**
   - `npm run dev` — Vite dev server (localhost:5173)
   - `npm run build` — production build → `dist/`
   - `npm test` — unit tests, pure Node (no framework): `node src/sm-survival-score.test.js && node api/subscribe.test.js`
-  - `npm run test:e2e` — Playwright E2E (browsers at `/opt/pw-browsers`); needs `npm run dev` running or `reuseExistingServer`
+  - `npm run test:e2e` — Playwright E2E (browsers at `/opt/pw-browsers`); needs `npm run dev` running or `reuseExistingServer`. Includes `a11y.spec.js`, the accessibility gate — **it must be green before any UI change counts as done**
   - No lint command configured — match existing style manually
 
 - **Non-obvious conventions:**
-  - **One-file architecture**: all data, logic, components, and styles live in `src/sm-survival-score.jsx` (~1 300 lines). Do not split. Internal order is load-bearing: DATA → CONSTANTS → SCORING UTILS → ANALYTICS → DESIGN TOKENS → GLOBAL STYLES → COMPONENTS → SCREENS → APP ROOT.
+  - **One-file architecture**: all data, logic, components, and styles live in `src/sm-survival-score.jsx` (~2 000 lines). Do not split. Internal order is load-bearing: DATA → CONSTANTS → SCORING UTILS → ANALYTICS → DESIGN TOKENS → GLOBAL STYLES → COMPONENTS → SCREENS → APP ROOT.
   - **Screens via state enum**: `SCREEN = { LANDING, QUIZ, RESULT }` — no router library.
   - **Styling**: always `style={{ ...T.someToken, additionalProp }}`. Never add CSS files. Global CSS (animations, `@media print`) injected once via `<style>` in DOM by `StyleProvider`.
   - **Auto-advance guard**: `userJustSelectedRef` (React ref, not state) tracks whether the current question was just answered by the user. It must be cleared in `handlePrev` — otherwise back-navigation triggers auto-advance.
@@ -54,5 +54,9 @@ No abstraction for one caller, no unasked config, no future-proofing (add it the
   - `DIMENSION_WEIGHTS` — deliberately tuned for layoff-risk prediction; altering it changes which diagnostic unlocks first and breaks existing test expectations.
   - Ghost JWT logic in `api/subscribe.js` — correct by construction (no deps), verified by 27 tests; rewriting risks subtle crypto errors.
   - `src/main.jsx` — 10-line entry point; change only if mount target changes.
+
+  - **Colours are surface-scoped**: every colour is valid for a light background *or* for `T.vert`, never both. `getCategory` models it (`color` = light surface, `onDark` = green). Darkening a token to pass AA on cream makes it fail on green — that exact move shipped a regression. `T.onVertMuted` is the one alpha for secondary text on green.
+  - **The gate is the definition of done for UI work**: `tests/e2e/a11y.spec.js` measures the rendered DOM (contrast with real alpha compositing, focus indicators against their own surface, 48px targets, axe). It only covers what it samples — when adding a pseudo-element or a programmatic focus target, extend the probe first, or it becomes the next blind spot.
+  - **Verify the adjacent pair, not just the one you're fixing.** Every regression shipped in this codebase has that shape: badge text checked / badge fill missed; `:focus-visible` rule added / inline `outline:none` missed; focus restore written / target unmounts first. See `RETROSPECTIVE.md`.
 
 - **The one gotcha that bites everyone:** `userJustSelectedRef` is a **ref, not state** — it does not trigger re-renders and is invisible in the component tree. Any new navigation path that doesn't call `userJustSelectedRef.current = false` will cause the quiz to auto-advance the instant the user lands on a question. E2E tests won't catch it because they always navigate forward. Always grep for `userJustSelectedRef` before touching navigation logic.
