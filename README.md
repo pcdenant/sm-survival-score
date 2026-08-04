@@ -19,13 +19,13 @@ Ce diagnostic mesure 5 dimensions clés et donne un plan d'action personnalisé.
 | Couche | Technologie |
 |---|---|
 | UI | React 18 + Vite 5 |
-| Graphiques | Recharts |
 | Styles | CSS-in-JS inline (design tokens) |
 | API serverless | Vercel Functions |
 | Email / CRM | Ghost Admin API (JWT HS256) |
 | Analytics | Google Apps Script (webhook) |
 | Tests | Node.js vanilla (zéro dépendances) |
 | E2E | Playwright |
+| Accessibilité | Gate mesuré sur le DOM rendu (Playwright + axe-core) |
 
 ---
 

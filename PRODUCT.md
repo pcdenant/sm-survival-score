@@ -12,7 +12,7 @@ Scrum Master en poste, 2–8 ans d'expérience, francophone. Inquiet de la stabi
 
 ## Product Purpose
 
-Diagnostic interactif (20 questions) qui mesure la « défendabilité » du rôle d'un Scrum Master sur 5 dimensions (visibilité, preuves, business, autonomie, stratégique). Livre un score global, un profil radar, des diagnostics par dimension et un plan d'action personnalisé. Sert aussi d'aimant à emails qualifiés pour Collaboration Solved (conseil de Pierre-Cyril Denant) — l'acquisition d'emails est un objectif produit explicite, pas un effet secondaire.
+Diagnostic interactif (20 questions) qui mesure la « défendabilité » du rôle d'un Scrum Master sur 5 dimensions (visibilité, preuves, business, autonomie, stratégique). Livre un score global, un classement par risque des cinq dimensions, des diagnostics et un plan d'action personnalisé. Le radar subsiste dans le PDF et la carte de score partageable, pas à l'écran (il y doublonnait les barres). Sert aussi d'aimant à emails qualifiés pour Collaboration Solved (conseil de Pierre-Cyril Denant) — l'acquisition d'emails est un objectif produit explicite, pas un effet secondaire.
 
 ## Positioning
 
@@ -24,7 +24,7 @@ Usage solo, desktop ou mobile, session unique d'environ 5 minutes. Découverte v
 
 ## Capabilities and Constraints
 
-React 18 + Vite 5, JavaScript (pas TypeScript). Fichier composant unique (`src/sm-survival-score.jsx`) — pas de split en sous-composants. Zéro base de données, toutes les données sont statiques dans le code source. Styles 100 % inline via un objet de design tokens centralisé (`T`) — pas de fichier CSS séparé, pas de Tailwind. Zéro nouvelle dépendance npm sans discussion préalable ; libs approuvées : `react`, `react-dom`, `recharts`, `vite`, `@vitejs/plugin-react` — `html2canvas` et `jsPDF` sont déjà en place via import dynamique pour la génération du PDF existante. Email/CRM via Ghost Admin API (JWT HS256, zéro dépendance, `crypto` natif Node). Analytics fire-and-forget via Google Apps Script webhook (`sendBeacon`), jamais bloquant.
+React 18 + Vite 5, JavaScript (pas TypeScript). Fichier composant unique (`src/sm-survival-score.jsx`) — pas de split en sous-composants. Zéro base de données, toutes les données sont statiques dans le code source. Styles 100 % inline via un objet de design tokens centralisé (`T`) — pas de fichier CSS séparé, pas de Tailwind. Zéro nouvelle dépendance npm sans discussion préalable ; libs approuvées : `react`, `react-dom`, `vite`, `@vitejs/plugin-react` — `html2canvas` et `jsPDF` via import dynamique pour le PDF, `@playwright/test` et `@axe-core/playwright` en dev pour le gate d'accessibilité. `recharts` reste déclaré mais n'a plus d'importeur depuis le retrait du radar de l'écran. Email/CRM via Ghost Admin API (JWT HS256, zéro dépendance, `crypto` natif Node). Analytics fire-and-forget via Google Apps Script webhook (`sendBeacon`), jamais bloquant.
 
 ## Brand Commitments
 
@@ -44,4 +44,20 @@ Statistiques citées dans le produit et sourcées : 1 100 rôles agiles supprim�
 
 ## Accessibility & Inclusion
 
-WCAG AA vérifié sur toutes les combinaisons fond/texte. Rôles ARIA complets (`radiogroup`, `radio`, `progressbar`, `meter`, `article`, `region`, `alert`, `img`). Navigation clavier (flèches pour les réponses, tab pour le focus). Cibles tactiles ≥ 48px. `prefers-reduced-motion` respecté (animations réduites à 0.01ms).
+Sur l'écran résultat, ces garanties sont **mesurées à chaque exécution** par `tests/e2e/a11y.spec.js`
+(3 bandes de score × verrouillé/déverrouillé × 390/1280px, plus le modal) et non plus affirmées :
+contraste AA de tout le texte rendu, contraste ≥ 3:1 des formes porteuses de sens, indicateur de
+focus vérifié contre sa propre surface à chaque arrêt de tabulation, cibles tactiles ≥ 48px
+(exemption WCAG 2.2 pour les liens en ligne), ARIA et ordre des titres via axe-core.
+
+**Exception connue, non corrigée** : le `::placeholder` du champ email mesure 1.23:1, et comme le
+champ n'a pas de `<label>` visible, ce placeholder est son seul nom visible. Le gate ne l'a pas vu
+— il échantillonne les nœuds de texte, pas les pseudo-éléments. C'est le prochain correctif
+d'accessibilité à faire.
+
+Rôles ARIA complets (`radiogroup`, `radio`, `progressbar`, `meter`, `article`, `region`, `alert`,
+`status`, `dialog`, `img`). Navigation clavier (flèches pour les réponses, tab pour le focus).
+`prefers-reduced-motion` respecté (animations réduites à 0.01ms, défilement non animé).
+
+Les autres écrans (landing, quiz) ne sont pas couverts par le gate : leurs garanties restent
+déclaratives.
