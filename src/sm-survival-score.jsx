@@ -429,10 +429,23 @@ export function getOrderedDimensions(dimensionScoresPct) {
 // Replace with your Google Apps Script deployment URL
 const ANALYTICS_URL = "https://script.google.com/macros/s/AKfycbxSSFKyZsQvhbwwSAZTyolhHQ9RzTYhIGrQwYYoGYVzyjfnFjRRPYfnzqgVAgrQ211o/exec";
 
+// Vercel preview deployments always serve from *.vercel.app; npm run dev sets import.meta.env.DEV.
+// Everything else (custom domain) is production.
+export function detectAnalyticsEnv(hostname, isDev) {
+  if (isDev) return "development";
+  if (hostname && hostname.endsWith(".vercel.app")) return "preview";
+  return "production";
+}
+
+const ANALYTICS_ENV = detectAnalyticsEnv(
+  typeof window !== "undefined" ? window.location.hostname : "",
+  import.meta.env.DEV
+);
+
 function trackEvent(event, data = {}) {
   if (!ANALYTICS_URL) return;
   try {
-    const payload = { timestamp: new Date().toISOString(), event, deviceId: DEVICE_ID, ...data };
+    const payload = { timestamp: new Date().toISOString(), event, deviceId: DEVICE_ID, env: ANALYTICS_ENV, ...data };
     // Fire and forget — navigator.sendBeacon for reliability on page unload
     if (navigator.sendBeacon) {
       navigator.sendBeacon(ANALYTICS_URL, JSON.stringify(payload));
