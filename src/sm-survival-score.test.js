@@ -429,6 +429,31 @@ describe("buildAbandonPayload", () => {
 });
 
 // ============================================================
+// ANALYTICS ENV DETECTION
+// ============================================================
+
+// Mirrors detectAnalyticsEnv from sm-survival-score.jsx
+function detectAnalyticsEnv(hostname, isDev) {
+  if (isDev) return "development";
+  if (hostname && hostname.endsWith(".vercel.app")) return "preview";
+  return "production";
+}
+
+describe("detectAnalyticsEnv", () => {
+  assertEqual(detectAnalyticsEnv("localhost", true), "development",
+    "npm run dev is always development, regardless of hostname");
+
+  assertEqual(detectAnalyticsEnv("sm-survival-score-git-claude-revision-32a917-pcdenants-projects.vercel.app", false),
+    "preview", "Vercel preview deployment hostname is preview");
+
+  assertEqual(detectAnalyticsEnv("smsurvivalscore.com", false), "production",
+    "Custom production domain is production");
+
+  assertEqual(detectAnalyticsEnv("", false), "production",
+    "Empty/unknown hostname falls back to production");
+});
+
+// ============================================================
 // WORDING INTEGRITY v1.2 (complete — all 14 questions)
 // Reads sm-survival-score.jsx as raw text and checks exact strings.
 // ============================================================
