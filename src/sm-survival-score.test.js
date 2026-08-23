@@ -1237,15 +1237,26 @@ function contrastRatio(hexA, hexB) {
 
 describe("CONTRASTE WCAG — couleurs de catégorie", () => {
   const src = readFileSync(join(__dirname, "sm-survival-score.jsx"), "utf8");
-  const VERT = "#006946"; // T.vert — fond du héros et de la carte de score
+  // getCategory() référence les tokens T.statut* (PR3) plutôt que des hex en dur —
+  // on les extrait du bloc DESIGN TOKENS, seul endroit où ces hex existent encore
+  // littéralement. Zéro-dépendance oblige (pas de transform JSX pour `node`), on ne
+  // peut pas importer/appeler getCategory() directement : le fichier source est du JSX.
+  const extractHex = (tokenName) => {
+    const m = src.match(new RegExp(`\\b${tokenName}:\\s*"(#[0-9a-fA-F]{6})"`));
+    if (!m) throw new Error(`Token T.${tokenName} introuvable dans la source`);
+    return m[1];
+  };
+  const VERT = extractHex("vert"); // T.vert — fond du héros et de la carte de score
 
   // Sanity check du calcul lui-même, sur des paires connues
   assert(Math.abs(contrastRatio("#000000", "#ffffff") - 21) < 0.01, "contrastRatio: noir/blanc = 21:1");
   assert(Math.abs(contrastRatio("#ffffff", "#ffffff") - 1) < 0.01, "contrastRatio: blanc/blanc = 1:1");
 
-  const categories = [...src.matchAll(
-    /key:\s*"(\w+)",\s*label:\s*"[^"]+",\s*color:\s*"(#[0-9a-fA-F]{6})",\s*onDark:\s*"(#[0-9a-fA-F]{6})",\s*bg:\s*"(#[0-9a-fA-F]{6})"/g
-  )].map(m => ({ key: m[1], color: m[2], onDark: m[3], bg: m[4] }));
+  const categories = [
+    { key: "vulnerable", color: extractHex("statutRisque"), onDark: extractHex("statutRisqueOnDark"), bg: extractHex("statutRisqueBg") },
+    { key: "stable", color: extractHex("statutStable"), onDark: extractHex("statutStableOnDark"), bg: extractHex("statutStableBg") },
+    { key: "irreplaceable", color: extractHex("statutSain"), onDark: extractHex("statutSainOnDark"), bg: extractHex("statutSainBg") },
+  ];
 
   assertEqual(categories.length, 3, "getCategory expose 3 catégories avec color + onDark + bg");
 
@@ -1261,9 +1272,12 @@ describe("CONTRASTE WCAG — couleurs de catégorie", () => {
   });
 
   // Le bug d'origine : réutiliser `color` (calibré fond clair) sur le fond vert.
-  // Si quelqu'un le refait, ce test tombe avant la revue.
+  // Si quelqu'un le refait, ce test tombe avant la revue. Seuil 4.5 (pas 3) : onDark
+  // sert aussi de fond de badge avec T.text par-dessus (voir commentaire sur
+  // T.statutRisqueOnDark) — sur l'encre plus sombre qu'avant, `color` peut désormais
+  // dépasser le seuil 3:1 « grand texte » par coïncidence, mais reste sous 4.5:1.
   const stable = categories.find(c => c.key === "stable");
-  assert(contrastRatio(stable.color, VERT) < 3,
+  assert(contrastRatio(stable.color, VERT) < 4.5,
     "régression connue: le token `color` de stable échoue bien sur T.vert (d'où l'existence de onDark)");
   assert(!/color:\s*category\.key === "irreplaceable" \? T\.jaune : category\.color/.test(src),
     "ABSENT: ancien ternaire qui posait category.color sur le héros vert");

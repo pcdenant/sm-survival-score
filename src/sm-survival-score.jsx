@@ -197,9 +197,9 @@ export function computeGlobalScore(dimensionScores) {
 // foncé (score du héros, carte de score). Un seul token ne peut pas servir les deux : plus on
 // fonce pour passer AA sur fond clair, plus on échoue sur fond foncé.
 export function getCategory(percentage) {
-  if (percentage < SCORE_THRESHOLDS.low) return { key: "vulnerable", label: "Vulnérable", color: "#c81e1e", onDark: "#ffb4ab", bg: "#fef2f2" };
-  if (percentage < SCORE_THRESHOLDS.mid) return { key: "stable", label: "Stable", color: "#b45309", onDark: "#ffd166", bg: "#fffbeb" };
-  return { key: "irreplaceable", label: "Irremplaçable", color: "#006946", onDark: "#FFF200", bg: "#ecfdf5" };
+  if (percentage < SCORE_THRESHOLDS.low) return { key: "vulnerable", label: "Vulnérable", color: T.statutRisque, onDark: T.statutRisqueOnDark, bg: T.statutRisqueBg };
+  if (percentage < SCORE_THRESHOLDS.mid) return { key: "stable", label: "Stable", color: T.statutStable, onDark: T.statutStableOnDark, bg: T.statutStableBg };
+  return { key: "irreplaceable", label: "Irremplaçable", color: T.statutSain, onDark: T.statutSainOnDark, bg: T.statutSainBg };
 }
 
 export function getDiagnosticLevel(score) { return score <= 3 ? "low" : score <= 5 ? "mid" : "high"; }
@@ -521,6 +521,24 @@ const T = {
   border: "#e8ddd1",
   borderLight: "#f0e8de",
   trackBorder: "#8c8073", // 3.85 sur blanc — délimite la piste du meter (WCAG 1.4.11)
+  // Statuts de getCategory() — jamais des couleurs de marque (le design system du site
+  // principal est explicite : le vert/rouge de la jauge Survival Score restent un
+  // micro-usage statutaire, jamais l'accent). `*Color`/`*Bg` inchangés depuis l'ancien
+  // brand (déjà calibrés ≥4.5:1 entre eux, revérifiés OK sur le nouveau papier #f9f3e4).
+  // `*OnDark` reprend les teintes gauge du design system (à risque #e0463a, sain #3fae74)
+  // pour le score héros sur fond encre — sert aussi de fond de badge avec T.text par
+  //-dessus, donc calibré à 4.5:1 contre T.text, pas seulement 3:1 contre l'encre :
+  // #e0463a littéral ne fait que 4.23:1 dans ce rôle, éclairci en #e75248 (4.72:1).
+  // #3fae74 et #ffd166 passaient déjà largement (6.23:1 / 12.08:1), inchangés.
+  statutRisque: "#c81e1e",
+  statutRisqueOnDark: "#e75248",
+  statutRisqueBg: "#fef2f2",
+  statutStable: "#b45309",
+  statutStableOnDark: "#ffd166",
+  statutStableBg: "#fffbeb",
+  statutSain: "#006946",
+  statutSainOnDark: "#3fae74",
+  statutSainBg: "#ecfdf5",
   r: 16,
   rLg: 20,
   rSm: 10,
