@@ -466,30 +466,26 @@ describe("WORDING INTEGRITY v1.2 — strings applied", () => {
     "Ces trente derniers jours, as-tu communiqué un résultat chiffré à ton manager ?",
     "J'ai communiqué des résultats, mais rien de chiffré",
     "En dehors des réunions, ton manager pourrait citer de mémoire une contribution concrète de ta part ce trimestre ?",
-    "Oui, j'ai au moins un allié qui tient à moi — pas juste au rôle",
-    "Je l'utilise pour diagnostiquer ce qui bloque — et décider quoi faire",
+    // "Oui, j'ai au moins un allié..." et "Je l'utilise pour diagnostiquer..." : tirets cadratins
+    // retirés en v1.4, voir "WORDING INTEGRITY v1.4" ci-dessous.
     "Pourrais-tu montrer à ton manager un avant/après chiffré qui prouve l'impact d'une de tes actions ?",
-    "Rarement — j'apprends la décision en même temps que tout le monde",
+    // "Rarement — j'apprends..." : tiret cadratin retiré en v1.4.
     // Batch 2 (gap changes)
-    "J'ai une réponse précise — avec un chiffre ou un exemple concret derrière",
-    "Un chiffre ou un fait — j'aurais pu me défendre si on m'avait poussé",
+    // "J'ai une réponse précise..." et "Un chiffre ou un fait..." : tirets cadratins retirés en v1.4.
     "Une bonne raison, mais rien à montrer si on avait insisté",
-    "Risque, coût, délai, prédictibilité — avec des chiffres pour illustrer",
+    // "Risque, coût, délai, prédictibilité..." : tiret cadratin retiré en v1.4.
     "Un mix : je traduis parfois en termes business, parfois je reste en mode Scrum",
-    "Le vocabulaire de mon rôle (sprint, backlog, rétro) — je traduis rarement",
-    "L'équipe tourne — et je peux expliquer comment j'ai construit ça",
+    // "Le vocabulaire de mon rôle..." et "L'équipe tourne..." : tirets cadratins retirés en v1.4.
     "Ça ralentit. Certaines choses tombent",
     "Les événements sautent ou il faut un back-up",
-    "Oui — et cette personne l'a déjà fait sans moi",
+    // "Oui — et cette personne..." et "Oui, c'est la norme..." : tirets cadratins retirés en v1.4.
     "J'ai commencé, mais c'est pas encore ancré",
-    "Oui, c'est la norme — j'ai activement construit ça",
     "Il citerait des résultats concrets ou des risques que tu as évités",
-    "Il décrirait ton rôle — facilitation, cérémonies Scrum — sans l'accrocher à aucun résultat",
-    "On mesurerait une perte concrète — une livraison ralentie, un risque non géré",
+    // "Il décrirait ton rôle..." et "On mesurerait une perte concrète..." : tirets cadratins retirés en v1.4.
     "On sentirait un vide, mais personne ne pourrait le chiffrer",
     // Q20 fix
     "Si ton poste disparaissait demain, quelle serait la réaction dans ton organisation ?",
-    "Ça passerait probablement inaperçu — quelqu'un absorberait le rôle rapidement",
+    // "Ça passerait probablement inaperçu..." : tiret cadratin retiré en v1.4.
   ];
 
   expected.forEach(str => {
@@ -529,6 +525,71 @@ describe("WORDING INTEGRITY v1.2 — old strings removed", () => {
     // Q20 fix
     "Si ton entreprise annonçait une réduction de coûts demain, comment tu classerais le risque pour ton poste ?",
     "Élevé — je serais probablement sur la liste",
+  ];
+
+  removed.forEach(str => {
+    assert(!src.includes(str), `REMOVED: "${str.slice(0, 60)}..."`);
+  });
+});
+
+// ============================================================
+// WORDING INTEGRITY v1.4 (tirets cadratins retirés des réponses du quiz —
+// voix éditoriale : ponctuation seule, aucun changement de sens ni de score)
+// ============================================================
+
+describe("WORDING INTEGRITY v1.4 — em dash removal applied", () => {
+  const src = readFileSync(join(__dirname, "sm-survival-score.jsx"), "utf8");
+
+  const expected = [
+    "J'ai une réponse précise (avec un chiffre ou un exemple concret derrière)",
+    "toi (pas juste pour garder un SM dans l'équipe) ?",
+    "Oui, j'ai au moins un allié qui tient à moi (pas juste au rôle)",
+    "Je l'utilise pour diagnostiquer ce qui bloque, et décider quoi faire",
+    "Je ne l'utilise pas comme outil de diagnostic : je m'appuie sur ce que j'observe en réunion",
+    "Un chiffre ou un fait : j'aurais pu me défendre si on m'avait poussé",
+    "Risque, coût, délai, prédictibilité (avec des chiffres pour illustrer)",
+    "Le vocabulaire de mon rôle (sprint, backlog, rétro), je traduis rarement",
+    "Rarement : j'apprends la décision en même temps que tout le monde",
+    "L'équipe tourne, et je peux expliquer comment j'ai construit ça",
+    "Oui, et cette personne l'a déjà fait sans moi",
+    "Non : je facilite tout moi-même",
+    "Oui, c'est la norme : j'ai activement construit ça",
+    "Il décrirait ton rôle (facilitation, cérémonies Scrum), sans l'accrocher à aucun résultat",
+    "Avant la décision : on me consulte",
+    "Après la décision : on m'informe en même temps que tout le monde",
+    "(pas \\\"faciliter les retros\\\" : un résultat)",
+    "On mesurerait une perte concrète : une livraison ralentie, un risque non géré",
+    "Ça passerait probablement inaperçu : quelqu'un absorberait le rôle rapidement",
+  ];
+
+  expected.forEach(str => {
+    assert(src.includes(str), `PRESENT: "${str.slice(0, 60)}..."`);
+  });
+});
+
+describe("WORDING INTEGRITY v1.4 — old em dash strings removed", () => {
+  const src = readFileSync(join(__dirname, "sm-survival-score.jsx"), "utf8");
+
+  const removed = [
+    "J'ai une réponse précise — avec un chiffre ou un exemple concret derrière",
+    "toi — pas juste pour garder un SM dans l'équipe ?",
+    "Oui, j'ai au moins un allié qui tient à moi — pas juste au rôle",
+    "Je l'utilise pour diagnostiquer ce qui bloque — et décider quoi faire",
+    "Je ne l'utilise pas comme outil de diagnostic — je m'appuie sur ce que j'observe en réunion",
+    "Un chiffre ou un fait — j'aurais pu me défendre si on m'avait poussé",
+    "Risque, coût, délai, prédictibilité — avec des chiffres pour illustrer",
+    "Le vocabulaire de mon rôle (sprint, backlog, rétro) — je traduis rarement",
+    "Rarement — j'apprends la décision en même temps que tout le monde",
+    "L'équipe tourne — et je peux expliquer comment j'ai construit ça",
+    "Oui — et cette personne l'a déjà fait sans moi",
+    "Non — je facilite tout moi-même",
+    "Oui, c'est la norme — j'ai activement construit ça",
+    "Il décrirait ton rôle — facilitation, cérémonies Scrum — sans l'accrocher à aucun résultat",
+    "Avant la décision — on me consulte",
+    "Après la décision — on m'informe en même temps que tout le monde",
+    "(pas \\\"faciliter les retros\\\" — un résultat)",
+    "On mesurerait une perte concrète — une livraison ralentie, un risque non géré",
+    "Ça passerait probablement inaperçu — quelqu'un absorberait le rôle rapidement",
   ];
 
   removed.forEach(str => {
