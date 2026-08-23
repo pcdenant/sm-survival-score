@@ -501,7 +501,9 @@ const T = {
   r: 16,
   rLg: 20,
   rSm: 10,
-  f: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif",
+  f: "'IBM Plex Sans', -apple-system, BlinkMacSystemFont, sans-serif",
+  fHeading: "'Archivo', -apple-system, BlinkMacSystemFont, sans-serif",
+  fMono: "'IBM Plex Mono', Menlo, Consolas, monospace",
 };
 // Button style helpers — used in ResultScreen actions (share + restart)
 T.btnAction = { fontSize: 14, fontWeight: 700, fontFamily: T.f, background: T.vert, color: T.white, border: "none", borderRadius: T.rSm, cursor: "pointer", minHeight: 48, padding: "14px 28px" };
@@ -512,7 +514,7 @@ T.btnGhost = { fontSize: 14, fontWeight: 600, fontFamily: T.f, background: "tran
 // ============================================================
 
 const GLOBAL_CSS = `
-  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;0,9..40,900;1,9..40,400&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;700&display=swap');
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   body { background: ${T.creme}; -webkit-font-smoothing: antialiased; }
   button:focus-visible { outline: 2px solid ${T.white}; outline-offset: 2px; box-shadow: 0 0 0 4px ${T.vert}; }
@@ -731,7 +733,7 @@ function DiagnosticCard({ dimension, index, rank = null, cardArticle = null }) {
       )}
       <div style={{ padding: isPriority ? "18px 18px 14px" : "16px 18px 12px" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12, flexWrap: "wrap", gap: 8 }}>
-          <h3 style={{ fontSize: isPriority ? 17 : 15, fontWeight: 700, color: T.text, margin: 0, fontFamily: T.f, letterSpacing: isPriority ? "-0.01em" : 0 }}>
+          <h3 style={{ fontSize: isPriority ? 17 : 15, fontWeight: 700, color: T.text, margin: 0, fontFamily: T.fHeading, letterSpacing: isPriority ? "-0.01em" : 0 }}>
             {rank && !isPriority && <span style={{ color: T.textMuted, fontWeight: 600, marginRight: 6 }}>{rank}.</span>}
             {dimension.name}
           </h3>
@@ -806,7 +808,7 @@ function LockedDiagnosticCard({ dimension, rank = null, onUnlockClick }) {
     >
       <div style={{ padding: "14px 18px 8px", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          <h3 style={{ fontSize: 14, fontWeight: 700, color: T.text, margin: 0, fontFamily: T.f }}>
+          <h3 style={{ fontSize: 14, fontWeight: 700, color: T.text, margin: 0, fontFamily: T.fHeading }}>
             {rank && <span style={{ color: T.textMuted, fontWeight: 600, marginRight: 6 }}>{rank}.</span>}
             {dimension.name}
           </h3>
@@ -902,7 +904,7 @@ function ChapterRevealScreen({ completedDimIndex, nextDimIndex, onContinue }) {
       <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: ".1em", textTransform: "uppercase", color: "rgba(255,255,255,0.4)", marginBottom: 8, fontFamily: T.f }}>
         Dimension complète
       </p>
-      <h2 style={{ fontSize: 22, fontWeight: 800, color: T.white, marginBottom: 28, fontFamily: T.f }}>{completed.name}</h2>
+      <h2 style={{ fontSize: 22, fontWeight: 800, color: T.white, marginBottom: 28, fontFamily: T.fHeading }}>{completed.name}</h2>
       <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", color: "rgba(255,255,255,0.35)", marginBottom: 8, fontFamily: T.f }}>
         Prochaine dimension
       </p>
@@ -926,7 +928,7 @@ function PDFDocument({ globalScore, category, globalResult, dimensionResults, pr
         <p style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: `${T.white}99`, marginBottom: 8 }}>
           Collaboration Solved
         </p>
-        <h1 style={{ fontSize: 28, fontWeight: 900, color: T.white, marginBottom: 4, letterSpacing: "-0.02em" }}>
+        <h1 style={{ fontSize: 28, fontWeight: 900, color: T.white, marginBottom: 4, letterSpacing: "-0.02em", fontFamily: T.fHeading }}>
           Ton diagnostic Scrum Master
         </h1>
         <p style={{ fontSize: 13, color: `${T.white}80` }}>{dateStr}</p>
@@ -935,7 +937,7 @@ function PDFDocument({ globalScore, category, globalResult, dimensionResults, pr
       {/* Score + texte global */}
       <div style={{ padding: "28px 48px", borderBottom: `1px solid ${T.border}`, display: "flex", gap: 32, alignItems: "flex-start" }}>
         <div style={{ textAlign: "center", flexShrink: 0 }}>
-          <div style={{ fontSize: 80, fontWeight: 900, color: category.key === "irreplaceable" ? T.vert : category.color, lineHeight: 1, letterSpacing: "-0.04em" }}>{globalScore}</div>
+          <div style={{ fontSize: 80, fontWeight: 900, color: category.key === "irreplaceable" ? T.vert : category.color, lineHeight: 1, letterSpacing: "-0.04em", fontFamily: T.fMono }}>{globalScore}</div>
           <div style={{ fontSize: 14, color: T.textMuted, marginBottom: 8 }}>/100</div>
           <div style={{ display: "inline-block", padding: "6px 18px", fontSize: 13, fontWeight: 700, color: category.key === "irreplaceable" ? T.vertDark : T.white, background: category.key === "irreplaceable" ? T.jaune : category.color, borderRadius: 20 }}>{category.label}</div>
         </div>
@@ -978,7 +980,7 @@ function PDFDocument({ globalScore, category, globalResult, dimensionResults, pr
 
       {/* Vue d'ensemble */}
       <div style={{ padding: "24px 48px 20px" }}>
-        <h2 style={{ fontSize: 12, fontWeight: 700, color: T.vert, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 16 }}>Vue d'ensemble</h2>
+        <h2 style={{ fontSize: 12, fontWeight: 700, color: T.vert, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 16, fontFamily: T.fHeading }}>Vue d'ensemble</h2>
         {orderedResults.map((dim) => {
           const dimCat = getCategory(dim.pct);
           const isPriority = dim.id === priorityDimId;
@@ -988,7 +990,7 @@ function PDFDocument({ globalScore, category, globalResult, dimensionResults, pr
                 <span style={{ fontSize: 13, fontWeight: isPriority ? 700 : 500, color: isPriority ? T.vert : T.text }}>
                   {dim.shortName}{isPriority ? " ← priorité" : ""}
                 </span>
-                <span style={{ fontSize: 13, fontWeight: 700, color: dimCat.color, fontFamily: "monospace" }}>{dim.score}/8</span>
+                <span style={{ fontSize: 13, fontWeight: 700, color: dimCat.color, fontFamily: T.fMono }}>{dim.score}/8</span>
               </div>
               <div style={{ height: 6, background: T.cremeDeep, borderRadius: 3 }}>
                 <div style={{ height: 6, width: `${Math.max(dim.pct, 3)}%`, background: dimCat.color, borderRadius: 3 }} />
@@ -1000,7 +1002,7 @@ function PDFDocument({ globalScore, category, globalResult, dimensionResults, pr
 
       {/* Diagnostics détaillés — forced page break before this section (end of page 1) */}
       <div data-pdf-force-break="true" style={{ padding: "24px 48px 32px" }}>
-        <h2 style={{ fontSize: 12, fontWeight: 700, color: T.vert, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 16 }}>Diagnostic par dimension</h2>
+        <h2 style={{ fontSize: 12, fontWeight: 700, color: T.vert, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 16, fontFamily: T.fHeading }}>Diagnostic par dimension</h2>
         {orderedResults.map((dim, index) => {
           const level = getDiagnosticLevel(dim.score);
           const diag = dim.diagnostics[level];
@@ -1014,7 +1016,7 @@ function PDFDocument({ globalScore, category, globalResult, dimensionResults, pr
             {index === 3 && <div data-pdf-force-break="true" style={{ height: 24 }} />}
             <div style={{ marginBottom: 20 }}>
               <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8, alignItems: "center" }}>
-                <h3 style={{ fontSize: 14, fontWeight: 700, color: T.text, margin: 0 }}>{dim.name}</h3>
+                <h3 style={{ fontSize: 14, fontWeight: 700, color: T.text, margin: 0, fontFamily: T.fHeading }}>{dim.name}</h3>
                 <span style={{ fontSize: 11, fontWeight: 700, color: dimCat.color, padding: "3px 10px", background: dimCat.bg, borderRadius: 20 }}>{levelLabel} — {dim.score}/8</span>
               </div>
               <p style={{ fontSize: 13, lineHeight: 1.7, color: T.textMid, marginBottom: 10 }}>{diag.text}</p>
@@ -1126,7 +1128,7 @@ function ScoreCardDocument({ globalScore, category, dimensionResults }) {
       <p style={{ fontSize: 24, fontWeight: 800, color: T.jaune, letterSpacing: "0.18em", textTransform: "uppercase", margin: 0 }}>SM Survival Score</p>
 
       <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-        <div style={{ fontSize: 240, fontWeight: 900, color: scoreColor, lineHeight: 1, letterSpacing: "-0.04em" }}>{globalScore}</div>
+        <div style={{ fontSize: 240, fontWeight: 900, color: scoreColor, lineHeight: 1, letterSpacing: "-0.04em", fontFamily: T.fMono }}>{globalScore}</div>
         <p style={{ fontSize: 28, fontWeight: 600, color: `${T.white}cc`, margin: "4px 0 24px" }}>/100</p>
         <div style={{ padding: "14px 40px", fontSize: 26, fontWeight: 700, color: badgeText, background: badgeBg, borderRadius: 32, marginBottom: 48 }}>{category.label}</div>
 
@@ -1378,7 +1380,7 @@ function UnlockModal({ email, onClose, pdfProps, onRestoreFocus }) {
         <div style={{ width: 56, height: 56, borderRadius: "50%", background: T.vertLight, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
           <IconCheck size={26} color={T.vert} />
         </div>
-        <h2 id="modal-title" ref={headingRef} tabIndex={-1} style={{ fontSize: 20, fontWeight: 800, color: T.vert, marginBottom: 12, outline: "none" }}>
+        <h2 id="modal-title" ref={headingRef} tabIndex={-1} style={{ fontSize: 20, fontWeight: 800, color: T.vert, marginBottom: 12, outline: "none", fontFamily: T.fHeading }}>
           Diagnostics déverrouillés
         </h2>
         <p style={{ fontSize: 14, color: T.textMuted, lineHeight: 1.65, marginBottom: 28 }}>
@@ -1423,7 +1425,7 @@ function LandingScreen({ onStart }) {
         <p style={{ fontSize: 11, fontWeight: 600, color: `${T.white}40`, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 28 }}>
           Collaboration Solved
         </p>
-        <h1 style={{ fontSize: "clamp(30px, 7vw, 44px)", fontWeight: 900, lineHeight: 1.15, color: T.white, marginBottom: 20, letterSpacing: "-0.03em" }}>
+        <h1 style={{ fontSize: "clamp(30px, 7vw, 44px)", fontWeight: 900, lineHeight: 1.15, color: T.white, marginBottom: 20, letterSpacing: "-0.03em", fontFamily: T.fHeading }}>
           <span style={{ display: "block" }}>Ton rôle est en danger.</span>
           <span style={{ display: "block", fontWeight: 700 }}>Tu ne sais pas encore où.</span>
         </h1>
@@ -1529,7 +1531,7 @@ function QuestionScreen({ questionIndex, question, selectedAnswer, onSelect, onN
         <div style={{ maxWidth: 560, margin: "0 auto" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
             <span style={{ fontSize: 12, fontWeight: 600, color: T.jaune, letterSpacing: "0.04em", textTransform: "uppercase" }}>{dimInfo.name}</span>
-            <span style={{ fontSize: 12, color: `${T.white}99`, fontFamily: "monospace" }}>{questionIndex + 1}/{total}</span>
+            <span style={{ fontSize: 12, color: `${T.white}99`, fontFamily: T.fMono }}>{questionIndex + 1}/{total}</span>
           </div>
           <ProgressBar currentIndex={questionIndex} />
         </div>
@@ -1537,13 +1539,13 @@ function QuestionScreen({ questionIndex, question, selectedAnswer, onSelect, onN
 
       {/* Question */}
       <main key={questionIndex} style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", maxWidth: 560, margin: "0 auto", padding: "40px 24px", width: "100%", animation: "fadeIn 0.2s ease-out" }}>
-        <h2 style={{ fontSize: "clamp(18px, 4.5vw, 22px)", fontWeight: 700, lineHeight: 1.5, color: T.text, marginBottom: 28 }}>
+        <h2 style={{ fontSize: "clamp(18px, 4.5vw, 22px)", fontWeight: 700, lineHeight: 1.5, color: T.text, marginBottom: 28, fontFamily: T.fHeading }}>
           {question.text}
         </h2>
         <p style={{ fontSize: 11, color: T.textLight, marginBottom: 14, fontFamily: T.f }}>
           {ANSWER_LETTERS.map((l, i) => (
             <span key={l}>
-              <kbd style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", background: T.white, border: `1px solid ${T.border}`, borderBottom: `2px solid ${T.border}`, borderRadius: 4, width: 18, height: 18, fontSize: 10, fontWeight: 700, color: T.textMuted, fontFamily: "monospace", marginRight: 2 }}>{l}</kbd>
+              <kbd style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", background: T.white, border: `1px solid ${T.border}`, borderBottom: `2px solid ${T.border}`, borderRadius: 4, width: 18, height: 18, fontSize: 10, fontWeight: 700, color: T.textMuted, fontFamily: T.fMono, marginRight: 2 }}>{l}</kbd>
               {i < ANSWER_LETTERS.length - 1 ? " " : ""}
             </span>
           ))}
@@ -1573,7 +1575,7 @@ function QuestionScreen({ questionIndex, question, selectedAnswer, onSelect, onN
                 <span style={{
                   flexShrink: 0, width: 24, height: 24, borderRadius: 6,
                   display: "flex", alignItems: "center", justifyContent: "center",
-                  fontSize: 11, fontWeight: 800, fontFamily: "monospace",
+                  fontSize: 11, fontWeight: 800, fontFamily: T.fMono,
                   background: sel ? "rgba(255,255,255,0.18)" : "#e8f3ee",
                   color: sel ? T.white : T.vert,
                   border: `1px solid ${sel ? "rgba(255,255,255,0.25)" : "rgba(0,105,70,0.25)"}`,
@@ -1716,7 +1718,7 @@ function ResultScreen({ answers, onRestart, sessionId }) {
       <header style={{ background: T.vert, padding: "48px 24px 56px", textAlign: "center", animation: "fadeIn 0.4s ease-out" }}>
         <div style={{ maxWidth: 520, margin: "0 auto" }}>
           <p style={{ fontSize: 12, color: T.onVertMuted, marginBottom: 12, letterSpacing: "0.06em", textTransform: "uppercase", fontWeight: 600 }}>Ton score</p>
-          <h1 aria-label={`Score : ${globalScore} sur 100`} style={{ fontSize: "clamp(64px, 18vw, 96px)", fontWeight: 900, color: category.onDark, lineHeight: 1, letterSpacing: "-0.04em", animation: "scaleIn 0.4s ease-out 0.15s both", willChange: "transform, opacity" }}>{globalScore}</h1>
+          <h1 aria-label={`Score : ${globalScore} sur 100`} style={{ fontSize: "clamp(64px, 18vw, 96px)", fontWeight: 900, color: category.onDark, lineHeight: 1, letterSpacing: "-0.04em", animation: "scaleIn 0.4s ease-out 0.15s both", willChange: "transform, opacity", fontFamily: T.fMono }}>{globalScore}</h1>
           <p style={{ fontSize: 16, color: T.onVertMuted, marginBottom: 20 }}>/100</p>
           <div data-a11y-shape style={{ display: "inline-block", padding: "10px 28px", fontSize: 15, fontWeight: 700, color: T.vertDark, background: category.onDark, borderRadius: 24 }}>{category.label}</div>
           <button
@@ -1752,7 +1754,7 @@ function ResultScreen({ answers, onRestart, sessionId }) {
             diagnostics et marquent la dimension prioritaire, comme le PDF le fait déjà : trois
             artefacts, un seul classement. */}
         <BentoCard style={{ marginBottom: 16, animation: "fadeUp 0.4s ease-out 0.3s both" }}>
-          <h2 style={{ fontSize: 13, fontWeight: 700, color: T.vert, marginBottom: 16, textTransform: "uppercase", letterSpacing: "0.06em" }}>Par dimension</h2>
+          <h2 style={{ fontSize: 13, fontWeight: 700, color: T.vert, marginBottom: 16, textTransform: "uppercase", letterSpacing: "0.06em", fontFamily: T.fHeading }}>Par dimension</h2>
           {orderedDimResults.map((dim, i) => {
             const dimCategory = getCategory(dim.pct);
             const isPriority = dim.id === priorityDimId;
@@ -1763,7 +1765,7 @@ function ResultScreen({ answers, onRestart, sessionId }) {
                     {dim.shortName}
                     {isPriority && <span style={{ fontSize: 11, fontWeight: 700, color: T.vert, marginLeft: 8, textTransform: "uppercase", letterSpacing: "0.04em" }}>priorité</span>}
                   </span>
-                  <span style={{ fontSize: 13, fontWeight: 700, color: dimCategory.color, fontFamily: "monospace", whiteSpace: "nowrap" }}>{dim.score}/{MAX_DIM_SCORE}</span>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: dimCategory.color, fontFamily: T.fMono, whiteSpace: "nowrap" }}>{dim.score}/{MAX_DIM_SCORE}</span>
                 </div>
                 <div data-a11y-shape role="meter" aria-valuenow={dim.score} aria-valuemin={0} aria-valuemax={MAX_DIM_SCORE} aria-label={isPriority ? `${dim.name} — dimension prioritaire` : dim.name} style={{ height: 6, background: T.cremeDeep, border: `1px solid ${T.trackBorder}`, borderRadius: 3, overflow: "hidden" }}>
                   <div style={{ height: 6, width: "100%", transformOrigin: "left", transform: `scaleX(${Math.max(dim.pct, 3) / 100})`, background: dimCategory.color, borderRadius: 3, transition: "transform 0.6s ease-out" }} />
@@ -1834,7 +1836,7 @@ function ResultScreen({ answers, onRestart, sessionId }) {
               Tes 5 diagnostics sont ouverts. Ton rapport PDF reste accessible en bas de page.
             </p>
           )}
-          <h2 style={{ fontSize: 13, fontWeight: 700, color: T.vert, textTransform: "uppercase", letterSpacing: "0.06em", paddingLeft: 4 }}>Diagnostic par dimension</h2>
+          <h2 style={{ fontSize: 13, fontWeight: 700, color: T.vert, textTransform: "uppercase", letterSpacing: "0.06em", paddingLeft: 4, fontFamily: T.fHeading }}>Diagnostic par dimension</h2>
           <DiagnosticCard dimension={priorityDimResult} index={0} rank={1} cardArticle={cardArticle} />
           {unlocked ? (
             orderedDimResults.filter(d => d.id !== priorityDimId).map((dim, i) => <DiagnosticCard key={dim.id} dimension={dim} index={i + 1} rank={i + 2} />)
