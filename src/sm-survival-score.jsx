@@ -1411,7 +1411,7 @@ function UnlockModal({ email, onClose, pdfProps, onRestoreFocus }) {
       role="dialog" aria-modal="true" aria-labelledby="modal-title"
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
       className="no-print"
-      style={{ position: "fixed", inset: 0, background: "rgba(11,36,25,0.65)",
+      style={{ position: "fixed", inset: 0, background: "rgba(21,17,13,0.65)",
         display: "flex", alignItems: "center", justifyContent: "center",
         zIndex: 1000, padding: 24 }}>
       <div ref={dialogRef} style={{ background: T.white, borderRadius: T.rLg, maxWidth: 440,
@@ -1621,9 +1621,9 @@ function QuestionScreen({ questionIndex, question, selectedAnswer, onSelect, onN
                   flexShrink: 0, width: 24, height: 24, borderRadius: 6,
                   display: "flex", alignItems: "center", justifyContent: "center",
                   fontSize: 11, fontWeight: 800, fontFamily: T.fMono,
-                  background: sel ? "rgba(255,255,255,0.18)" : "#e8f3ee",
+                  background: sel ? "rgba(255,255,255,0.18)" : T.cremeDeep,
                   color: sel ? T.white : T.jaune,
-                  border: `1px solid ${sel ? "rgba(255,255,255,0.25)" : "rgba(0,105,70,0.25)"}`,
+                  border: `1px solid ${sel ? "rgba(255,255,255,0.25)" : T.border}`,
                   flexShrink: 0,
                 }}>{ANSWER_LETTERS[i]}</span>
                 <span>{a.text}</span>
