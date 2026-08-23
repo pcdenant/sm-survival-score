@@ -1273,11 +1273,11 @@ const SIGNUP_ERRORS = {
   server: {
     // Panne de notre côté : ne pas dire à l'utilisateur que son adresse est fautive, et ne pas
     // le laisser croire qu'il a perdu son diagnostic.
-    text: "Le service est momentanément indisponible — ce n'est pas ton adresse. Réessaie dans quelques minutes, tes résultats restent affichés.",
+    text: "Le service est momentanément indisponible : ce n'est pas ton adresse. Réessaie dans quelques minutes, tes résultats restent affichés.",
     recoverable: false,
   },
   offline: {
-    text: "Connexion interrompue. Vérifie ton réseau et réessaie — tes résultats restent affichés.",
+    text: "Connexion interrompue. Vérifie ton réseau et réessaie : tes résultats restent affichés.",
     recoverable: false,
   },
 };
@@ -1430,7 +1430,7 @@ function UnlockModal({ email, onClose, pdfProps, onRestoreFocus }) {
         </h2>
         <p style={{ fontSize: 14, color: T.textMuted, lineHeight: 1.65, marginBottom: 28 }}>
           Un email a été envoyé à <strong style={{ color: T.text }}>{email}</strong>.
-          Vérifie aussi tes spams — sans confirmation, tu ne recevras pas les conseils de la semaine.
+          Vérifie aussi tes spams : sans confirmation, tu ne recevras pas les conseils de la semaine.
         </p>
         <button onClick={handleDownloadPDF} disabled={isGenerating} className="btn-hover" style={{ display: "block", width: "100%",
           padding: "14px 24px", minHeight: 48, background: isGenerating ? T.textLight : T.jaune, color: T.white, fontWeight: 700,
@@ -1440,7 +1440,7 @@ function UnlockModal({ email, onClose, pdfProps, onRestoreFocus }) {
         </button>
         {pdfError && (
           <p role="alert" style={{ fontSize: 12, color: T.textMid, margin: "0 0 12px", lineHeight: 1.5 }}>
-            La génération a échoué. Réessaie — et si ça persiste, le rapport reste disponible depuis tes résultats.
+            La génération a échoué. Réessaie, et si ça persiste, le rapport reste disponible depuis tes résultats.
           </p>
         )}
         <button onClick={onClose} className="btn-hover" style={{ display: "block", width: "100%",
@@ -1777,7 +1777,7 @@ function ResultScreen({ answers, onRestart, sessionId }) {
             {isGeneratingCard ? "Génération..." : "Télécharger ma carte de score"}
           </button>
           {cardError && (
-            <p role="alert" style={{ marginTop: 10, fontSize: 13, color: T.jauneClair, fontFamily: T.f }}>Impossible de générer la carte — réessaie.</p>
+            <p role="alert" style={{ marginTop: 10, fontSize: 13, color: T.jauneClair, fontFamily: T.f }}>Impossible de générer la carte : réessaie.</p>
           )}
         </div>
       </header>
@@ -1812,7 +1812,7 @@ function ResultScreen({ answers, onRestart, sessionId }) {
                   </span>
                   <span style={{ fontSize: 13, fontWeight: 700, color: dimCategory.color, fontFamily: T.fMono, whiteSpace: "nowrap" }}>{dim.score}/{MAX_DIM_SCORE}</span>
                 </div>
-                <div data-a11y-shape role="meter" aria-valuenow={dim.score} aria-valuemin={0} aria-valuemax={MAX_DIM_SCORE} aria-label={isPriority ? `${dim.name} — dimension prioritaire` : dim.name} style={{ height: 6, background: T.cremeDeep, border: `1px solid ${T.trackBorder}`, borderRadius: 3, overflow: "hidden" }}>
+                <div data-a11y-shape role="meter" aria-valuenow={dim.score} aria-valuemin={0} aria-valuemax={MAX_DIM_SCORE} aria-label={isPriority ? `${dim.name} : dimension prioritaire` : dim.name} style={{ height: 6, background: T.cremeDeep, border: `1px solid ${T.trackBorder}`, borderRadius: 3, overflow: "hidden" }}>
                   <div style={{ height: 6, width: "100%", transformOrigin: "left", transform: `scaleX(${Math.max(dim.pct, 3) / 100})`, background: dimCategory.color, borderRadius: 3, transition: "transform 0.6s ease-out" }} />
                 </div>
               </div>
@@ -1915,7 +1915,7 @@ function ResultScreen({ answers, onRestart, sessionId }) {
           )}
           {pdfError && (
             <p role="alert" style={{ width: "100%", textAlign: "center", fontSize: 13, color: T.onVertMuted, margin: 0, lineHeight: 1.5 }}>
-              La génération du PDF a échoué. Réessaie — tes résultats restent affichés.
+              La génération du PDF a échoué. Réessaie : tes résultats restent affichés.
             </p>
           )}
           <button onClick={handleShare} aria-label="Partager le test" className="btn-hover" style={T.btnAction}>
@@ -1925,7 +1925,7 @@ function ResultScreen({ answers, onRestart, sessionId }) {
             onClick={() => {
               if (window.confirm("Refaire le test effacera ce diagnostic et tes 20 réponses. Continuer ?")) onRestart();
             }}
-            aria-label="Refaire le test — efface le diagnostic actuel"
+            aria-label="Refaire le test : efface le diagnostic actuel"
             className="btn-hover"
             style={T.btnGhost}
           >
