@@ -473,27 +473,50 @@ export function buildAbandonPayload(screen, currentQ, answers) {
 }
 
 // ============================================================
-// DESIGN TOKENS — Brand: vert #006946, jaune #FFF200, crème #FBF3EB
+// DESIGN TOKENS — Brand (post-audit Purple Cow, aligné sur collaborationsolved.com) :
+// encre #15110d, papier #f3ecdc, signal #c8102e (seul accent de marque).
 // ============================================================
 
 const T = {
-  vert: "#006946",
+  // "vert" et "creme" gardent leur nom (portée : fond de marque) mais portent désormais
+  // la même valeur qu'encre — un seul ton de fond dans toute l'appli, plus deux noms
+  // historiques pour limiter le diff. vertDark reste sur l'ancienne valeur : encore
+  // consommé par PDFDocument/ScoreCardDocument, dont la migration est PR5.
+  vert: "#15110d",
   vertDark: "#004d34",
-  vertLight: "#e6f5ef",
-  jaune: "#FFF200",
-  jauneMuted: "#e6d900",
-  creme: "#FBF3EB",
-  cremeDeep: "#f0e6d9",
-  white: "#ffffff",
-  // Échelle de gris calibrée pour tenir AA (4.5:1) sur les DEUX surfaces claires du produit,
-  // crème #FBF3EB et blanc. Les anciennes valeurs (#7a7a7a, #a3a3a3) tombaient à 2.30–4.29 :
-  // le contraste minimal sur crème impose ~#6e6e6e, donc la hiérarchie se resserre et se joue
-  // désormais surtout à la taille et à la graisse, pas seulement à la couleur.
-  text: "#1a1a1a",      // 15.85 crème / 17.40 blanc
-  textMid: "#4a4a4a",   //  8.07 /  8.86
-  textMuted: "#666666", //  5.23 /  5.74
-  textLight: "#6e6e6e", //  4.64 /  5.10
-  // Texte secondaire sur le vert : white@.8. En dessous ça échoue (.733 → 4.41, .6 → 3.48).
+  // jaune devient le signal (seul accent) : fonds de bouton/badge ET texte/icône
+  // d'accent sur surface claire (papier). Contraste vérifié 5.01:1 sur papier.
+  jaune: "#c8102e",
+  // Variante claire du signal, pour du texte lisible directement sur fond encre :
+  // c8102e sur 15110d ne fait que 3.19:1 (échoue AA texte) ; e63946 remonte à 4.51:1.
+  jauneClair: "#e63946",
+  // Teinte pâle du signal — fonds d'icône/encadré clairs (remplace l'ancien vertLight).
+  jauneLight: "#fce9ea",
+  creme: "#15110d",
+  // Papier plus soutenu : panneaux clairs nichés dans une carte ou une page déjà claires
+  // (ex. bandeau d'article dans une DiagnosticCard, encadré CTA du PDF). Assez clair pour
+  // que jaune (signal, texte de lien) y reste ≥4.5:1 (4.71:1 mesuré) — le #e8dcc4 initial
+  // ne faisait que 4.33:1.
+  cremeDeep: "#f0e5cb",
+  // Papier : à la fois fond de carte ET texte clair sur fond encre (15.7:1 sur encre).
+  // Éclairci par rapport au papier du site (#f3ecdc, calibré pour d'autres composants
+  // Ghost) : à cette valeur, l'échelle de gris ci-dessous et les couleurs de catégorie
+  // existantes (ex. stable #b45309, 4.26:1 sur #f3ecdc) retombaient sous 4.5:1.
+  white: "#f9f3e4",
+  // Échelle de gris calibrée pour tenir AA (4.5:1) sur les surfaces claires du produit
+  // (papier #f9f3e4 et sa variante soutenue #f0e5cb). Les anciennes valeurs (#7a7a7a,
+  // #a3a3a3) tombaient à 2.30–4.29 : le contraste minimal impose ~#6e6e6e, donc la
+  // hiérarchie se resserre et se joue désormais surtout à la taille et à la graisse, pas
+  // seulement à la couleur. Réservé au texte à l'intérieur des cartes/boutons clairs — le
+  // texte posé directement sur la page (fond encre) utilise white/onVertMuted, pas cette
+  // échelle.
+  text: "#1a1a1a",      // 17.9 papier / 17.40 blanc
+  textMid: "#4a4a4a",   //  9.1 /  8.86
+  textMuted: "#666666", //  5.9 /  5.74
+  textLight: "#6e6e6e", //  4.6 /  5.10
+  // Texte secondaire directement sur fond encre : white@.8, contraste encore plus large
+  // qu'avant (fond plus sombre qu'avant). En dessous ça échouait déjà sur l'ancien vert
+  // (.733 → 4.41, .6 → 3.48) — la marge ne fait que croître ici, valeur inchangée.
   onVertMuted: "rgba(255,255,255,.8)",
   border: "#e8ddd1",
   borderLight: "#f0e8de",
@@ -506,8 +529,8 @@ const T = {
   fMono: "'IBM Plex Mono', Menlo, Consolas, monospace",
 };
 // Button style helpers — used in ResultScreen actions (share + restart)
-T.btnAction = { fontSize: 14, fontWeight: 700, fontFamily: T.f, background: T.vert, color: T.white, border: "none", borderRadius: T.rSm, cursor: "pointer", minHeight: 48, padding: "14px 28px" };
-T.btnGhost = { fontSize: 14, fontWeight: 600, fontFamily: T.f, background: "transparent", color: T.textMuted, border: `1px solid ${T.border}`, borderRadius: T.rSm, cursor: "pointer", minHeight: 48, padding: "14px 28px" };
+T.btnAction = { fontSize: 14, fontWeight: 700, fontFamily: T.f, background: T.jaune, color: T.white, border: "none", borderRadius: T.rSm, cursor: "pointer", minHeight: 48, padding: "14px 28px" };
+T.btnGhost = { fontSize: 14, fontWeight: 600, fontFamily: T.f, background: "transparent", color: T.onVertMuted, border: `1px solid ${T.border}`, borderRadius: T.rSm, cursor: "pointer", minHeight: 48, padding: "14px 28px" };
 
 // ============================================================
 // GLOBAL STYLES
@@ -517,7 +540,11 @@ const GLOBAL_CSS = `
   @import url('https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;700&display=swap');
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   body { background: ${T.creme}; -webkit-font-smoothing: antialiased; }
-  button:focus-visible { outline: 2px solid ${T.white}; outline-offset: 2px; box-shadow: 0 0 0 4px ${T.vert}; }
+  button:focus-visible { outline: 2px solid ${T.white}; outline-offset: 2px; box-shadow: 0 0 0 4px ${T.jaune}; }
+  /* Liens posés directement sur le fond encre (pas dans une carte claire) : le contour de
+     focus par défaut du navigateur (sombre) y est invisible. Les liens dans une carte claire
+     gardent le contour par défaut, qui y fonctionne déjà. */
+  .link-on-ink:focus-visible, summary:focus-visible { outline: 2px solid ${T.white}; outline-offset: 2px; box-shadow: 0 0 0 4px ${T.jaune}; }
   @keyframes fadeUp { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:translateY(0); } }
   @keyframes fadeIn { from { opacity:0; } to { opacity:1; } }
   @keyframes scaleIn { from { opacity:0; transform:scale(0.88); } to { opacity:1; transform:scale(1); } }
@@ -537,7 +564,7 @@ const GLOBAL_CSS = `
     .signup-row { flex-direction: column; }
     .signup-row > * { width: 100%; }
   }
-  .signup-input:focus-visible { outline: 2px solid ${T.jaune}; outline-offset: 2px; }
+  .signup-input:focus-visible { outline: 2px solid ${T.jauneClair}; outline-offset: 2px; }
 `;
 
 let stylesInjected = false;
@@ -669,8 +696,8 @@ function PrioritySignal({ priorityDimId, level }) {
   const signal = getSignalText(priorityDimId, level);
   if (!signal) return null;
   return (
-    <div style={{ backgroundColor: T.vertDark, borderRadius: T.r, padding: '18px 20px', margin: '20px 0 24px 0' }}>
-      <p style={{ fontWeight: 700, fontSize: '0.95rem', color: T.jaune, margin: '0 0 6px 0', fontFamily: T.f, letterSpacing: '-0.01em' }}>{signal.title}</p>
+    <div style={{ backgroundColor: T.vert, borderRadius: T.r, padding: '18px 20px', margin: '20px 0 24px 0' }}>
+      <p style={{ fontWeight: 700, fontSize: '0.95rem', color: T.jauneClair, margin: '0 0 6px 0', fontFamily: T.f, letterSpacing: '-0.01em' }}>{signal.title}</p>
       <p style={{ fontSize: '0.9rem', color: 'rgba(255,255,255,.75)', margin: 0, lineHeight: 1.5, fontFamily: T.f }}>{signal.body}</p>
     </div>
   );
@@ -721,13 +748,13 @@ function DiagnosticCard({ dimension, index, rank = null, cardArticle = null }) {
     <BentoCard
       style={{
         animation: `fadeUp 0.3s ease-out ${index * 0.06}s both`, padding: 0, overflow: "hidden",
-        ...(isPriority ? { boxShadow: `0 2px 16px ${T.vert}1f`, border: `1px solid ${T.vert}` } : null),
+        ...(isPriority ? { boxShadow: `0 2px 16px ${T.jaune}1f`, border: `1px solid ${T.jaune}` } : null),
       }}
       role="article"
       aria-label={rank ? `Diagnostic ${rank} sur 5 : ${dimension.name}` : `Diagnostic : ${dimension.name}`}
     >
       {isPriority && (
-        <div style={{ background: T.vert, padding: "6px 18px", fontSize: 11, fontWeight: 800, letterSpacing: ".08em", textTransform: "uppercase", color: T.jaune, fontFamily: T.f }}>
+        <div style={{ background: T.vert, padding: "6px 18px", fontSize: 11, fontWeight: 800, letterSpacing: ".08em", textTransform: "uppercase", color: T.jauneClair, fontFamily: T.f }}>
           Priorité 1 — commence ici
         </div>
       )}
@@ -748,8 +775,8 @@ function DiagnosticCard({ dimension, index, rank = null, cardArticle = null }) {
             className="btn-hover"
             style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", cursor: "pointer", padding: "17px 0", margin: "-17px 0", marginBottom: expanded ? -5 : -17, minHeight: 48, fontFamily: T.f }}
           >
-            <IconChevron size={11} color={T.vert} direction={expanded ? "up" : "down"} />
-            <span style={{ fontSize: 12, color: T.vert, fontWeight: 600 }}>{expanded ? "Réduire" : "Lire l'analyse complète"}</span>
+            <IconChevron size={11} color={T.jaune} direction={expanded ? "up" : "down"} />
+            <span style={{ fontSize: 12, color: T.jaune, fontWeight: 600 }}>{expanded ? "Réduire" : "Lire l'analyse complète"}</span>
             {!expanded && <span style={{ fontSize: 12, color: T.textLight }}>(30 sec)</span>}
           </button>
         )}
@@ -759,7 +786,7 @@ function DiagnosticCard({ dimension, index, rank = null, cardArticle = null }) {
       </div>
       <div style={{ background: T.vert, padding: "16px 18px" }}>
         <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
-          <div aria-hidden="true" style={{ width: 22, height: 22, borderRadius: "50%", background: T.jaune, color: T.vertDark, fontSize: 11, fontWeight: 900, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 1 }}>{rank ?? "1"}</div>
+          <div aria-hidden="true" style={{ width: 22, height: 22, borderRadius: "50%", background: T.jaune, color: T.white, fontSize: 11, fontWeight: 900, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 1 }}>{rank ?? "1"}</div>
           <div>
             <p style={{ fontSize: 9, fontWeight: 800, textTransform: "uppercase", letterSpacing: ".08em", color: T.onVertMuted, marginBottom: 3, fontFamily: T.f }}>
               {level === "high" ? "Prochain niveau" : "Action cette semaine"}
@@ -772,17 +799,17 @@ function DiagnosticCard({ dimension, index, rank = null, cardArticle = null }) {
         </div>
       </div>
       {cardArticle && (
-        <div style={{ padding: "10px 18px 14px", borderTop: `1px solid ${T.borderLight}`, background: T.creme }}>
+        <div style={{ padding: "10px 18px 14px", borderTop: `1px solid ${T.borderLight}`, background: T.cremeDeep }}>
           {cardArticle.url ? (
             <a href={cardArticle.url} target="_blank" rel="noopener noreferrer"
-               style={{ display: "inline-flex", alignItems: "center", minHeight: 48, fontSize: 13, color: T.vert, textDecoration: "underline", textUnderlineOffset: 3, fontWeight: 600, fontFamily: T.f }}>
+               style={{ display: "inline-flex", alignItems: "center", minHeight: 48, fontSize: 13, color: T.jaune, textDecoration: "underline", textUnderlineOffset: 3, fontWeight: 600, fontFamily: T.f }}>
               {cardArticle.linkText}
             </a>
           ) : (
             <>
               <p style={{ fontSize: 13, color: T.textMid, fontFamily: T.f, margin: "0 0 6px", lineHeight: 1.5 }}>{cardArticle.text}</p>
               <a href="#unlock-form"
-                 style={{ display: "inline-flex", alignItems: "center", minHeight: 48, fontSize: 13, color: T.vert, textDecoration: "underline", textUnderlineOffset: 3, fontWeight: 600, fontFamily: T.f }}>
+                 style={{ display: "inline-flex", alignItems: "center", minHeight: 48, fontSize: 13, color: T.jaune, textDecoration: "underline", textUnderlineOffset: 3, fontWeight: 600, fontFamily: T.f }}>
                 S'abonner →
               </a>
             </>
@@ -821,15 +848,15 @@ function LockedDiagnosticCard({ dimension, rank = null, onUnlockClick }) {
       <div style={{ padding: "0 18px", fontSize: 13, lineHeight: 1.6, color: T.textMid, fontFamily: T.f, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
         {hookText}
       </div>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 18px", background: T.creme, borderTop: `1px solid ${T.border}`, marginTop: 8, gap: 8 }}>
-        <span style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11, color: T.textLight }}>
-          <IconUnlock size={11} color={T.textLight} /> Analyse + action concrète
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 18px", background: T.cremeDeep, borderTop: `1px solid ${T.border}`, marginTop: 8, gap: 8 }}>
+        <span style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11, color: T.textMid }}>
+          <IconUnlock size={11} color={T.textMid} /> Analyse + action concrète
         </span>
         <button
           onClick={onUnlockClick}
           aria-label={`Déverrouiller le diagnostic ${dimension.name}`}
           className="btn-hover"
-          style={{ background: T.vert, color: T.white, padding: "10px 16px", borderRadius: T.rSm, fontSize: 12, fontWeight: 700, fontFamily: T.f, border: "none", cursor: "pointer", whiteSpace: "nowrap", minHeight: 48 }}
+          style={{ background: T.jaune, color: T.white, padding: "10px 16px", borderRadius: T.rSm, fontSize: 12, fontWeight: 700, fontFamily: T.f, border: "none", cursor: "pointer", whiteSpace: "nowrap", minHeight: 48 }}
         >
           Voir le diagnostic →
         </button>
@@ -856,14 +883,14 @@ function ProgressBar({ currentIndex }) {
                 const pipDone = idx < currentIndex;
                 return <div key={q} style={{
                   flex: 1, height: 4, borderRadius: 2,
-                  background: pipCurrent ? T.jaune : pipDone ? "rgba(255,255,255,0.6)" : "rgba(255,255,255,0.12)",
+                  background: pipCurrent ? T.jauneClair : pipDone ? "rgba(255,255,255,0.6)" : "rgba(255,255,255,0.12)",
                   transition: "background 0.2s ease",
                 }} />;
               })}
             </div>
             <div style={{
               fontSize: 9, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em",
-              color: isActive ? T.jaune : isDone ? "rgba(255,255,255,0.5)" : "rgba(255,255,255,0.2)",
+              color: isActive ? T.jauneClair : isDone ? "rgba(255,255,255,0.5)" : "rgba(255,255,255,0.2)",
               textAlign: "center", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
               fontFamily: T.f, lineHeight: 1,
             }}>
@@ -908,7 +935,7 @@ function ChapterRevealScreen({ completedDimIndex, nextDimIndex, onContinue }) {
       <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", color: "rgba(255,255,255,0.35)", marginBottom: 8, fontFamily: T.f }}>
         Prochaine dimension
       </p>
-      <p style={{ fontSize: 18, fontWeight: 700, color: T.jaune, marginBottom: 40, fontFamily: T.f }}>{next.name} →</p>
+      <p style={{ fontSize: 18, fontWeight: 700, color: T.jauneClair, marginBottom: 40, fontFamily: T.f }}>{next.name} →</p>
       <p style={{ fontSize: 12, color: "rgba(255,255,255,0.2)", fontFamily: T.f }}>Clique pour continuer</p>
     </div>
   );
@@ -939,7 +966,7 @@ function PDFDocument({ globalScore, category, globalResult, dimensionResults, pr
         <div style={{ textAlign: "center", flexShrink: 0 }}>
           <div style={{ fontSize: 80, fontWeight: 900, color: category.key === "irreplaceable" ? T.vert : category.color, lineHeight: 1, letterSpacing: "-0.04em", fontFamily: T.fMono }}>{globalScore}</div>
           <div style={{ fontSize: 14, color: T.textMuted, marginBottom: 8 }}>/100</div>
-          <div style={{ display: "inline-block", padding: "6px 18px", fontSize: 13, fontWeight: 700, color: category.key === "irreplaceable" ? T.vertDark : T.white, background: category.key === "irreplaceable" ? T.jaune : category.color, borderRadius: 20 }}>{category.label}</div>
+          <div style={{ display: "inline-block", padding: "6px 18px", fontSize: 13, fontWeight: 700, color: T.white, background: category.key === "irreplaceable" ? T.jaune : category.color, borderRadius: 20 }}>{category.label}</div>
         </div>
         <div>
           {globalResult.paragraphs.map((p, i) => (
@@ -950,13 +977,13 @@ function PDFDocument({ globalScore, category, globalResult, dimensionResults, pr
 
       {/* Signal prioritaire */}
       <div style={{ padding: "24px 48px 0" }}>
-        <div style={{ backgroundColor: T.vertDark, borderRadius: 4, padding: "14px 18px" }}>
+        <div style={{ backgroundColor: T.vert, borderRadius: 4, padding: "14px 18px" }}>
           <p style={{ fontSize: 9, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.1em", color: "rgba(255,255,255,0.4)", margin: "0 0 6px 0" }}>⚡ Signal prioritaire</p>
-          <p style={{ fontWeight: 600, fontSize: 14, color: T.jaune, margin: "0 0 6px 0" }}>{signal.title}</p>
+          <p style={{ fontWeight: 600, fontSize: 14, color: T.jauneClair, margin: "0 0 6px 0" }}>{signal.title}</p>
           <p style={{ fontSize: 13, color: "rgba(255,255,255,0.75)", margin: 0, lineHeight: 1.5 }}>{signal.body}</p>
         </div>
         <div style={{ marginTop: 12, background: T.vert, borderRadius: T.rSm, padding: "12px 14px", display: "flex", gap: 10, alignItems: "flex-start" }}>
-          <div style={{ width: 20, height: 20, borderRadius: "50%", background: T.jaune, color: T.vertDark, fontSize: 10, fontWeight: 900, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 2 }}>1</div>
+          <div style={{ width: 20, height: 20, borderRadius: "50%", background: T.jaune, color: T.white, fontSize: 10, fontWeight: 900, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 2 }}>1</div>
           <div>
             <p style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", color: "rgba(255,255,255,0.5)", marginBottom: 3 }}>
               Action immédiate — {priorityResult.shortName}
@@ -971,7 +998,7 @@ function PDFDocument({ globalScore, category, globalResult, dimensionResults, pr
         <div style={{ padding: "16px 48px 0" }}>
           <p style={{ fontSize: 13, color: T.textMid, lineHeight: 1.6, margin: 0 }}>
             {bannerArticle.accroche}{" "}
-            <a href={bannerArticle.url} style={{ color: T.vert, fontWeight: 600, textDecoration: "underline", textUnderlineOffset: 3 }}>
+            <a href={bannerArticle.url} style={{ color: T.jaune, fontWeight: 600, textDecoration: "underline", textUnderlineOffset: 3 }}>
               {bannerArticle.linkText}
             </a>
           </p>
@@ -980,14 +1007,14 @@ function PDFDocument({ globalScore, category, globalResult, dimensionResults, pr
 
       {/* Vue d'ensemble */}
       <div style={{ padding: "24px 48px 20px" }}>
-        <h2 style={{ fontSize: 12, fontWeight: 700, color: T.vert, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 16, fontFamily: T.fHeading }}>Vue d'ensemble</h2>
+        <h2 style={{ fontSize: 12, fontWeight: 700, color: T.jaune, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 16, fontFamily: T.fHeading }}>Vue d'ensemble</h2>
         {orderedResults.map((dim) => {
           const dimCat = getCategory(dim.pct);
           const isPriority = dim.id === priorityDimId;
           return (
             <div key={dim.id} style={{ marginBottom: 12 }}>
               <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-                <span style={{ fontSize: 13, fontWeight: isPriority ? 700 : 500, color: isPriority ? T.vert : T.text }}>
+                <span style={{ fontSize: 13, fontWeight: isPriority ? 700 : 500, color: isPriority ? T.jaune : T.text }}>
                   {dim.shortName}{isPriority ? " ← priorité" : ""}
                 </span>
                 <span style={{ fontSize: 13, fontWeight: 700, color: dimCat.color, fontFamily: T.fMono }}>{dim.score}/8</span>
@@ -1002,7 +1029,7 @@ function PDFDocument({ globalScore, category, globalResult, dimensionResults, pr
 
       {/* Diagnostics détaillés — forced page break before this section (end of page 1) */}
       <div data-pdf-force-break="true" style={{ padding: "24px 48px 32px" }}>
-        <h2 style={{ fontSize: 12, fontWeight: 700, color: T.vert, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 16, fontFamily: T.fHeading }}>Diagnostic par dimension</h2>
+        <h2 style={{ fontSize: 12, fontWeight: 700, color: T.jaune, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 16, fontFamily: T.fHeading }}>Diagnostic par dimension</h2>
         {orderedResults.map((dim, index) => {
           const level = getDiagnosticLevel(dim.score);
           const diag = dim.diagnostics[level];
@@ -1021,7 +1048,7 @@ function PDFDocument({ globalScore, category, globalResult, dimensionResults, pr
               </div>
               <p style={{ fontSize: 13, lineHeight: 1.7, color: T.textMid, marginBottom: 10 }}>{diag.text}</p>
               <div style={{ background: T.vert, borderRadius: T.rSm, padding: "12px 14px", display: "flex", gap: 10, alignItems: "flex-start" }}>
-                <div style={{ width: 20, height: 20, borderRadius: "50%", background: T.jaune, color: T.vertDark, fontSize: 10, fontWeight: 900, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 2 }}>1</div>
+                <div style={{ width: 20, height: 20, borderRadius: "50%", background: T.jaune, color: T.white, fontSize: 10, fontWeight: 900, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 2 }}>1</div>
                 <div>
                   <p style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", color: "rgba(255,255,255,0.5)", marginBottom: 3 }}>
                     {level === "high" ? "Prochain niveau" : "Action immédiate"}
@@ -1030,8 +1057,8 @@ function PDFDocument({ globalScore, category, globalResult, dimensionResults, pr
                 </div>
               </div>
               {article && (
-                <div style={{ marginTop: 10, padding: "10px 14px", background: T.creme, borderTop: `1px solid ${T.border}` }}>
-                  <a href={article.url} style={{ fontSize: 12, color: T.vert, fontWeight: 600, textDecoration: "underline", textUnderlineOffset: 3 }}>
+                <div style={{ marginTop: 10, padding: "10px 14px", background: T.cremeDeep, borderTop: `1px solid ${T.border}` }}>
+                  <a href={article.url} style={{ fontSize: 12, color: T.jaune, fontWeight: 600, textDecoration: "underline", textUnderlineOffset: 3 }}>
                     {article.linkText}
                   </a>
                 </div>
@@ -1043,12 +1070,12 @@ function PDFDocument({ globalScore, category, globalResult, dimensionResults, pr
       </div>
 
       {/* CTA Collaboration Solved */}
-      <div style={{ padding: "20px 48px 32px", borderTop: `1px solid ${T.border}`, textAlign: "center", background: T.creme }}>
+      <div style={{ padding: "20px 48px 32px", borderTop: `1px solid ${T.border}`, textAlign: "center", background: T.cremeDeep }}>
         <p style={{ fontSize: 13, fontWeight: 600, color: T.text, marginBottom: 8 }}>
           Pour aller plus loin avec un accompagnement personnalisé
         </p>
         {collabUrl && (
-          <a href={collabUrl} style={{ fontSize: 13, color: T.vert, fontWeight: 700, display: "block", marginBottom: 4, textDecoration: "underline", textUnderlineOffset: 3 }}>
+          <a href={collabUrl} style={{ fontSize: 13, color: T.jaune, fontWeight: 700, display: "block", marginBottom: 4, textDecoration: "underline", textUnderlineOffset: 3 }}>
             {collabUrl}
           </a>
         )}
@@ -1121,11 +1148,11 @@ function ScoreCardDocument({ globalScore, category, dimensionResults }) {
   const radar = useMemo(() => buildRadarPolygon(dimensionResults), [dimensionResults]);
   const scoreColor = category.onDark;
   const badgeBg = category.key === "irreplaceable" ? T.jaune : category.color;
-  const badgeText = category.key === "irreplaceable" ? T.vertDark : T.white;
+  const badgeText = T.white;
 
   return (
     <div style={{ width: 1080, height: 1080, background: T.vert, fontFamily: T.f, boxSizing: "border-box", padding: "64px 56px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "space-between" }}>
-      <p style={{ fontSize: 24, fontWeight: 800, color: T.jaune, letterSpacing: "0.18em", textTransform: "uppercase", margin: 0 }}>SM Survival Score</p>
+      <p style={{ fontSize: 24, fontWeight: 800, color: T.jauneClair, letterSpacing: "0.18em", textTransform: "uppercase", margin: 0 }}>SM Survival Score</p>
 
       <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
         <div style={{ fontSize: 240, fontWeight: 900, color: scoreColor, lineHeight: 1, letterSpacing: "-0.04em", fontFamily: T.fMono }}>{globalScore}</div>
@@ -1160,7 +1187,7 @@ function ScoreCardDocument({ globalScore, category, dimensionResults }) {
 
       <div style={{ textAlign: "center" }}>
         <p style={{ fontSize: 16, fontWeight: 600, color: `${T.white}99`, letterSpacing: "0.04em", margin: "0 0 14px" }}>Un outil Collaboration Solved</p>
-        <div style={{ display: "inline-block", padding: "12px 30px", fontSize: 20, fontWeight: 800, color: T.vertDark, background: T.jaune, borderRadius: 28 }}>dub.sh/sm-survival-score</div>
+        <div style={{ display: "inline-block", padding: "12px 30px", fontSize: 20, fontWeight: 800, color: T.white, background: T.jaune, borderRadius: 28 }}>dub.sh/sm-survival-score</div>
       </div>
     </div>
   );
@@ -1291,18 +1318,18 @@ function GhostSignupForm({ onSuccess }) {
             background: `${T.white}15`, color: T.white, fontSize: 14 }}
         />
         <button type="submit" disabled={status === "submitting"} aria-busy={status === "submitting"} className="btn-hover"
-          style={{ padding: "12px 20px", minHeight: 48, borderRadius: 8, background: T.jaune, color: T.vert,
+          style={{ padding: "12px 20px", minHeight: 48, borderRadius: 8, background: T.jaune, color: T.white,
             fontWeight: 700, fontSize: 14, border: "none", cursor: status === "submitting" ? "wait" : "pointer" }}>
           {status === "submitting" ? "Envoi…" : "Déverrouiller"}
         </button>
       </div>
       {/* L'abonnement newsletter n'était annoncé qu'après soumission, dans le modal.
-          .8 et pas .7 : sur T.vert, .7 tombe à 4.17:1 et .8 à 4.94:1 (AA = 4.5:1). */}
+          .8 et pas .7 : sur fond encre, .7 tombe à 4.17:1 et .8 à 4.94:1 (AA = 4.5:1). */}
       <p style={{ fontSize: 12, color: "rgba(255,255,255,.8)", margin: 0, fontFamily: T.f }}>
         Un email par semaine. Désabonnement en un clic.
       </p>
       {error && (
-        <p id="signup-error" role="alert" style={{ fontSize: 12, color: T.jaune, margin: 0, lineHeight: 1.5, textAlign: "left" }}>{error.text}</p>
+        <p id="signup-error" role="alert" style={{ fontSize: 12, color: T.jauneClair, margin: 0, lineHeight: 1.5, textAlign: "left" }}>{error.text}</p>
       )}
     </form>
   );
@@ -1377,10 +1404,10 @@ function UnlockModal({ email, onClose, pdfProps, onRestoreFocus }) {
             borderRadius: T.rSm, cursor: "pointer", color: T.textMuted, fontFamily: T.f }}>
           <IconClose size={18} color={T.textMuted} />
         </button>
-        <div style={{ width: 56, height: 56, borderRadius: "50%", background: T.vertLight, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
-          <IconCheck size={26} color={T.vert} />
+        <div style={{ width: 56, height: 56, borderRadius: "50%", background: T.jauneLight, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
+          <IconCheck size={26} color={T.jaune} />
         </div>
-        <h2 id="modal-title" ref={headingRef} tabIndex={-1} style={{ fontSize: 20, fontWeight: 800, color: T.vert, marginBottom: 12, outline: "none", fontFamily: T.fHeading }}>
+        <h2 id="modal-title" ref={headingRef} tabIndex={-1} style={{ fontSize: 20, fontWeight: 800, color: T.jaune, marginBottom: 12, outline: "none", fontFamily: T.fHeading }}>
           Diagnostics déverrouillés
         </h2>
         <p style={{ fontSize: 14, color: T.textMuted, lineHeight: 1.65, marginBottom: 28 }}>
@@ -1388,7 +1415,7 @@ function UnlockModal({ email, onClose, pdfProps, onRestoreFocus }) {
           Vérifie aussi tes spams — sans confirmation, tu ne recevras pas les conseils de la semaine.
         </p>
         <button onClick={handleDownloadPDF} disabled={isGenerating} className="btn-hover" style={{ display: "block", width: "100%",
-          padding: "14px 24px", minHeight: 48, background: isGenerating ? T.textLight : T.vert, color: T.white, fontWeight: 700,
+          padding: "14px 24px", minHeight: 48, background: isGenerating ? T.textLight : T.jaune, color: T.white, fontWeight: 700,
           fontSize: 15, fontFamily: T.f, border: "none", borderRadius: T.r,
           cursor: isGenerating ? "wait" : "pointer", marginBottom: 12 }}>
           {isGenerating ? "Génération..." : "Télécharger mon rapport (PDF)"}
@@ -1433,7 +1460,7 @@ function LandingScreen({ onStart }) {
           Diagnostic gratuit · 5 min · Sans inscription
         </p>
         <div style={{ maxWidth: 380, width: "100%", margin: "0 auto 32px" }}>
-          <button onClick={onStart} style={{ display: "block", width: "100%", padding: "18px 0", fontSize: 16, fontWeight: 700, fontFamily: T.f, background: T.jaune, color: T.vertDark, border: "none", borderRadius: T.r, cursor: "pointer", boxShadow: "0 4px 24px rgba(0,0,0,0.15)", minHeight: 56, marginBottom: 8 }}>
+          <button onClick={onStart} style={{ display: "block", width: "100%", padding: "18px 0", fontSize: 16, fontWeight: 700, fontFamily: T.f, background: T.jaune, color: T.white, border: "none", borderRadius: T.r, cursor: "pointer", boxShadow: "0 4px 24px rgba(0,0,0,0.15)", minHeight: 56, marginBottom: 8 }}>
             Voir mes angles morts
           </button>
           <p style={{ fontSize: 11, color: `${T.white}40`, textAlign: "center" }}>Résultat immédiat · Aucune carte requise</p>
@@ -1446,7 +1473,7 @@ function LandingScreen({ onStart }) {
             { num: "5",     text: "dimensions analysées : visibilité, preuves, business, autonomie, stratégique" },
           ].map(({ num, text }, i, arr) => (
             <div key={num} style={{ display: "flex", gap: 14, alignItems: "flex-start", marginBottom: i < arr.length - 1 ? 20 : 0 }}>
-              <span style={{ fontSize: 32, fontWeight: 900, color: T.jaune, letterSpacing: "-0.03em", lineHeight: 1, flexShrink: 0, width: 92, textAlign: "right", whiteSpace: "nowrap" }}>{num}</span>
+              <span style={{ fontSize: 32, fontWeight: 900, color: T.jauneClair, letterSpacing: "-0.03em", lineHeight: 1, flexShrink: 0, width: 92, textAlign: "right", whiteSpace: "nowrap" }}>{num}</span>
               <span style={{ fontSize: 13, color: `${T.white}bb`, lineHeight: 1.55, paddingTop: 6 }}>{text}</span>
             </div>
           ))}
@@ -1530,7 +1557,7 @@ function QuestionScreen({ questionIndex, question, selectedAnswer, onSelect, onN
       <header style={{ background: T.vert, padding: "16px 24px", position: "sticky", top: 0, zIndex: 10 }}>
         <div style={{ maxWidth: 560, margin: "0 auto" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-            <span style={{ fontSize: 12, fontWeight: 600, color: T.jaune, letterSpacing: "0.04em", textTransform: "uppercase" }}>{dimInfo.name}</span>
+            <span style={{ fontSize: 12, fontWeight: 600, color: T.jauneClair, letterSpacing: "0.04em", textTransform: "uppercase" }}>{dimInfo.name}</span>
             <span style={{ fontSize: 12, color: `${T.white}99`, fontFamily: T.fMono }}>{questionIndex + 1}/{total}</span>
           </div>
           <ProgressBar currentIndex={questionIndex} />
@@ -1539,10 +1566,10 @@ function QuestionScreen({ questionIndex, question, selectedAnswer, onSelect, onN
 
       {/* Question */}
       <main key={questionIndex} style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", maxWidth: 560, margin: "0 auto", padding: "40px 24px", width: "100%", animation: "fadeIn 0.2s ease-out" }}>
-        <h2 style={{ fontSize: "clamp(18px, 4.5vw, 22px)", fontWeight: 700, lineHeight: 1.5, color: T.text, marginBottom: 28, fontFamily: T.fHeading }}>
+        <h2 style={{ fontSize: "clamp(18px, 4.5vw, 22px)", fontWeight: 700, lineHeight: 1.5, color: T.white, marginBottom: 28, fontFamily: T.fHeading }}>
           {question.text}
         </h2>
-        <p style={{ fontSize: 11, color: T.textLight, marginBottom: 14, fontFamily: T.f }}>
+        <p style={{ fontSize: 11, color: T.onVertMuted, marginBottom: 14, fontFamily: T.f }}>
           {ANSWER_LETTERS.map((l, i) => (
             <span key={l}>
               <kbd style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", background: T.white, border: `1px solid ${T.border}`, borderBottom: `2px solid ${T.border}`, borderRadius: 4, width: 18, height: 18, fontSize: 10, fontWeight: 700, color: T.textMuted, fontFamily: T.fMono, marginRight: 2 }}>{l}</kbd>
@@ -1566,7 +1593,7 @@ function QuestionScreen({ questionIndex, question, selectedAnswer, onSelect, onN
                 style={{
                   padding: "16px 18px 16px 14px", fontSize: 15, lineHeight: 1.5, fontFamily: T.f, textAlign: "left",
                   background: sel ? T.vert : T.white, color: sel ? T.white : T.text,
-                  border: `2px solid ${sel ? T.vert : T.border}`, borderRadius: T.r,
+                  border: `2px solid ${sel ? T.jaune : T.border}`, borderRadius: T.r,
                   cursor: "pointer", transition: "all 0.15s ease", fontWeight: sel ? 600 : 400,
                   minHeight: 56, display: "flex", alignItems: "flex-start", gap: 12,
                   animation: sel && isAdvancing ? "answerPulse 0.2s ease-out" : "none",
@@ -1577,7 +1604,7 @@ function QuestionScreen({ questionIndex, question, selectedAnswer, onSelect, onN
                   display: "flex", alignItems: "center", justifyContent: "center",
                   fontSize: 11, fontWeight: 800, fontFamily: T.fMono,
                   background: sel ? "rgba(255,255,255,0.18)" : "#e8f3ee",
-                  color: sel ? T.white : T.vert,
+                  color: sel ? T.white : T.jaune,
                   border: `1px solid ${sel ? "rgba(255,255,255,0.25)" : "rgba(0,105,70,0.25)"}`,
                   flexShrink: 0,
                 }}>{ANSWER_LETTERS[i]}</span>
@@ -1591,10 +1618,10 @@ function QuestionScreen({ questionIndex, question, selectedAnswer, onSelect, onN
         {isAdvancing && (
           <div key={selectedAnswer} style={{ marginTop: 20 }}>
             <div style={{ height: 2, background: T.border, borderRadius: 1, overflow: "hidden" }}>
-              <div style={{ height: "100%", background: T.vert, borderRadius: 1, animation: "countdown 0.6s linear forwards" }} />
+              <div style={{ height: "100%", background: T.jaune, borderRadius: 1, animation: "countdown 0.6s linear forwards" }} />
             </div>
             {questionIndex === 0 && (
-              <p style={{ fontSize: 11, color: T.textLight, textAlign: "center", marginTop: 6, fontFamily: T.f }}>
+              <p style={{ fontSize: 11, color: T.onVertMuted, textAlign: "center", marginTop: 6, fontFamily: T.f }}>
                 Se déplace automatiquement
               </p>
             )}
@@ -1607,7 +1634,7 @@ function QuestionScreen({ questionIndex, question, selectedAnswer, onSelect, onN
         <div style={{ maxWidth: 560, margin: "0 auto" }}>
           <button onClick={onPrev} disabled={questionIndex === 0} aria-label="Question précédente" style={{
             padding: "12px 28px", fontSize: 14, fontFamily: T.f, fontWeight: 600, background: "transparent",
-            color: questionIndex === 0 ? T.textLight : T.textMuted, border: `1px solid ${T.border}`,
+            color: questionIndex === 0 ? "rgba(255,255,255,0.35)" : T.onVertMuted, border: `1px solid ${T.border}`,
             borderRadius: T.rSm, cursor: questionIndex === 0 ? "default" : "pointer", minHeight: 48,
           }}>Précédent</button>
         </div>
@@ -1720,19 +1747,19 @@ function ResultScreen({ answers, onRestart, sessionId }) {
           <p style={{ fontSize: 12, color: T.onVertMuted, marginBottom: 12, letterSpacing: "0.06em", textTransform: "uppercase", fontWeight: 600 }}>Ton score</p>
           <h1 aria-label={`Score : ${globalScore} sur 100`} style={{ fontSize: "clamp(64px, 18vw, 96px)", fontWeight: 900, color: category.onDark, lineHeight: 1, letterSpacing: "-0.04em", animation: "scaleIn 0.4s ease-out 0.15s both", willChange: "transform, opacity", fontFamily: T.fMono }}>{globalScore}</h1>
           <p style={{ fontSize: 16, color: T.onVertMuted, marginBottom: 20 }}>/100</p>
-          <div data-a11y-shape style={{ display: "inline-block", padding: "10px 28px", fontSize: 15, fontWeight: 700, color: T.vertDark, background: category.onDark, borderRadius: 24 }}>{category.label}</div>
+          <div data-a11y-shape style={{ display: "inline-block", padding: "10px 28px", fontSize: 15, fontWeight: 700, color: T.text, background: category.onDark, borderRadius: 24 }}>{category.label}</div>
           <button
             onClick={handleDownloadScoreCard}
             disabled={isGeneratingCard}
             aria-label="Télécharger ma carte de score à partager"
             aria-busy={isGeneratingCard}
             className="btn-hover"
-            style={{ display: "block", width: "100%", marginTop: 28, fontFamily: T.f, fontSize: 15, fontWeight: 700, background: T.jaune, color: T.vertDark, border: "none", borderRadius: T.rSm, padding: "14px 32px", minHeight: 48, opacity: isGeneratingCard ? 0.7 : 1, cursor: isGeneratingCard ? "wait" : "pointer" }}
+            style={{ display: "block", width: "100%", marginTop: 28, fontFamily: T.f, fontSize: 15, fontWeight: 700, background: T.jaune, color: T.white, border: "none", borderRadius: T.rSm, padding: "14px 32px", minHeight: 48, opacity: isGeneratingCard ? 0.7 : 1, cursor: isGeneratingCard ? "wait" : "pointer" }}
           >
             {isGeneratingCard ? "Génération..." : "Télécharger ma carte de score"}
           </button>
           {cardError && (
-            <p role="alert" style={{ marginTop: 10, fontSize: 13, color: T.jaune, fontFamily: T.f }}>Impossible de générer la carte — réessaie.</p>
+            <p role="alert" style={{ marginTop: 10, fontSize: 13, color: T.jauneClair, fontFamily: T.f }}>Impossible de générer la carte — réessaie.</p>
           )}
         </div>
       </header>
@@ -1754,7 +1781,7 @@ function ResultScreen({ answers, onRestart, sessionId }) {
             diagnostics et marquent la dimension prioritaire, comme le PDF le fait déjà : trois
             artefacts, un seul classement. */}
         <BentoCard style={{ marginBottom: 16, animation: "fadeUp 0.4s ease-out 0.3s both" }}>
-          <h2 style={{ fontSize: 13, fontWeight: 700, color: T.vert, marginBottom: 16, textTransform: "uppercase", letterSpacing: "0.06em", fontFamily: T.fHeading }}>Par dimension</h2>
+          <h2 style={{ fontSize: 13, fontWeight: 700, color: T.jaune, marginBottom: 16, textTransform: "uppercase", letterSpacing: "0.06em", fontFamily: T.fHeading }}>Par dimension</h2>
           {orderedDimResults.map((dim, i) => {
             const dimCategory = getCategory(dim.pct);
             const isPriority = dim.id === priorityDimId;
@@ -1763,7 +1790,7 @@ function ResultScreen({ answers, onRestart, sessionId }) {
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 8, marginBottom: 6 }}>
                   <span style={{ fontSize: 13, color: T.text, fontWeight: isPriority ? 700 : 500 }}>
                     {dim.shortName}
-                    {isPriority && <span style={{ fontSize: 11, fontWeight: 700, color: T.vert, marginLeft: 8, textTransform: "uppercase", letterSpacing: "0.04em" }}>priorité</span>}
+                    {isPriority && <span style={{ fontSize: 11, fontWeight: 700, color: T.jaune, marginLeft: 8, textTransform: "uppercase", letterSpacing: "0.04em" }}>priorité</span>}
                   </span>
                   <span style={{ fontSize: 13, fontWeight: 700, color: dimCategory.color, fontFamily: T.fMono, whiteSpace: "nowrap" }}>{dim.score}/{MAX_DIM_SCORE}</span>
                 </div>
@@ -1782,10 +1809,10 @@ function ResultScreen({ answers, onRestart, sessionId }) {
             lieu de la prouver ne peut pas se contenter d'affirmer un score. Replié par défaut :
             c'est une justification, pas une étape du parcours. */}
         <details style={{ marginBottom: 16 }}>
-          <summary style={{ cursor: "pointer", fontSize: 13, fontWeight: 600, color: T.vert, fontFamily: T.f, padding: "12px 4px", minHeight: 48, display: "flex", alignItems: "center" }}>
+          <summary style={{ cursor: "pointer", fontSize: 13, fontWeight: 600, color: T.jauneClair, fontFamily: T.f, padding: "12px 4px", minHeight: 48, display: "flex", alignItems: "center" }}>
             Comment ce score est calculé
           </summary>
-          <div style={{ padding: "4px 4px 12px", fontSize: 13, lineHeight: 1.7, color: T.textMid, fontFamily: T.f }}>
+          <div style={{ padding: "4px 4px 12px", fontSize: 13, lineHeight: 1.7, color: T.onVertMuted, fontFamily: T.f }}>
             <p style={{ margin: "0 0 8px" }}>
               20 questions, {QUESTIONS_PER_DIM} par dimension. Chaque réponse vaut 0, 1 ou 2 points, donc {MAX_DIM_SCORE} points
               au maximum par dimension et {MAX_SCORE} au total, ramenés sur 100.
@@ -1811,10 +1838,10 @@ function ResultScreen({ answers, onRestart, sessionId }) {
           const banner = ARTICLE_LINKS.banners[category.key];
           if (!banner) return null;
           return (
-            <p style={{ fontSize: 14, color: T.textMid, margin: "8px 0 16px", paddingLeft: 4 }}>
+            <p style={{ fontSize: 14, color: T.onVertMuted, margin: "8px 0 16px", paddingLeft: 4 }}>
               {banner.accroche}{" "}
-              <a href={banner.url} target="_blank" rel="noopener noreferrer"
-                 style={{ color: T.vert, fontWeight: 600, textDecoration: "underline", textUnderlineOffset: 3 }}>
+              <a href={banner.url} target="_blank" rel="noopener noreferrer" className="link-on-ink"
+                 style={{ color: T.jauneClair, fontWeight: 600, textDecoration: "underline", textUnderlineOffset: 3 }}>
                 {banner.linkText}
               </a>
             </p>
@@ -1831,12 +1858,12 @@ function ResultScreen({ answers, onRestart, sessionId }) {
               ref={unlockedNoticeRef}
               tabIndex={-1}
               role="status"
-              style={{ margin: 0, padding: "12px 16px", background: T.vertLight, color: T.vertDark, borderRadius: T.rSm, fontSize: 13, fontWeight: 600, fontFamily: T.f, outline: "none" }}
+              style={{ margin: 0, padding: "12px 16px", background: T.jauneLight, color: T.text, borderRadius: T.rSm, fontSize: 13, fontWeight: 600, fontFamily: T.f, outline: "none" }}
             >
               Tes 5 diagnostics sont ouverts. Ton rapport PDF reste accessible en bas de page.
             </p>
           )}
-          <h2 style={{ fontSize: 13, fontWeight: 700, color: T.vert, textTransform: "uppercase", letterSpacing: "0.06em", paddingLeft: 4, fontFamily: T.fHeading }}>Diagnostic par dimension</h2>
+          <h2 style={{ fontSize: 13, fontWeight: 700, color: T.jauneClair, textTransform: "uppercase", letterSpacing: "0.06em", paddingLeft: 4, fontFamily: T.fHeading }}>Diagnostic par dimension</h2>
           <DiagnosticCard dimension={priorityDimResult} index={0} rank={1} cardArticle={cardArticle} />
           {unlocked ? (
             orderedDimResults.filter(d => d.id !== priorityDimId).map((dim, i) => <DiagnosticCard key={dim.id} dimension={dim} index={i + 1} rank={i + 2} />)
@@ -1849,7 +1876,7 @@ function ResultScreen({ answers, onRestart, sessionId }) {
                 <p style={{ fontSize: 11, fontWeight: 700, color: T.onVertMuted, letterSpacing: ".08em", textTransform: "uppercase", marginBottom: 6, fontFamily: T.f }}>4 diagnostics verrouillés</p>
                 <p style={{ fontSize: 18, fontWeight: 800, color: T.white, marginBottom: 8, letterSpacing: "-0.01em", fontFamily: T.f }}>
                   Ton niveau en {displayLockedDim.shortName} :{" "}
-                  <span style={{ color: T.jaune }}>{firstLockedLevelLabel}</span>
+                  <span style={{ color: T.jauneClair }}>{firstLockedLevelLabel}</span>
                 </p>
                 <p style={{ fontSize: 13, color: T.onVertMuted, marginBottom: 24, lineHeight: 1.6, fontFamily: T.f }}>Entre ton email pour débloquer l'analyse et l'action concrète sur tes 4 dimensions restantes.</p>
                 <GhostSignupForm onSuccess={(email) => { setUnlocked(true); setShowModal(true); setSubscribedEmail(email); trackEvent("diagnostics_unlocked", { sessionId }); }} />
@@ -1869,7 +1896,7 @@ function ResultScreen({ answers, onRestart, sessionId }) {
             </button>
           )}
           {pdfError && (
-            <p role="alert" style={{ width: "100%", textAlign: "center", fontSize: 13, color: T.textMid, margin: 0, lineHeight: 1.5 }}>
+            <p role="alert" style={{ width: "100%", textAlign: "center", fontSize: 13, color: T.onVertMuted, margin: 0, lineHeight: 1.5 }}>
               La génération du PDF a échoué. Réessaie — tes résultats restent affichés.
             </p>
           )}
@@ -1890,7 +1917,7 @@ function ResultScreen({ answers, onRestart, sessionId }) {
 
         {/* Footer */}
         <footer style={{ textAlign: "center", paddingTop: 24, borderTop: `1px solid ${T.border}` }}>
-          <p style={{ fontSize: 12, color: T.textLight }}>Un outil <a href="https://dub.sh/cs-website" target="_blank" rel="noopener noreferrer" style={{ fontWeight: 700, color: T.textMuted, textDecoration: "underline", textUnderlineOffset: 3 }}>Collaboration Solved</a> — par Pierre-Cyril Denant</p>
+          <p style={{ fontSize: 12, color: T.onVertMuted }}>Un outil <a href="https://dub.sh/cs-website" target="_blank" rel="noopener noreferrer" className="link-on-ink" style={{ fontWeight: 700, color: T.onVertMuted, textDecoration: "underline", textUnderlineOffset: 3 }}>Collaboration Solved</a> — par Pierre-Cyril Denant</p>
         </footer>
       </main>
       {showModal && (
