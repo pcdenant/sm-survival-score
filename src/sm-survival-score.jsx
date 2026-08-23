@@ -494,20 +494,26 @@ const T = {
   jauneLight: "#fce9ea",
   creme: "#15110d",
   // Papier plus soutenu : panneaux clairs nichés dans une carte ou une page déjà claires
-  // (ex. bandeau d'article dans une DiagnosticCard, encadré CTA du PDF).
-  cremeDeep: "#e8dcc4",
-  // Papier : à la fois fond de carte ET texte clair sur fond encre (15.95:1 sur encre).
-  white: "#f3ecdc",
+  // (ex. bandeau d'article dans une DiagnosticCard, encadré CTA du PDF). Assez clair pour
+  // que jaune (signal, texte de lien) y reste ≥4.5:1 (4.71:1 mesuré) — le #e8dcc4 initial
+  // ne faisait que 4.33:1.
+  cremeDeep: "#f0e5cb",
+  // Papier : à la fois fond de carte ET texte clair sur fond encre (15.7:1 sur encre).
+  // Éclairci par rapport au papier du site (#f3ecdc, calibré pour d'autres composants
+  // Ghost) : à cette valeur, l'échelle de gris ci-dessous et les couleurs de catégorie
+  // existantes (ex. stable #b45309, 4.26:1 sur #f3ecdc) retombaient sous 4.5:1.
+  white: "#f9f3e4",
   // Échelle de gris calibrée pour tenir AA (4.5:1) sur les surfaces claires du produit
-  // (papier #f3ecdc et sa variante soutenue). Les anciennes valeurs (#7a7a7a, #a3a3a3)
-  // tombaient à 2.30–4.29 : le contraste minimal impose ~#6e6e6e, donc la hiérarchie se
-  // resserre et se joue désormais surtout à la taille et à la graisse, pas seulement à
-  // la couleur. Réservé au texte à l'intérieur des cartes/boutons clairs — le texte posé
-  // directement sur la page (fond encre) utilise white/onVertMuted, pas cette échelle.
-  text: "#1a1a1a",      // 15.85 papier / 17.40 blanc
-  textMid: "#4a4a4a",   //  8.07 /  8.86
-  textMuted: "#666666", //  5.23 /  5.74
-  textLight: "#6e6e6e", //  4.64 /  5.10
+  // (papier #f9f3e4 et sa variante soutenue #f0e5cb). Les anciennes valeurs (#7a7a7a,
+  // #a3a3a3) tombaient à 2.30–4.29 : le contraste minimal impose ~#6e6e6e, donc la
+  // hiérarchie se resserre et se joue désormais surtout à la taille et à la graisse, pas
+  // seulement à la couleur. Réservé au texte à l'intérieur des cartes/boutons clairs — le
+  // texte posé directement sur la page (fond encre) utilise white/onVertMuted, pas cette
+  // échelle.
+  text: "#1a1a1a",      // 17.9 papier / 17.40 blanc
+  textMid: "#4a4a4a",   //  9.1 /  8.86
+  textMuted: "#666666", //  5.9 /  5.74
+  textLight: "#6e6e6e", //  4.6 /  5.10
   // Texte secondaire directement sur fond encre : white@.8, contraste encore plus large
   // qu'avant (fond plus sombre qu'avant). En dessous ça échouait déjà sur l'ancien vert
   // (.733 → 4.41, .6 → 3.48) — la marge ne fait que croître ici, valeur inchangée.
@@ -535,6 +541,10 @@ const GLOBAL_CSS = `
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   body { background: ${T.creme}; -webkit-font-smoothing: antialiased; }
   button:focus-visible { outline: 2px solid ${T.white}; outline-offset: 2px; box-shadow: 0 0 0 4px ${T.jaune}; }
+  /* Liens posés directement sur le fond encre (pas dans une carte claire) : le contour de
+     focus par défaut du navigateur (sombre) y est invisible. Les liens dans une carte claire
+     gardent le contour par défaut, qui y fonctionne déjà. */
+  .link-on-ink:focus-visible, summary:focus-visible { outline: 2px solid ${T.white}; outline-offset: 2px; box-shadow: 0 0 0 4px ${T.jaune}; }
   @keyframes fadeUp { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:translateY(0); } }
   @keyframes fadeIn { from { opacity:0; } to { opacity:1; } }
   @keyframes scaleIn { from { opacity:0; transform:scale(0.88); } to { opacity:1; transform:scale(1); } }
@@ -839,8 +849,8 @@ function LockedDiagnosticCard({ dimension, rank = null, onUnlockClick }) {
         {hookText}
       </div>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 18px", background: T.cremeDeep, borderTop: `1px solid ${T.border}`, marginTop: 8, gap: 8 }}>
-        <span style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11, color: T.textLight }}>
-          <IconUnlock size={11} color={T.textLight} /> Analyse + action concrète
+        <span style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11, color: T.textMid }}>
+          <IconUnlock size={11} color={T.textMid} /> Analyse + action concrète
         </span>
         <button
           onClick={onUnlockClick}
@@ -1830,7 +1840,7 @@ function ResultScreen({ answers, onRestart, sessionId }) {
           return (
             <p style={{ fontSize: 14, color: T.onVertMuted, margin: "8px 0 16px", paddingLeft: 4 }}>
               {banner.accroche}{" "}
-              <a href={banner.url} target="_blank" rel="noopener noreferrer"
+              <a href={banner.url} target="_blank" rel="noopener noreferrer" className="link-on-ink"
                  style={{ color: T.jauneClair, fontWeight: 600, textDecoration: "underline", textUnderlineOffset: 3 }}>
                 {banner.linkText}
               </a>
@@ -1907,7 +1917,7 @@ function ResultScreen({ answers, onRestart, sessionId }) {
 
         {/* Footer */}
         <footer style={{ textAlign: "center", paddingTop: 24, borderTop: `1px solid ${T.border}` }}>
-          <p style={{ fontSize: 12, color: T.onVertMuted }}>Un outil <a href="https://dub.sh/cs-website" target="_blank" rel="noopener noreferrer" style={{ fontWeight: 700, color: T.onVertMuted, textDecoration: "underline", textUnderlineOffset: 3 }}>Collaboration Solved</a> — par Pierre-Cyril Denant</p>
+          <p style={{ fontSize: 12, color: T.onVertMuted }}>Un outil <a href="https://dub.sh/cs-website" target="_blank" rel="noopener noreferrer" className="link-on-ink" style={{ fontWeight: 700, color: T.onVertMuted, textDecoration: "underline", textUnderlineOffset: 3 }}>Collaboration Solved</a> — par Pierre-Cyril Denant</p>
         </footer>
       </main>
       {showModal && (
