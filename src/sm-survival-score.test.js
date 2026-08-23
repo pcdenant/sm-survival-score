@@ -843,7 +843,7 @@ describe("COMPOSITION — rang et classement unique", () => {
     "le rang est passé aux cartes déverrouillées ET verrouillées");
 
   const card = src.slice(src.indexOf("function DiagnosticCard"), src.indexOf("function LockedDiagnosticCard"));
-  assert(card.includes("Priorité 1 — commence ici"), "PRESENT: en-tête de la carte prioritaire");
+  assert(card.includes("Priorité 1 : commence ici"), "PRESENT: en-tête de la carte prioritaire");
   assert(card.includes("{rank ?? \"1\"}"), "le disque numéroté porte le rang réel");
   assert(!/>1<\/div>/.test(card), "ABSENT: disque « 1 » codé en dur sur les cinq cartes");
 });

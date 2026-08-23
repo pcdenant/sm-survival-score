@@ -164,7 +164,7 @@ function getCardArticle(categoryKey, dimensionId) {
     return { cta: true, text: "Déverrouille les 4 autres dimensions pour identifier l'angle mort qui reste." };
   }
   if (dimensionId === "strategic") {
-    return { cta: true, text: "C'est la dimension la plus difficile à construire — et la première consultée en cas de réorg. Je couvre ça chaque semaine dans la newsletter." };
+    return { cta: true, text: "C'est la dimension la plus difficile à construire, et la première consultée en cas de réorg. Je couvre ça chaque semaine dans la newsletter." };
   }
   // Anti-doublon : bannière Vulnérable pointe déjà vers Éd.1 (Visibilité)
   if (categoryKey === "vulnerable" && dimensionId === "visibility") {
@@ -773,7 +773,7 @@ function DiagnosticCard({ dimension, index, rank = null, cardArticle = null }) {
     >
       {isPriority && (
         <div style={{ background: T.vert, padding: "6px 18px", fontSize: 11, fontWeight: 800, letterSpacing: ".08em", textTransform: "uppercase", color: T.jauneClair, fontFamily: T.f }}>
-          Priorité 1 — commence ici
+          Priorité 1 : commence ici
         </div>
       )}
       <div style={{ padding: isPriority ? "18px 18px 14px" : "16px 18px 12px" }}>
@@ -782,7 +782,7 @@ function DiagnosticCard({ dimension, index, rank = null, cardArticle = null }) {
             {rank && !isPriority && <span style={{ color: T.textMuted, fontWeight: 600, marginRight: 6 }}>{rank}.</span>}
             {dimension.name}
           </h3>
-          <span data-a11y-shape style={{ fontSize: 11, fontWeight: 700, color: cat.color, padding: "4px 12px", background: cat.bg, border: `1px solid ${cat.color}`, borderRadius: 20, whiteSpace: "nowrap" }}>{levelLabel} — {dimension.score}/8</span>
+          <span data-a11y-shape style={{ fontSize: 11, fontWeight: 700, color: cat.color, padding: "4px 12px", background: cat.bg, border: `1px solid ${cat.color}`, borderRadius: 20, whiteSpace: "nowrap" }}>{levelLabel} · {dimension.score}/8</span>
         </div>
         <p style={{ fontSize: isPriority ? 16 : 14, fontWeight: 600, lineHeight: 1.55, color: T.text, fontFamily: T.f, marginBottom: 12 }}>{headline}</p>
         {rest && (
@@ -860,7 +860,7 @@ function LockedDiagnosticCard({ dimension, rank = null, onUnlockClick }) {
           <IconLock size={12} color={T.textMuted} />
         </div>
         <span data-a11y-shape style={{ fontSize: 11, fontWeight: 700, color: cat.color, padding: "3px 10px", background: cat.bg, border: `1px solid ${cat.color}`, borderRadius: 20, whiteSpace: "nowrap" }}>
-          {levelLabel} — {dimension.score}/8
+          {levelLabel} · {dimension.score}/8
         </span>
       </div>
       <div style={{ padding: "0 18px", fontSize: 13, lineHeight: 1.6, color: T.textMid, fontFamily: T.f, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
@@ -1004,7 +1004,7 @@ function PDFDocument({ globalScore, category, globalResult, dimensionResults, pr
           <div style={{ width: 20, height: 20, borderRadius: "50%", background: T.jaune, color: T.white, fontSize: 10, fontWeight: 900, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 2 }}>1</div>
           <div>
             <p style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", color: "rgba(255,255,255,0.5)", marginBottom: 3 }}>
-              Action immédiate — {priorityResult.shortName}
+              Action immédiate : {priorityResult.shortName}
             </p>
             <p style={{ fontSize: 13, lineHeight: 1.65, color: T.white }}>{priorityResult.diagnostics[priorityLevel].action}</p>
           </div>
@@ -1062,7 +1062,7 @@ function PDFDocument({ globalScore, category, globalResult, dimensionResults, pr
             <div style={{ marginBottom: 20 }}>
               <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8, alignItems: "center" }}>
                 <h3 style={{ fontSize: 14, fontWeight: 700, color: T.text, margin: 0, fontFamily: T.fHeading }}>{dim.name}</h3>
-                <span style={{ fontSize: 11, fontWeight: 700, color: dimCat.color, padding: "3px 10px", background: dimCat.bg, borderRadius: 20 }}>{levelLabel} — {dim.score}/8</span>
+                <span style={{ fontSize: 11, fontWeight: 700, color: dimCat.color, padding: "3px 10px", background: dimCat.bg, borderRadius: 20 }}>{levelLabel} · {dim.score}/8</span>
               </div>
               <p style={{ fontSize: 13, lineHeight: 1.7, color: T.textMid, marginBottom: 10 }}>{diag.text}</p>
               <div style={{ background: T.vert, borderRadius: T.rSm, padding: "12px 14px", display: "flex", gap: 10, alignItems: "flex-start" }}>
@@ -1102,7 +1102,7 @@ function PDFDocument({ globalScore, category, globalResult, dimensionResults, pr
             {collabEmail}
           </a>
         )}
-        <p style={{ fontSize: 11, color: T.textLight, marginBottom: 6 }}>Un outil Collaboration Solved — par Pierre-Cyril Denant</p>
+        <p style={{ fontSize: 11, color: T.textLight, marginBottom: 6 }}>Un outil Collaboration Solved, par Pierre-Cyril Denant</p>
         <a href="https://dub.sh/sm-survival-score" style={{ fontSize: 11, color: T.textLight, textDecoration: "underline" }}>
           Faire passer le test à un collègue SM → dub.sh/sm-survival-score
         </a>
@@ -1486,7 +1486,7 @@ function LandingScreen({ onStart }) {
         <hr style={{ border: "none", borderTop: `1px solid ${T.white}20`, width: 60, margin: "0 auto 24px" }} />
         <div style={{ maxWidth: 400, margin: "0 auto", textAlign: "left" }}>
           {[
-            { num: "1 100", text: "postes agile supprimés chez Capital One en 2023 — qualifiés de « critiques » jusqu'au bout" },
+            { num: "1 100", text: "postes agile supprimés chez Capital One en 2023, qualifiés de « critiques » jusqu'au bout" },
             { num: "18%",   text: "des Scrum Masters licenciés depuis 2022 selon ScrumAlliance" },
             { num: "5",     text: "dimensions analysées : visibilité, preuves, business, autonomie, stratégique" },
           ].map(({ num, text }, i, arr) => (
@@ -1841,8 +1841,8 @@ function ResultScreen({ answers, onRestart, sessionId }) {
             </p>
             <p style={{ margin: 0 }}>
               La dimension prioritaire n'est pas ton score le plus bas. Chaque dimension porte un poids
-              de survie — visibilité {DIMENSION_WEIGHTS.visibility}, stratégique {DIMENSION_WEIGHTS.strategic}, preuves {DIMENSION_WEIGHTS.proof},
-              business {DIMENSION_WEIGHTS.business}, autonomie {DIMENSION_WEIGHTS.autonomy} — et la priorité revient à celle où
+              de survie : visibilité {DIMENSION_WEIGHTS.visibility}, stratégique {DIMENSION_WEIGHTS.strategic}, preuves {DIMENSION_WEIGHTS.proof},
+              business {DIMENSION_WEIGHTS.business}, autonomie {DIMENSION_WEIGHTS.autonomy}, et la priorité revient à celle où
               l'écart pèse le plus lourd. Être invisible coûte plus cher qu'une équipe peu autonome.
             </p>
           </div>
@@ -1935,7 +1935,7 @@ function ResultScreen({ answers, onRestart, sessionId }) {
 
         {/* Footer */}
         <footer style={{ textAlign: "center", paddingTop: 24, borderTop: `1px solid ${T.border}` }}>
-          <p style={{ fontSize: 12, color: T.onVertMuted }}>Un outil <a href="https://dub.sh/cs-website" target="_blank" rel="noopener noreferrer" className="link-on-ink" style={{ fontWeight: 700, color: T.onVertMuted, textDecoration: "underline", textUnderlineOffset: 3 }}>Collaboration Solved</a> — par Pierre-Cyril Denant</p>
+          <p style={{ fontSize: 12, color: T.onVertMuted }}>Un outil <a href="https://dub.sh/cs-website" target="_blank" rel="noopener noreferrer" className="link-on-ink" style={{ fontWeight: 700, color: T.onVertMuted, textDecoration: "underline", textUnderlineOffset: 3 }}>Collaboration Solved</a>, par Pierre-Cyril Denant</p>
         </footer>
       </main>
       {showModal && (
