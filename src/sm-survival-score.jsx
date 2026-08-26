@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { flushSync } from "react-dom";
 import { createRoot } from "react-dom/client";
+import signatureUrl from "./signpc.svg";
 
 // ============================================================
 // DATA
@@ -1103,6 +1104,7 @@ function PDFDocument({ globalScore, category, globalResult, dimensionResults, pr
           </a>
         )}
         <p style={{ fontSize: 11, color: T.textLight, marginBottom: 6 }}>Un outil Collaboration Solved, par Pierre-Cyril Denant</p>
+        <img src={signatureUrl} alt="" style={{ height: 64, width: "auto", display: "block", margin: "0 auto 12px" }} />
         <a href="https://dub.sh/sm-survival-score" style={{ fontSize: 11, color: T.textLight, textDecoration: "underline" }}>
           Faire passer le test à un collègue SM → dub.sh/sm-survival-score
         </a>
